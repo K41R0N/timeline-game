@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm install && cd timeline-project && npm run build",
+  "devCommand": "cd timeline-project && npm run dev",
+  "installCommand": "npm install",
+  "framework": null,
+  "outputDirectory": "timeline-project/.next"
+}
