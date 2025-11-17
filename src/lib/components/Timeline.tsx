@@ -37,9 +37,11 @@ export default function Timeline({
   const [animationProgress, setAnimationProgress] = useState(0);
   const [chainAnalysis, setChainAnalysis] = useState<ChainAnalysis | null>(null);
   const [prevFiguresLength, setPrevFiguresLength] = useState(0);
+  const [hoverCardPositions, setHoverCardPositions] = useState<Map<string, { vertical: 'top' | 'bottom', horizontal: 'left' | 'center' | 'right' }>>(new Map());
   const timelineRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const bubbleRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   // Constants for timeline dimensions and constraints
   const TIMELINE_WIDTH = 1000;
@@ -313,6 +315,54 @@ export default function Timeline({
 
   const getInitials = (name: string) => {
     return name.split(' ').map(part => part[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  // Calculate best position for hover card based on available viewport space
+  const calculateHoverCardPosition = (figureId: string): { vertical: 'top' | 'bottom', horizontal: 'left' | 'center' | 'right' } => {
+    const bubbleEl = bubbleRefs.current.get(figureId);
+    const viewport = viewportRef.current;
+
+    if (!bubbleEl || !viewport) {
+      return { vertical: 'bottom' as const, horizontal: 'center' as const };
+    }
+
+    const bubbleRect = bubbleEl.getBoundingClientRect();
+    const viewportRect = viewport.getBoundingClientRect();
+
+    // Card dimensions
+    const CARD_WIDTH = 320;
+    const CARD_HEIGHT = 250; // Approximate height
+
+    // Calculate available space in each direction
+    const spaceAbove = bubbleRect.top - viewportRect.top;
+    const spaceBelow = viewportRect.bottom - bubbleRect.bottom;
+    const spaceLeft = bubbleRect.left - viewportRect.left;
+    const spaceRight = viewportRect.right - bubbleRect.right;
+
+    // Determine vertical position (prefer bottom to match node.isAbove logic)
+    const vertical: 'top' | 'bottom' = spaceBelow >= CARD_HEIGHT || spaceBelow > spaceAbove ? 'bottom' : 'top';
+
+    // Determine horizontal position
+    let horizontal: 'left' | 'center' | 'right' = 'center';
+    const centerSpaceNeeded = CARD_WIDTH / 2;
+
+    if (spaceLeft < centerSpaceNeeded && spaceRight >= CARD_WIDTH) {
+      horizontal = 'left'; // Align to left edge of bubble
+    } else if (spaceRight < centerSpaceNeeded && spaceLeft >= CARD_WIDTH) {
+      horizontal = 'right'; // Align to right edge of bubble
+    }
+
+    return { vertical, horizontal };
+  };
+
+  // Handle hover with position calculation
+  const handleNodeHover = (figureId: string) => {
+    setHoveredNode(figureId);
+    // Calculate position on next frame to ensure DOM is updated
+    requestAnimationFrame(() => {
+      const position = calculateHoverCardPosition(figureId);
+      setHoverCardPositions(prev => new Map(prev).set(figureId, position));
+    });
   };
 
   const getWikimediaUrl = (imageUrl: string): string => {
@@ -622,8 +672,11 @@ export default function Timeline({
 
                     {/* Profile bubble */}
                     <div
+                      ref={(el) => {
+                        if (el) bubbleRefs.current.set(node.figure.id, el);
+                      }}
                       className="relative group cursor-pointer"
-                      onMouseEnter={() => setHoveredNode(node.figure.id)}
+                      onMouseEnter={() => handleNodeHover(node.figure.id)}
                       onMouseLeave={() => setHoveredNode(null)}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -648,65 +701,84 @@ export default function Timeline({
                       </div>
 
                       {/* Info card on hover - clickable */}
-                      <div
-                        className={`
-                          timeline-card
-                          absolute ${node.isAbove ? 'bottom-full mb-3' : 'top-full mt-3'}
-                          left-1/2 -translate-x-1/2
-                          w-[320px]
-                          transition-all duration-300 ease-in-out
-                          cursor-pointer
-                          ${hoveredNode === node.figure.id
-                            ? 'opacity-100 translate-y-0'
-                            : 'opacity-0 translate-y-2 pointer-events-none'}
-                        `}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedFigure(node.figure);
-                        }}
-                        onMouseEnter={() => setHoveredNode(node.figure.id)}
-                        onMouseLeave={() => setHoveredNode(null)}
-                      >
-                        <div className="p-4">
-                          <h3 className="text-lg font-semibold text-foreground mb-2">
-                            {node.figure.name}
-                          </h3>
-                          <div className="text-primary font-medium mb-2 text-sm">
-                            {`${Math.abs(node.figure.birthYear)} ${node.figure.birthYear < 0 ? 'BCE' : 'CE'} - ${Math.abs(node.figure.deathYear)} ${node.figure.deathYear < 0 ? 'BCE' : 'CE'}`}
-                          </div>
+                      {(() => {
+                        const cardPos = hoverCardPositions.get(node.figure.id) || {
+                          vertical: node.isAbove ? 'top' : 'bottom',
+                          horizontal: 'center'
+                        };
 
-                          {/* Status indicator - Simplified */}
-                          {status !== 'neutral' && (
-                            <div className={`text-xs font-medium mb-2 px-2 py-1 rounded inline-block
-                              ${status === 'target' ? 'bg-yellow-100 text-yellow-700' : ''}
-                              ${status === 'in-chain' ? 'bg-green-100 text-green-700' : ''}
-                              ${status === 'wasted' ? 'bg-red-100 text-red-700' : ''}
-                              ${status === 'helpful' ? 'bg-green-100 text-green-700' : ''}
-                            `}>
-                              {status === 'target' && '🎯 TARGET'}
-                              {status === 'in-chain' && '✓ IN CHAIN'}
-                              {status === 'wasted' && '✗ NOT NEEDED'}
-                              {status === 'helpful' && '✓ GOOD CONNECTION'}
+                        // Vertical positioning classes
+                        const verticalClass = cardPos.vertical === 'bottom' ? 'top-full mt-3' : 'bottom-full mb-3';
+
+                        // Horizontal positioning classes
+                        let horizontalClass = 'left-1/2 -translate-x-1/2'; // center (default)
+                        if (cardPos.horizontal === 'left') {
+                          horizontalClass = 'left-0'; // align to left edge
+                        } else if (cardPos.horizontal === 'right') {
+                          horizontalClass = 'right-0'; // align to right edge
+                        }
+
+                        return (
+                          <div
+                            className={`
+                              timeline-card
+                              absolute ${verticalClass} ${horizontalClass}
+                              w-[320px]
+                              transition-all duration-300 ease-in-out
+                              cursor-pointer
+                              ${hoveredNode === node.figure.id
+                                ? 'opacity-100 translate-y-0'
+                                : 'opacity-0 translate-y-2 pointer-events-none'}
+                            `}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFigure(node.figure);
+                            }}
+                            onMouseEnter={() => handleNodeHover(node.figure.id)}
+                            onMouseLeave={() => setHoveredNode(null)}
+                          >
+                            <div className="p-4">
+                              <h3 className="text-lg font-semibold text-foreground mb-2">
+                                {node.figure.name}
+                              </h3>
+                              <div className="text-primary font-medium mb-2 text-sm">
+                                {`${Math.abs(node.figure.birthYear)} ${node.figure.birthYear < 0 ? 'BCE' : 'CE'} - ${Math.abs(node.figure.deathYear)} ${node.figure.deathYear < 0 ? 'BCE' : 'CE'}`}
+                              </div>
+
+                              {/* Status indicator - Simplified */}
+                              {status !== 'neutral' && (
+                                <div className={`text-xs font-medium mb-2 px-2 py-1 rounded inline-block
+                                  ${status === 'target' ? 'bg-yellow-100 text-yellow-700' : ''}
+                                  ${status === 'in-chain' ? 'bg-green-100 text-green-700' : ''}
+                                  ${status === 'wasted' ? 'bg-red-100 text-red-700' : ''}
+                                  ${status === 'helpful' ? 'bg-green-100 text-green-700' : ''}
+                                `}>
+                                  {status === 'target' && '🎯 TARGET'}
+                                  {status === 'in-chain' && '✓ IN CHAIN'}
+                                  {status === 'wasted' && '✗ NOT NEEDED'}
+                                  {status === 'helpful' && '✓ GOOD CONNECTION'}
+                                </div>
+                              )}
+
+                              <p className="text-foreground-muted leading-relaxed text-sm mb-3">
+                                {node.figure.shortDescription}
+                              </p>
+
+                              {/* Click hint */}
+                              <div className="text-xs text-primary font-medium border-t border-primary-bright-20 pt-2">
+                                👆 Click to view full details
+                              </div>
+
+                              {/* Contemporary info */}
+                              {prevNode && isContemporaryWithPrev && (
+                                <div className="mt-2 pt-2 border-t border-primary-bright-20 text-xs text-blue-600">
+                                  ⏱️ Contemporary with {prevNode.figure.name}
+                                </div>
+                              )}
                             </div>
-                          )}
-
-                          <p className="text-foreground-muted leading-relaxed text-sm mb-3">
-                            {node.figure.shortDescription}
-                          </p>
-
-                          {/* Click hint */}
-                          <div className="text-xs text-primary font-medium border-t border-primary-bright-20 pt-2">
-                            👆 Click to view full details
                           </div>
-
-                          {/* Contemporary info */}
-                          {prevNode && isContemporaryWithPrev && (
-                            <div className="mt-2 pt-2 border-t border-primary-bright-20 text-xs text-blue-600">
-                              ⏱️ Contemporary with {prevNode.figure.name}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 );
