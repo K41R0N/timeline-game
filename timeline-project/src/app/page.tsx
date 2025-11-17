@@ -1,7 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Timeline, HistoricalFigure, WikipediaService, SearchBar } from '@timeline/game-core';
+import {
+  Timeline,
+  HistoricalFigure,
+  WikipediaService,
+  SearchBar,
+  ScoreDisplay,
+  WinModal,
+  analyzeChain
+} from '@timeline/game-core';
 
 console.log('🚀 Initializing Timeline Game...');
 
@@ -11,6 +19,13 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [selectedFigure, setSelectedFigure] = useState<HistoricalFigure | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+
+  // Game state
+  const [score, setScore] = useState(0);
+  const [hasWon, setHasWon] = useState(false);
+  const [winningChain, setWinningChain] = useState<HistoricalFigure[]>([]);
+  const [targetA, setTargetA] = useState<HistoricalFigure | null>(null);
+  const [targetB, setTargetB] = useState<HistoricalFigure | null>(null);
 
   // Load initial figures
   useEffect(() => {
@@ -30,11 +45,14 @@ export default function Home() {
           throw new Error('Failed to load initial historical figures');
         }
 
-        console.log('✅ Initial figures loaded:', { 
+        console.log('✅ Initial figures loaded:', {
           alexander: { name: alexander.name, years: `${alexander.birthYear}-${alexander.deathYear}` },
           caesar: { name: caesar.name, years: `${caesar.birthYear}-${caesar.deathYear}` }
         });
-        
+
+        // Set targets (first and last in the list)
+        setTargetA(alexander);
+        setTargetB(caesar);
         setFigures([alexander, caesar]);
       } catch (err) {
         console.error('❌ Error loading initial figures:', err);
@@ -47,11 +65,72 @@ export default function Home() {
     loadInitialFigures();
   }, []);
 
+  // Calculate score (number of intermediate figures)
+  useEffect(() => {
+    if (figures.length >= 2) {
+      // Score = total figures minus the 2 targets
+      const newScore = Math.max(0, figures.length - 2);
+      setScore(newScore);
+      console.log(`📊 Score updated: ${newScore}`);
+    }
+  }, [figures]);
+
+  // Check for win condition
+  useEffect(() => {
+    if (figures.length < 2 || !targetA || !targetB || hasWon) return;
+
+    const analysis = analyzeChain(targetA, targetB, figures);
+
+    if (analysis.isComplete) {
+      console.log('🎉 WIN CONDITION MET!', {
+        chainLength: analysis.chainLength,
+        path: analysis.shortestPath.map(f => f.name).join(' → ')
+      });
+      setHasWon(true);
+      setWinningChain(analysis.shortestPath);
+    }
+  }, [figures, targetA, targetB, hasWon]);
+
   const handleFiguresChange = (updatedFigures: HistoricalFigure[]) => {
     console.log('📝 Updating timeline with figures:', 
       updatedFigures.map(f => ({ name: f.name, years: `${f.birthYear}-${f.deathYear}` }))
     );
     setFigures(updatedFigures);
+  };
+
+  const handlePlayAgain = () => {
+    console.log('🔄 Restarting game...');
+    setHasWon(false);
+    setWinningChain([]);
+    setScore(0);
+    setFigures([]);
+    setTargetA(null);
+    setTargetB(null);
+    setIsLoading(true);
+    setError(null);
+
+    // Reload initial figures
+    const loadInitialFigures = async () => {
+      try {
+        const [alexander, caesar] = await Promise.all([
+          WikipediaService.getPersonDetails('Alexander the Great'),
+          WikipediaService.getPersonDetails('Julius Caesar')
+        ]);
+
+        if (alexander && caesar) {
+          setTargetA(alexander);
+          setTargetB(caesar);
+          setFigures([alexander, caesar]);
+        }
+      } catch (err) {
+        console.error('❌ Error reloading figures:', err);
+        setError('Failed to restart game. Please refresh the page.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadInitialFigures();
   };
 
   const handleAddFigure = async (name: string) => {
@@ -112,7 +191,7 @@ export default function Home() {
     );
   }
 
-  if (error) {
+  if (error && figures.length === 0) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-background">
         <div className="text-red-500 text-xl">
@@ -124,31 +203,56 @@ export default function Home() {
 
   return (
     <>
-      {/* Fixed UI Layer */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-2 left-2 z-[100] text-2xl pointer-events-auto">
-          🌟
+      {/* Score Display - Top Right */}
+      <div className="fixed top-4 right-4 z-[100] pointer-events-auto">
+        <ScoreDisplay
+          score={score}
+          targetA={targetA?.name}
+          targetB={targetB?.name}
+        />
+      </div>
+
+      {/* Game Title - Top Left */}
+      <div className="fixed top-4 left-4 z-[100] pointer-events-auto">
+        <div className="timeline-card px-4 py-2">
+          <h1 className="text-lg font-bold text-primary">
+            History Links
+          </h1>
+          <p className="text-xs text-foreground-muted">
+            Connect through time
+          </p>
         </div>
       </div>
 
       {/* Timeline Canvas Container */}
       <main className="w-full h-screen bg-background">
-        <Timeline 
+        <Timeline
           figures={figures}
           onFiguresChange={handleFiguresChange}
           isAnimating={isAnimating}
           onAnimationComplete={() => setIsAnimating(false)}
+          targetA={targetA}
+          targetB={targetB}
         />
       </main>
 
       {/* Search Bar Layer */}
       <div className="fixed bottom-0 left-0 right-0 z-[100]">
-        <SearchBar 
+        <SearchBar
           figures={figures}
           onSelect={setSelectedFigure}
           onAddFigure={handleAddFigure}
         />
       </div>
+
+      {/* Win Modal */}
+      {hasWon && (
+        <WinModal
+          score={score}
+          winningChain={winningChain}
+          onPlayAgain={handlePlayAgain}
+        />
+      )}
     </>
   );
 }
