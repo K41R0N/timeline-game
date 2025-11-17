@@ -359,7 +359,15 @@ export default function Timeline({
   // Memoized ProfileImage component - prevents re-renders when parent state changes
   const ProfileImage = memo(({ figure }: { figure: HistoricalFigure }) => {
     const [hasError, setHasError] = useState(false);
+    const [imageLoaded, setImageLoaded] = useState(false);
 
+    // Reset error state when figure changes
+    useEffect(() => {
+      setHasError(false);
+      setImageLoaded(false);
+    }, [figure.id]);
+
+    // If no image URL or error occurred, show initials immediately
     if (!figure.imageUrl || hasError) {
       return (
         <div className="w-full h-full flex items-center justify-center bg-primary text-2xl text-background font-medium">
@@ -369,14 +377,28 @@ export default function Timeline({
     }
 
     return (
-      <img
-        src={figure.imageUrl}
-        alt={figure.name}
-        className="absolute inset-0 w-full h-full object-cover"
-        crossOrigin="anonymous"
-        loading="lazy"
-        onError={() => setHasError(true)}
-      />
+      <>
+        {/* Show initials while image is loading to prevent jitter */}
+        {!imageLoaded && (
+          <div className="w-full h-full flex items-center justify-center bg-primary text-2xl text-background font-medium">
+            {getInitials(figure.name)}
+          </div>
+        )}
+        <img
+          src={figure.imageUrl}
+          alt={figure.name}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${
+            imageLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          crossOrigin="anonymous"
+          loading="lazy"
+          onLoad={() => setImageLoaded(true)}
+          onError={() => {
+            setHasError(true);
+            setImageLoaded(false);
+          }}
+        />
+      </>
     );
   });
   ProfileImage.displayName = 'ProfileImage';
