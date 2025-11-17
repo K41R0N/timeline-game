@@ -8,6 +8,7 @@ import {
   SearchBar,
   ScoreDisplay,
   WinModal,
+  SplashScreen,
   analyzeChain,
   TargetSelectionService
 } from '@/lib';
@@ -16,11 +17,15 @@ console.log('🚀 Initializing Timeline Game...');
 
 export default function Home() {
   const [figures, setFigures] = useState<HistoricalFigure[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showDifficultySelect, setShowDifficultySelect] = useState(false);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+
+  // Splash screen state
+  const [showSplash, setShowSplash] = useState(true);
+  const [isPreloading, setIsPreloading] = useState(false);
 
   // Game state
   const [score, setScore] = useState(0);
@@ -29,10 +34,24 @@ export default function Home() {
   const [targetA, setTargetA] = useState<HistoricalFigure | null>(null);
   const [targetB, setTargetB] = useState<HistoricalFigure | null>(null);
 
-  // Load initial figures
-  useEffect(() => {
-    loadGame(difficulty);
-  }, []);
+  // Handle splash screen "Start Playing" button
+  const handleStartGame = async (selectedDifficulty: 'easy' | 'medium' | 'hard') => {
+    console.log(`🎮 Starting game with difficulty: ${selectedDifficulty}`);
+    setIsPreloading(true);
+
+    try {
+      // Pre-load game data in background
+      await loadGame(selectedDifficulty);
+
+      // Smooth transition: hide splash screen
+      console.log('✅ Pre-loading complete, transitioning to game...');
+      setShowSplash(false);
+    } catch (err) {
+      console.error('❌ Error during pre-loading:', err);
+      setError('Failed to start game. Please try again.');
+      setIsPreloading(false);
+    }
+  };
 
   const loadGame = async (selectedDifficulty: 'easy' | 'medium' | 'hard') => {
     try {
@@ -64,9 +83,11 @@ export default function Home() {
       setFigures([targetA, targetB]);
       setDifficulty(selectedDifficulty);
       setShowDifficultySelect(false);
+      setIsPreloading(false);
     } catch (err) {
       console.error('❌ Error loading initial figures:', err);
       setError('Failed to load initial figures. Please refresh the page.');
+      throw err; // Re-throw so handleStartGame can catch it
     } finally {
       setIsLoading(false);
     }
@@ -105,14 +126,16 @@ export default function Home() {
   };
 
   const handlePlayAgain = () => {
-    console.log('🔄 Showing difficulty selector...');
+    console.log('🔄 Returning to splash screen...');
     setHasWon(false);
     setWinningChain([]);
     setScore(0);
     setFigures([]);
     setTargetA(null);
     setTargetB(null);
-    setShowDifficultySelect(true);
+    setShowDifficultySelect(false);
+    setShowSplash(true);
+    setIsPreloading(false);
   };
 
   const handleAddFigure = async (name: string) => {
@@ -164,6 +187,11 @@ export default function Home() {
       setIsAnimating(false);
     }
   };
+
+  // Show splash screen first
+  if (showSplash) {
+    return <SplashScreen onStart={handleStartGame} isPreloading={isPreloading} />;
+  }
 
   if (showDifficultySelect) {
     return (
