@@ -258,6 +258,23 @@ export default function Home() {
 
   return (
     <>
+      {/* New Game Button - Top Left */}
+      <div className="fixed top-4 left-4 z-[22] pointer-events-auto">
+        <button
+          onClick={() => {
+            if (confirm('Start a new game? Your current progress will be lost.')) {
+              handlePlayAgain();
+            }
+          }}
+          className="timeline-card px-4 py-2 shadow-glow hover:shadow-xl transition-all hover:scale-105"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🎮</span>
+            <span className="text-sm font-medium text-primary">New Game</span>
+          </div>
+        </button>
+      </div>
+
       {/* Compact Floating Score Badge - Top Right */}
       <div className="fixed top-4 right-4 z-[22] pointer-events-auto group">
         <div className="timeline-card p-3 shadow-glow hover:shadow-xl transition-shadow">
