@@ -10,7 +10,7 @@ import {
   WinModal,
   analyzeChain,
   TargetSelectionService
-} from '@timeline/game-core';
+} from '@/lib';
 
 console.log('🚀 Initializing Timeline Game...');
 
