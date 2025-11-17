@@ -331,30 +331,36 @@ export default function Timeline({
       return { vertical: 'bottom' as const, horizontal: 'center' as const };
     }
 
+    // Get bubble and viewport positions
     const bubbleRect = bubbleEl.getBoundingClientRect();
     const viewportRect = viewport.getBoundingClientRect();
 
-    // Card dimensions (updated for compact tooltips)
+    // Card dimensions
     const CARD_WIDTH = 200;
-    const CARD_HEIGHT = 120; // Approximate height for compact version
+    const CARD_HEIGHT = 120;
 
-    // Calculate available space in each direction
+    // Calculate available space (accounting for bubble position in viewport)
     const spaceAbove = bubbleRect.top - viewportRect.top;
     const spaceBelow = viewportRect.bottom - bubbleRect.bottom;
-    const spaceLeft = bubbleRect.left - viewportRect.left;
-    const spaceRight = viewportRect.right - bubbleRect.right;
+    const distanceFromLeft = bubbleRect.left - viewportRect.left;
+    const distanceFromRight = viewportRect.right - bubbleRect.right;
 
-    // Determine vertical position (prefer bottom to match node.isAbove logic)
-    const vertical: 'top' | 'bottom' = spaceBelow >= CARD_HEIGHT || spaceBelow > spaceAbove ? 'bottom' : 'top';
+    // Vertical: Show opposite side if not enough space
+    let vertical: 'top' | 'bottom' = 'bottom';
+    if (spaceBelow < CARD_HEIGHT && spaceAbove > spaceBelow) {
+      vertical = 'top';
+    }
 
-    // Determine horizontal position
+    // Horizontal: Only adjust if too close to edges
     let horizontal: 'left' | 'center' | 'right' = 'center';
-    const centerSpaceNeeded = CARD_WIDTH / 2;
+    const halfCardWidth = CARD_WIDTH / 2;
 
-    if (spaceLeft < centerSpaceNeeded && spaceRight >= CARD_WIDTH) {
-      horizontal = 'left'; // Align to left edge of bubble
-    } else if (spaceRight < centerSpaceNeeded && spaceLeft >= CARD_WIDTH) {
-      horizontal = 'right'; // Align to right edge of bubble
+    if (distanceFromLeft < halfCardWidth && distanceFromRight > CARD_WIDTH) {
+      // Too close to left edge, align left
+      horizontal = 'left';
+    } else if (distanceFromRight < halfCardWidth && distanceFromLeft > CARD_WIDTH) {
+      // Too close to right edge, align right
+      horizontal = 'right';
     }
 
     return { vertical, horizontal };
