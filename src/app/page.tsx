@@ -38,7 +38,7 @@ export default function Home() {
   const { loadSavedState, clearState } = useGameStatePersistence();
   useAutoSave(figures, targetA, targetB, difficulty, score);
 
-  // Load saved state on mount
+  // Load saved state on mount - runs ONCE only
   useEffect(() => {
     const savedState = loadSavedState();
     if (savedState && savedState.figures.length > 0) {
@@ -50,7 +50,8 @@ export default function Home() {
       setScore(savedState.score);
       setShowSplash(false);
     }
-  }, [loadSavedState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty array = run once on mount only
 
   // Handle splash screen "Start Playing" button - show difficulty selector
   const handleStartGame = () => {
