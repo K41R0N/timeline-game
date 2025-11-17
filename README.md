@@ -8,39 +8,37 @@ Connect two randomly selected historical figures by finding intermediate figures
 
 ## 📁 Project Structure
 
-This is an **NPM workspace monorepo** with two packages:
+Standard Next.js application with organized library code:
 
 ```
 timeline-game/
-├── game-core/              # Shared game logic library
-│   ├── components/         # Reusable React components
-│   │   ├── Timeline.tsx    # Main timeline visualization
-│   │   └── ui/            # UI component library
-│   ├── services/          # Business logic
-│   │   ├── WikipediaService.ts
-│   │   └── TargetSelectionService.ts
-│   ├── types/             # TypeScript type definitions
-│   ├── utils/             # Game logic utilities
-│   └── index.ts           # Barrel exports
+├── src/
+│   ├── app/              # Next.js App Router
+│   │   ├── page.tsx      # Main game page
+│   │   ├── layout.tsx    # Root layout
+│   │   └── globals.css   # Global styles + design system
+│   └── lib/              # Game logic library
+│       ├── components/   # React components
+│       │   ├── Timeline.tsx
+│       │   └── ui/       # UI component library
+│       ├── services/     # Business logic
+│       │   ├── WikipediaService.ts
+│       │   └── TargetSelectionService.ts
+│       ├── types/        # TypeScript type definitions
+│       └── utils/        # Game logic utilities
 │
-├── timeline-project/       # Next.js application
-│   ├── src/
-│   │   └── app/           # Next.js App Router
-│   │       ├── page.tsx   # Main game page
-│   │       ├── layout.tsx # Root layout
-│   │       └── globals.css # Styles + design system
-│   ├── public/            # Static assets
-│   └── [config files]     # Next.js, TypeScript, Tailwind
-│
-├── package.json           # Workspace root
-├── vercel.json           # Vercel deployment config
-└── DEPLOYMENT.md         # Deployment guide
+├── public/               # Static assets
+├── package.json          # Dependencies
+├── next.config.js        # Next.js config
+├── tailwind.config.ts    # Tailwind CSS config
+├── tsconfig.json         # TypeScript config
+└── vercel.json           # Vercel deployment config
 ```
 
 ## 🚀 Quick Start
 
 ```bash
-# Install all workspace dependencies
+# Install dependencies
 npm install
 
 # Start development server
@@ -62,7 +60,7 @@ The app will be available at `http://localhost:3000`
 - **Styling**: Tailwind CSS 3.4.1 + CSS Variables
 - **State**: React Hooks (no external state management)
 - **Data**: Wikipedia API (MediaWiki + Wikimedia Commons)
-- **Deployment**: Vercel (configured)
+- **Deployment**: Vercel (auto-detected)
 
 ## ✨ Features
 
@@ -92,89 +90,88 @@ The app will be available at `http://localhost:3000`
 - **Win Condition**: Connect both targets with the shortest chain
 
 ### UI Features
-- **Score Display**: Real-time score tracking
+- **Score Display**: Real-time score tracking (top right)
 - **Timeline Visualization**: Dynamic timeline with zoom/pan
-- **Search System**: Debounced Wikipedia search
+- **Search System**: Debounced Wikipedia search (bottom bar)
 - **Detail Panels**: Click figures for biographical info and hints
 - **Win Modal**: Victory screen with chain visualization
 - **Play Again**: New random targets each game
 
-## 🧩 Workspace Structure
+## 🧩 Code Organization
 
-### game-core (Library Package)
-Pure, reusable game logic and components. No application-specific code.
+### Library Structure (src/lib/)
 
-**Purpose**: Can be imported by multiple apps or used standalone
+Organized game logic that can be imported throughout the app:
 
 **Exports**:
 ```typescript
 import {
-  Timeline,              // Main component
-  SearchBar,             // UI components
+  // Components
+  Timeline,
+  SearchBar,
   ScoreDisplay,
   WinModal,
   DetailPanel,
-  WikipediaService,      // Services
+
+  // Services
+  WikipediaService,
   TargetSelectionService,
-  analyzeChain,          // Utilities
+
+  // Utilities
+  analyzeChain,
   areContemporaries,
-  HistoricalFigure,      // Types
+  formatYear,
+
+  // Types
+  HistoricalFigure,
   TimelineNode
-} from '@timeline/game-core';
+} from '@/lib';
 ```
 
-### timeline-project (Next.js App)
-Application shell that consumes `game-core` and adds Next.js-specific features.
+### Import Patterns
 
-**Purpose**: Production-ready web application
+```typescript
+// Use @/lib for library imports
+import { Timeline, WikipediaService } from '@/lib';
+
+// Use @/app for app-specific imports
+import styles from '@/app/styles.module.css';
+```
 
 ## 🔧 Development
-
-### Working with the Monorepo
-
-```bash
-# Install dependencies for all workspaces
-npm install
-
-# Run from root (uses workspace scripts)
-npm run dev
-npm run build
-
-# Or work in specific workspace
-cd timeline-project
-npm run dev
-
-cd game-core
-# No dev command - library only
-```
 
 ### Key Commands
 
 ```bash
 # Development
-npm run dev              # Start dev server
+npm run dev              # Start dev server with hot reload
 
 # Production
 npm run build            # Build for production
 npm run start            # Start production server
 
-# Linting (in timeline-project)
-cd timeline-project && npm run lint
-
-# Type checking
-cd timeline-project && npx tsc --noEmit
+# Quality checks
+npm run lint             # Run ESLint
+npx tsc --noEmit         # Type checking
 ```
+
+### Development Workflow
+
+1. Make changes in `src/lib/` or `src/app/`
+2. Hot reload automatically updates the browser
+3. Check console for TypeScript errors
+4. Run `npm run lint` before committing
 
 ## 🚢 Deployment
 
 See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for detailed deployment instructions.
 
 **Quick Deploy to Vercel:**
-1. Set Root Directory to `timeline-project` in settings
-2. Keep all other settings as auto-detected
-3. Deploy!
+1. Import repository to Vercel
+2. Deploy (Vercel auto-detects everything)
+3. Done!
 
-Or use the included `vercel.json` configuration.
+No configuration needed - standard Next.js project structure.
 
 ## 🎨 Design System
 
@@ -182,10 +179,12 @@ The game uses a custom design system with:
 - **Glassmorphism** aesthetic with blur effects
 - **Glow effects** on interactive elements
 - **Holographic** borders and shadows
-- **CSS Variables** for consistent theming
+- **CSS Variables** for consistent theming (defined in `globals.css`)
 - **Tailwind** utilities with custom extensions
 
-Colors: Cyan-blue primary (#40B4E5), ivory background (#FFFFF0)
+**Colors**: Cyan-blue primary (#40B4E5), ivory background (#FFFFF0)
+
+**Custom Animations**: Glow, fade-in, progress bars
 
 ## 📖 Learn More
 
