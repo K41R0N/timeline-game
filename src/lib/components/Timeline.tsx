@@ -94,7 +94,7 @@ export default function Timeline({
     }
   }, [isAnimating, figures, onAnimationComplete]);
 
-  // Calculate node positions and center timeline
+  // Calculate node positions with collision detection and center timeline
   useEffect(() => {
     if (figures.length === 0) return;
 
@@ -103,11 +103,58 @@ export default function Timeline({
     const maxYear = Math.max(...allYears);
     const timespan = maxYear - minYear;
 
-    const newNodes = figures.map((figure, index) => ({
+    // Create nodes with basic positioning
+    const basicNodes = figures.map((figure, index) => ({
       figure,
       position: ((figure.birthYear - minYear) / timespan) * 100,
       isAbove: index % 2 === 0
     }));
+
+    // Improved positioning: prevent overlaps by checking horizontal spacing
+    const BUBBLE_WIDTH = 8; // Width in percentage points (80px at 1000px width)
+    const MIN_SPACING = 10; // Minimum spacing between bubbles in percentage points
+
+    const newNodes = basicNodes.map((node, index) => {
+      if (index === 0) return node;
+
+      // Check for overlap with previous nodes on the same side
+      let adjustedIsAbove = node.isAbove;
+      let needsRepositioning = false;
+
+      // Look back at recent nodes on the same side
+      for (let i = index - 1; i >= Math.max(0, index - 3); i--) {
+        const prevNode = basicNodes[i];
+        if (prevNode.isAbove === adjustedIsAbove) {
+          const distance = Math.abs(node.position - prevNode.position);
+          if (distance < MIN_SPACING) {
+            // Too close, flip to other side
+            adjustedIsAbove = !adjustedIsAbove;
+            needsRepositioning = true;
+            break;
+          }
+        }
+      }
+
+      // If still overlapping after flip, check the other side
+      if (needsRepositioning) {
+        for (let i = index - 1; i >= Math.max(0, index - 3); i--) {
+          const prevNode = basicNodes[i];
+          if (prevNode.isAbove === adjustedIsAbove) {
+            const distance = Math.abs(node.position - prevNode.position);
+            if (distance < MIN_SPACING) {
+              // Both sides crowded, keep original but add vertical offset
+              adjustedIsAbove = node.isAbove;
+              break;
+            }
+          }
+        }
+      }
+
+      return {
+        ...node,
+        isAbove: adjustedIsAbove
+      };
+    });
 
     setNodes(newNodes);
 
@@ -585,28 +632,21 @@ export default function Timeline({
                       transform: `translate(-50%, ${node.isAbove ? '-120px' : '120px'}) scale(${bubbleScale})`
                     }}
                   >
-                    {/* Contemporary connection indicator */}
-                    {prevNode && isContemporaryWithPrev && (
-                      <div
-                        className="absolute h-[2px] bg-blue-300/30"
-                        style={{
-                          top: node.isAbove ? '40px' : '-40px',
-                          right: '100%',
-                          width: `${Math.abs(node.position - prevNode.position) * 10}px`,
-                        }}
-                      >
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-400 rounded-full" />
-                      </div>
-                    )}
-
-                    {/* Connection line to timeline */}
+                    {/* Connection gradient to timeline */}
                     <div
-                      className={`absolute left-1/2 w-[2px] transition-all duration-300 ease-in-out
-                        ${status === 'in-chain' ? 'bg-green-500' : status === 'target' ? 'bg-yellow-500' : 'bg-primary-bright'}
-                        ${hoveredNode === node.figure.id ? 'opacity-100' : 'opacity-70'}`}
+                      className="absolute left-1/2 -translate-x-1/2 transition-all duration-500 ease-in-out"
                       style={{
-                        height: '60px',
-                        top: node.isAbove ? '60px' : '-60px'
+                        width: '3px',
+                        height: '100px',
+                        top: node.isAbove ? '80px' : '-100px',
+                        background: isContemporaryWithPrev
+                          ? node.isAbove
+                            ? 'linear-gradient(to bottom, rgba(34, 197, 94, 0.6), rgba(34, 197, 94, 0))'
+                            : 'linear-gradient(to top, rgba(34, 197, 94, 0.6), rgba(34, 197, 94, 0))'
+                          : node.isAbove
+                            ? 'linear-gradient(to bottom, rgba(156, 163, 175, 0.4), rgba(156, 163, 175, 0))'
+                            : 'linear-gradient(to top, rgba(156, 163, 175, 0.4), rgba(156, 163, 175, 0))',
+                        opacity: hoveredNode === node.figure.id ? 1 : 0.6
                       }}
                     />
 
