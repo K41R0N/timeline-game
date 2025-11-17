@@ -214,45 +214,32 @@ export default function Timeline({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) {
-      // Don't set isDragging yet - wait for actual movement
+      setIsDragging(true);
       setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (e.buttons === 1 && dragStart.x !== 0 && viewportRef.current) {
-      // Calculate distance moved from start
-      const deltaX = Math.abs(e.clientX - (dragStart.x + pan.x));
-      const deltaY = Math.abs(e.clientY - (dragStart.y + pan.y));
-      const distanceMoved = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    if (!isDragging || !viewportRef.current) return;
 
-      // Only start dragging if moved more than 5px (prevents interfering with clicks)
-      if (!isDragging && distanceMoved > 5) {
-        setIsDragging(true);
-      }
+    const viewport = viewportRef.current.getBoundingClientRect();
+    const scaledWidth = TIMELINE_WIDTH * zoom;
+    const scaledHeight = TIMELINE_HEIGHT * zoom;
 
-      // If we're dragging, update pan position
-      if (isDragging || distanceMoved > 5) {
-        const viewport = viewportRef.current.getBoundingClientRect();
-        const scaledWidth = TIMELINE_WIDTH * zoom;
-        const scaledHeight = TIMELINE_HEIGHT * zoom;
+    const newPan = {
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    };
 
-        const newPan = {
-          x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y
-        };
+    const minX = (viewport.width - scaledWidth) / 2 - MAX_PAN;
+    const maxX = (viewport.width - scaledWidth) / 2 + MAX_PAN;
+    const minY = (viewport.height - scaledHeight) / 2 - MAX_PAN;
+    const maxY = (viewport.height - scaledHeight) / 2 + MAX_PAN;
 
-        const minX = (viewport.width - scaledWidth) / 2 - MAX_PAN;
-        const maxX = (viewport.width - scaledWidth) / 2 + MAX_PAN;
-        const minY = (viewport.height - scaledHeight) / 2 - MAX_PAN;
-        const maxY = (viewport.height - scaledHeight) / 2 + MAX_PAN;
-
-        setPan({
-          x: Math.min(Math.max(newPan.x, minX), maxX),
-          y: Math.min(Math.max(newPan.y, minY), maxY)
-        });
-      }
-    }
+    setPan({
+      x: Math.min(Math.max(newPan.x, minX), maxX),
+      y: Math.min(Math.max(newPan.y, minY), maxY)
+    });
   };
 
   const handleMouseUp = () => {
@@ -331,30 +318,36 @@ export default function Timeline({
       return { vertical: 'bottom' as const, horizontal: 'center' as const };
     }
 
+    // Get bubble and viewport positions
     const bubbleRect = bubbleEl.getBoundingClientRect();
     const viewportRect = viewport.getBoundingClientRect();
 
-    // Card dimensions (updated for compact tooltips)
+    // Card dimensions
     const CARD_WIDTH = 200;
-    const CARD_HEIGHT = 120; // Approximate height for compact version
+    const CARD_HEIGHT = 120;
 
-    // Calculate available space in each direction
+    // Calculate available space (accounting for bubble position in viewport)
     const spaceAbove = bubbleRect.top - viewportRect.top;
     const spaceBelow = viewportRect.bottom - bubbleRect.bottom;
-    const spaceLeft = bubbleRect.left - viewportRect.left;
-    const spaceRight = viewportRect.right - bubbleRect.right;
+    const distanceFromLeft = bubbleRect.left - viewportRect.left;
+    const distanceFromRight = viewportRect.right - bubbleRect.right;
 
-    // Determine vertical position (prefer bottom to match node.isAbove logic)
-    const vertical: 'top' | 'bottom' = spaceBelow >= CARD_HEIGHT || spaceBelow > spaceAbove ? 'bottom' : 'top';
+    // Vertical: Show opposite side if not enough space
+    let vertical: 'top' | 'bottom' = 'bottom';
+    if (spaceBelow < CARD_HEIGHT && spaceAbove > spaceBelow) {
+      vertical = 'top';
+    }
 
-    // Determine horizontal position
+    // Horizontal: Only adjust if too close to edges
     let horizontal: 'left' | 'center' | 'right' = 'center';
-    const centerSpaceNeeded = CARD_WIDTH / 2;
+    const halfCardWidth = CARD_WIDTH / 2;
 
-    if (spaceLeft < centerSpaceNeeded && spaceRight >= CARD_WIDTH) {
-      horizontal = 'left'; // Align to left edge of bubble
-    } else if (spaceRight < centerSpaceNeeded && spaceLeft >= CARD_WIDTH) {
-      horizontal = 'right'; // Align to right edge of bubble
+    if (distanceFromLeft < halfCardWidth && distanceFromRight > CARD_WIDTH) {
+      // Too close to left edge, align left
+      horizontal = 'left';
+    } else if (distanceFromRight < halfCardWidth && distanceFromLeft > CARD_WIDTH) {
+      // Too close to right edge, align right
+      horizontal = 'right';
     }
 
     return { vertical, horizontal };
