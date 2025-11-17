@@ -86,6 +86,7 @@ export class WikipediaService {
           return isPersonPage;
         })
         .map((page: any) => ({
+          pageid: page.pageid,
           title: page.title,
           snippet: page.extract
             .replace(/<\/?[^>]+(>|$)/g, '')
@@ -335,7 +336,7 @@ export class WikipediaService {
         birthYear: birthYear ?? -500, // Use nullish coalescing for fallback
         deathYear: deathYear ?? -400,
         shortDescription: this.extractShortDescription(page.extract || ''),
-        imageUrl,
+        imageUrl: imageUrl ?? '',
         contemporaries: []
       };
     } catch (error) {

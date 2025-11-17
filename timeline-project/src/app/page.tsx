@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Timeline, HistoricalFigure, WikipediaService } from '@timeline/game-core';
-import { SearchBar } from '@timeline/game-core/components/ui/SearchBar';
+import { Timeline, HistoricalFigure, WikipediaService, SearchBar } from '@timeline/game-core';
 
 console.log('🚀 Initializing Timeline Game...');
 
@@ -96,7 +95,8 @@ export default function Home() {
       }
     } catch (err) {
       console.error(`❌ Error adding figure "${name}":`, err);
-      setError(`Error adding ${name}: ${err.message}`);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(`Error adding ${name}: ${errorMessage}`);
     } finally {
       setIsAnimating(false);
     }
