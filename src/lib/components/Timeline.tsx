@@ -410,46 +410,6 @@ export default function Timeline({
 
   return (
     <div className="w-full h-full relative">
-      {/* Visual Legend */}
-      <div className="fixed top-20 left-4 z-[90] pointer-events-auto">
-        <div className="timeline-card p-3 text-xs space-y-2 max-w-[200px]">
-          <div className="font-bold text-sm text-foreground mb-2">Legend:</div>
-
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full border-4 border-yellow-500 bg-primary flex-shrink-0" />
-            <span className="text-foreground-muted">Targets to connect</span>
-          </div>
-
-          {chainAnalysis?.isComplete && (
-            <>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full border-3 border-green-500 bg-primary flex-shrink-0" />
-                <span className="text-foreground-muted">In winning chain</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full border-3 border-red-400 bg-primary opacity-50 flex-shrink-0" />
-                <span className="text-foreground-muted">Not needed</span>
-              </div>
-            </>
-          )}
-
-          {!chainAnalysis?.isComplete && (
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full border-3 border-blue-400 bg-primary flex-shrink-0" />
-              <span className="text-foreground-muted">Contemporary helper</span>
-            </div>
-          )}
-
-          <div className="pt-2 border-t border-primary-bright-20">
-            <div className="text-foreground-muted">
-              {chainAnalysis?.isComplete
-                ? `✅ Chain complete! ${chainAnalysis.chainLength} connections`
-                : '⏳ Build a chain...'}
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Zoom Controls - Bottom Right */}
       <div className="fixed bottom-24 right-4 z-[90] pointer-events-auto flex flex-col gap-2">
@@ -599,11 +559,12 @@ export default function Timeline({
                 let shadowClass = 'shadow-holo';
                 let opacity = 'opacity-100';
 
+                // Simplified color system: Yellow (target), Green (good), Red (bad)
                 if (status === 'target') {
                   borderClass = 'border-yellow-500';
                   borderWidth = 'border-4';
                   shadowClass = 'shadow-lg shadow-yellow-500/50';
-                } else if (status === 'in-chain') {
+                } else if (status === 'in-chain' || status === 'helpful') {
                   borderClass = 'border-green-500';
                   borderWidth = 'border-4';
                   shadowClass = 'shadow-lg shadow-green-500/50';
@@ -611,10 +572,6 @@ export default function Timeline({
                   borderClass = 'border-red-400';
                   opacity = 'opacity-60';
                   shadowClass = 'shadow-sm';
-                } else if (status === 'helpful') {
-                  borderClass = 'border-blue-400';
-                  borderWidth = 'border-3';
-                  shadowClass = 'shadow-lg shadow-blue-400/50';
                 }
 
                 // Check if contemporary with previous node
@@ -702,19 +659,20 @@ export default function Timeline({
                             {`${Math.abs(node.figure.birthYear)} ${node.figure.birthYear < 0 ? 'BCE' : 'CE'} - ${Math.abs(node.figure.deathYear)} ${node.figure.deathYear < 0 ? 'BCE' : 'CE'}`}
                           </div>
 
-                          {/* Status indicator */}
-                          <div className={`text-xs font-medium mb-2 px-2 py-1 rounded inline-block
-                            ${status === 'target' ? 'bg-yellow-100 text-yellow-700' : ''}
-                            ${status === 'in-chain' ? 'bg-green-100 text-green-700' : ''}
-                            ${status === 'wasted' ? 'bg-red-100 text-red-700' : ''}
-                            ${status === 'helpful' ? 'bg-blue-100 text-blue-700' : ''}
-                          `}>
-                            {status === 'target' && '🎯 Target Figure'}
-                            {status === 'in-chain' && '✅ In Winning Chain'}
-                            {status === 'wasted' && '❌ Not Needed for Chain'}
-                            {status === 'helpful' && '💡 Contemporary with Target'}
-                            {status === 'neutral' && '⏳ Exploring...'}
-                          </div>
+                          {/* Status indicator - Simplified */}
+                          {status !== 'neutral' && (
+                            <div className={`text-xs font-medium mb-2 px-2 py-1 rounded inline-block
+                              ${status === 'target' ? 'bg-yellow-100 text-yellow-700' : ''}
+                              ${status === 'in-chain' ? 'bg-green-100 text-green-700' : ''}
+                              ${status === 'wasted' ? 'bg-red-100 text-red-700' : ''}
+                              ${status === 'helpful' ? 'bg-green-100 text-green-700' : ''}
+                            `}>
+                              {status === 'target' && '🎯 TARGET'}
+                              {status === 'in-chain' && '✓ IN CHAIN'}
+                              {status === 'wasted' && '✗ NOT NEEDED'}
+                              {status === 'helpful' && '✓ GOOD CONNECTION'}
+                            </div>
+                          )}
 
                           <p className="text-foreground-muted leading-relaxed text-sm mb-3">
                             {node.figure.shortDescription}

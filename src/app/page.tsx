@@ -6,7 +6,6 @@ import {
   HistoricalFigure,
   WikipediaService,
   SearchBar,
-  ScoreDisplay,
   WinModal,
   SplashScreen,
   analyzeChain,
@@ -238,45 +237,59 @@ export default function Home() {
 
   return (
     <>
-      {/* Goal Banner - Top Center */}
-      {targetA && targetB && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] pointer-events-auto">
-          <div className="timeline-card px-6 py-3 shadow-glow">
-            <div className="text-center">
-              <div className="text-xs text-foreground-muted uppercase tracking-wide mb-1">
-                Your Mission
+      {/* Main Header - Top */}
+      <div className="fixed top-0 left-0 right-0 z-[100] pointer-events-none">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            {/* Game Title - Left */}
+            <div className="timeline-card px-4 py-2 pointer-events-auto">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">⏳</span>
+                <div>
+                  <h1 className="text-base font-bold text-primary leading-tight">
+                    History Links
+                  </h1>
+                  <p className="text-[10px] text-foreground-muted leading-tight">
+                    {difficulty === 'easy' ? 'Easy Mode' : difficulty === 'medium' ? 'Medium Mode' : 'Hard Mode'}
+                  </p>
+                </div>
               </div>
-              <div className="text-sm font-bold text-primary">
-                Connect <span className="text-yellow-600">{targetA.name}</span>
-                {' '} to {' '}
-                <span className="text-yellow-600">{targetB.name}</span>
+            </div>
+
+            {/* Goal Banner - Center */}
+            {targetA && targetB && (
+              <div className="timeline-card px-6 py-3 shadow-glow pointer-events-auto max-w-xl">
+                <div className="text-center">
+                  <div className="text-[10px] text-foreground-muted uppercase tracking-wider mb-1">
+                    Goal
+                  </div>
+                  <div className="text-sm font-bold text-primary leading-snug">
+                    <span className="text-yellow-600">{targetA.name}</span>
+                    <span className="mx-2 text-foreground-muted">→</span>
+                    <span className="text-yellow-600">{targetB.name}</span>
+                  </div>
+                  <div className="text-[10px] text-foreground-subtle mt-1">
+                    Find the shortest path • Lower score is better
+                  </div>
+                </div>
               </div>
-              <div className="text-xs text-foreground-muted mt-1">
-                Use as few connections as possible • {difficulty === 'easy' ? '🟢 Easy' : difficulty === 'medium' ? '🟡 Medium' : '🔴 Hard'}
+            )}
+
+            {/* Score - Right */}
+            <div className="timeline-card px-5 py-2 pointer-events-auto min-w-[100px]">
+              <div className="text-center">
+                <div className="text-[10px] text-foreground-muted uppercase tracking-wider mb-0.5">
+                  Score
+                </div>
+                <div className={`text-3xl font-bold ${score === 0 ? 'text-green-600' : score <= 3 ? 'text-yellow-600' : 'text-red-600'} leading-none`}>
+                  {score}
+                </div>
+                <div className="text-[9px] text-foreground-subtle mt-0.5">
+                  {score === 0 ? 'Perfect start!' : score === 1 ? '1 connection' : `${score} connections`}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Score Display - Top Right */}
-      <div className="fixed top-4 right-4 z-[100] pointer-events-auto">
-        <ScoreDisplay
-          score={score}
-          targetA={targetA?.name}
-          targetB={targetB?.name}
-        />
-      </div>
-
-      {/* Game Title - Top Left */}
-      <div className="fixed top-4 left-4 z-[100] pointer-events-auto">
-        <div className="timeline-card px-4 py-2">
-          <h1 className="text-lg font-bold text-primary">
-            History Links
-          </h1>
-          <p className="text-xs text-foreground-muted">
-            Connect through time
-          </p>
         </div>
       </div>
 
