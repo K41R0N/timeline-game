@@ -101,17 +101,11 @@ export function SearchInput({
 
   const handleSubmit = () => {
     if (!value.trim()) return;
-    
+
     console.log(`📥 Submitting search: "${value}"`);
     setSubmitAttempted(true);
-    
-    // If we have suggestions and none match exactly, show them
-    if (suggestions.length > 0 && !suggestions.some(s => s.title.toLowerCase() === value.toLowerCase())) {
-      setIsOpen(true);
-      return;
-    }
-    
-    // Otherwise, submit the value
+
+    // Submit the value directly - let the backend handle validation
     onSubmit(value);
     setIsOpen(false);
     setSelectedIndex(-1);
