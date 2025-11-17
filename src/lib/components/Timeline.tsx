@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, memo, useMemo } from 'react';
 import { HistoricalFigure, TimelineNode } from '../types/HistoricalFigure';
-import { SearchInput } from './ui/SearchInput';
 import { DetailPanel } from './ui/DetailPanel';
 import { SearchBar } from './ui/SearchBar';
 import { WikipediaService } from '../services/WikipediaService';
@@ -38,7 +37,6 @@ export default function Timeline({
   const [chainAnalysis, setChainAnalysis] = useState<ChainAnalysis | null>(null);
   const [prevFiguresLength, setPrevFiguresLength] = useState(0);
   const [hoverCardPositions, setHoverCardPositions] = useState<Map<string, { vertical: 'top' | 'bottom', horizontal: 'left' | 'center' | 'right' }>>(new Map());
-  const timelineRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const bubbleRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -113,7 +111,6 @@ export default function Timeline({
     }));
 
     // Improved positioning: prevent overlaps by checking horizontal spacing
-    const BUBBLE_WIDTH = 8; // Width in percentage points (80px at 1000px width)
     const MIN_SPACING = 10; // Minimum spacing between bubbles in percentage points
 
     const newNodes = basicNodes.map((node, index) => {
@@ -322,9 +319,9 @@ export default function Timeline({
     const bubbleRect = bubbleEl.getBoundingClientRect();
     const viewportRect = viewport.getBoundingClientRect();
 
-    // Card dimensions
-    const CARD_WIDTH = 200;
-    const CARD_HEIGHT = 120;
+    // Card dimensions (updated for tooltip with description)
+    const CARD_WIDTH = 260;
+    const CARD_HEIGHT = 160;
 
     // Calculate available space (accounting for bubble position in viewport)
     const spaceAbove = bubbleRect.top - viewportRect.top;
@@ -363,21 +360,8 @@ export default function Timeline({
     });
   };
 
-  const getWikimediaUrl = (imageUrl: string): string => {
-    try {
-      if (imageUrl.startsWith('http')) {
-        return imageUrl.replace(/^http:/, 'https:');
-      }
-      const url = new URL(imageUrl);
-      return url.toString();
-    } catch (error) {
-      console.error('Error processing image URL:', imageUrl, error);
-      return imageUrl;
-    }
-  };
-
-
-  const ProfileImage = ({ figure }: { figure: HistoricalFigure }) => {
+  // Memoized ProfileImage component - prevents re-renders when parent state changes
+  const ProfileImage = memo(({ figure }: { figure: HistoricalFigure }) => {
     const [hasError, setHasError] = useState(false);
 
     if (!figure.imageUrl || hasError) {
@@ -398,7 +382,8 @@ export default function Timeline({
         onError={() => setHasError(true)}
       />
     );
-  };
+  });
+  ProfileImage.displayName = 'ProfileImage';
 
   const handleAddFigure = async (name: string) => {
     try {
@@ -709,7 +694,7 @@ export default function Timeline({
                             className={`
                               timeline-card
                               absolute ${verticalClass} ${horizontalClass}
-                              w-[200px]
+                              w-[260px]
                               transition-all duration-150 ease-out
                               cursor-pointer
                               z-[30]
@@ -731,6 +716,13 @@ export default function Timeline({
                               <div className="text-[11px] text-primary font-medium mt-1">
                                 {`${Math.abs(node.figure.birthYear)} ${node.figure.birthYear < 0 ? 'BCE' : 'CE'} - ${Math.abs(node.figure.deathYear)} ${node.figure.deathYear < 0 ? 'BCE' : 'CE'}`}
                               </div>
+
+                              {/* Brief description */}
+                              {node.figure.shortDescription && (
+                                <p className="text-[11px] text-foreground-muted leading-snug mt-2 line-clamp-2">
+                                  {node.figure.shortDescription}
+                                </p>
+                              )}
 
                               {/* Status badge - compact */}
                               {status !== 'neutral' && (
