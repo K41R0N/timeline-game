@@ -10,8 +10,6 @@ export interface HistoricalFigure {
 
 export interface TimelineNode {
   figure: HistoricalFigure;
-  x: number;  // Position on timeline
-  selected: boolean;
-  isStart?: boolean;
-  isEnd?: boolean;
+  position: number;  // Calculated position (0-100%)
+  isAbove: boolean;  // Alternating vertical display
 } 

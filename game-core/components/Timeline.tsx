@@ -1,17 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { HistoricalFigure } from '../types/HistoricalFigure';
+import { HistoricalFigure, TimelineNode } from '../types/HistoricalFigure';
 import { SearchInput } from './ui/SearchInput';
 import { DetailPanel } from './ui/DetailPanel';
 import { SearchBar } from './ui/SearchBar';
 import { WikipediaService } from '../services/WikipediaService';
-
-interface TimelineNode {
-  figure: HistoricalFigure;
-  position: number;
-  isAbove: boolean;
-}
 
 interface TimelineProps {
   figures: HistoricalFigure[];
@@ -445,7 +439,8 @@ export default function Timeline({
 
     } catch (error) {
       console.error(`Error adding figure ${name}:`, error);
-      setError(`Error adding ${name}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Error adding ${name}: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
