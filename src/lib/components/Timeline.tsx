@@ -686,18 +686,6 @@ export default function Timeline({
                       {/* Profile image/initials */}
                       <div className={`w-[80px] h-[80px] rounded-full overflow-hidden relative ${borderClass} ${borderWidth} ${shadowClass} bg-background-marble transition-all duration-300 hover:scale-110`}>
                         <ProfileImage figure={node.figure} />
-
-                        {/* Status badge */}
-                        {status === 'target' && (
-                          <div className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
-                            TARGET
-                          </div>
-                        )}
-                        {status === 'in-chain' && chainAnalysis?.isComplete && (
-                          <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
-                            ✓
-                          </div>
-                        )}
                       </div>
 
                       {/* Info card on hover - clickable */}
