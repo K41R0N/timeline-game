@@ -9,7 +9,9 @@ import {
   WinModal,
   SplashScreen,
   analyzeChain,
-  TargetSelectionService
+  TargetSelectionService,
+  useAutoSave,
+  useGameStatePersistence
 } from '@/lib';
 
 console.log('🚀 Initializing Timeline Game...');
@@ -31,6 +33,24 @@ export default function Home() {
   const [winningChain, setWinningChain] = useState<HistoricalFigure[]>([]);
   const [targetA, setTargetA] = useState<HistoricalFigure | null>(null);
   const [targetB, setTargetB] = useState<HistoricalFigure | null>(null);
+
+  // State persistence hooks
+  const { loadSavedState, clearState } = useGameStatePersistence();
+  useAutoSave(figures, targetA, targetB, difficulty, score);
+
+  // Load saved state on mount
+  useEffect(() => {
+    const savedState = loadSavedState();
+    if (savedState && savedState.figures.length > 0) {
+      console.log('🔄 Restoring saved game...');
+      setFigures(savedState.figures);
+      setTargetA(savedState.targetA);
+      setTargetB(savedState.targetB);
+      setDifficulty(savedState.difficulty);
+      setScore(savedState.score);
+      setShowSplash(false);
+    }
+  }, [loadSavedState]);
 
   // Handle splash screen "Start Playing" button - show difficulty selector
   const handleStartGame = () => {
@@ -111,6 +131,7 @@ export default function Home() {
 
   const handlePlayAgain = () => {
     console.log('🔄 Returning to splash screen...');
+    clearState(); // Clear saved progress
     setHasWon(false);
     setWinningChain([]);
     setScore(0);

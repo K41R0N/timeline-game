@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo, useMemo } from 'react';
 import { HistoricalFigure, TimelineNode } from '../types/HistoricalFigure';
 import { SearchInput } from './ui/SearchInput';
 import { DetailPanel } from './ui/DetailPanel';
@@ -96,9 +96,9 @@ export default function Timeline({
     }
   }, [isAnimating, figures, onAnimationComplete]);
 
-  // Calculate node positions with collision detection and center timeline
-  useEffect(() => {
-    if (figures.length === 0) return;
+  // Memoized node position calculation - only recalculates when figures change
+  const calculatedNodes = useMemo(() => {
+    if (figures.length === 0) return [];
 
     const allYears = figures.map(f => [f.birthYear, f.deathYear]).flat();
     const minYear = Math.min(...allYears);
@@ -158,11 +158,16 @@ export default function Timeline({
       };
     });
 
-    setNodes(newNodes);
+    return newNodes;
+  }, [figures]);
+
+  // Update nodes state when calculated nodes change
+  useEffect(() => {
+    setNodes(calculatedNodes);
 
     // Auto-snap to latest figure if a new one was added
     const snapToLatest = () => {
-      if (!viewportRef.current || !contentRef.current) return;
+      if (!viewportRef.current || !contentRef.current || calculatedNodes.length === 0) return;
 
       const viewport = viewportRef.current.getBoundingClientRect();
       const scaledWidth = TIMELINE_WIDTH * zoom;
@@ -170,7 +175,7 @@ export default function Timeline({
 
       // If a new figure was added (not initial load), snap to it
       if (figures.length > prevFiguresLength && figures.length > 2) {
-        const latestNode = newNodes[newNodes.length - 1];
+        const latestNode = calculatedNodes[calculatedNodes.length - 1];
         // Center on the latest node
         const targetX = (viewport.width / 2) - (latestNode.position / 100) * scaledWidth * zoom;
         const targetY = (viewport.height - scaledHeight) / 2;
@@ -191,7 +196,7 @@ export default function Timeline({
     };
 
     setTimeout(snapToLatest, 50);
-  }, [figures, zoom, prevFiguresLength]);
+  }, [calculatedNodes, zoom, prevFiguresLength, figures.length]);
 
   useEffect(() => {
     const preventBrowserZoom = (e: WheelEvent) => {
