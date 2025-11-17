@@ -30,7 +30,6 @@ export default function Timeline({
   const [error, setError] = useState<string | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [selectedFigure, setSelectedFigure] = useState<HistoricalFigure | null>(null);
-  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [zoom, setZoom] = useState(0.9);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -269,98 +268,9 @@ export default function Timeline({
     }
   };
 
-  const loadImage = (figure: HistoricalFigure) => {
-    if (!figure.imageUrl) return;
-
-    const img = new Image();
-    const processedUrl = getWikimediaUrl(figure.imageUrl);
-
-    img.onload = () => {
-      setImageErrors(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(figure.id);
-        return newSet;
-      });
-    };
-
-    img.onerror = () => {
-      setImageErrors(prev => new Set(prev).add(figure.id));
-    };
-
-    img.crossOrigin = 'anonymous';
-    img.src = processedUrl;
-  };
-
-  useEffect(() => {
-    figures.forEach(figure => {
-      if (figure.imageUrl) {
-        loadImage(figure);
-      }
-    });
-  }, [figures]);
 
   const ProfileImage = ({ figure }: { figure: HistoricalFigure }) => {
-    const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
-    const imageRef = useRef<HTMLImageElement>(null);
-
-    useEffect(() => {
-      if (!figure.imageUrl) {
-        setHasError(true);
-        setIsLoading(false);
-        return;
-      }
-
-      let isMounted = true;
-      const controller = new AbortController();
-
-      const loadImage = async () => {
-        try {
-          const response = await fetch(figure.imageUrl, {
-            method: 'HEAD',
-            signal: controller.signal
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to verify image: ${response.status}`);
-          }
-
-          if (!isMounted) return;
-
-          const img = new Image();
-
-          img.onload = () => {
-            if (!isMounted) return;
-            setIsLoading(false);
-            setHasError(false);
-            if (imageRef.current) {
-              imageRef.current.src = figure.imageUrl!;
-            }
-          };
-
-          img.onerror = () => {
-            if (!isMounted) return;
-            setIsLoading(false);
-            setHasError(true);
-          };
-
-          img.src = figure.imageUrl;
-          img.crossOrigin = "anonymous";
-
-        } catch (error) {
-          if (!isMounted) return;
-          setIsLoading(false);
-          setHasError(true);
-        }
-      };
-
-      loadImage();
-
-      return () => {
-        isMounted = false;
-        controller.abort();
-      };
-    }, [figure.imageUrl, figure.name]);
 
     if (!figure.imageUrl || hasError) {
       return (
@@ -371,24 +281,14 @@ export default function Timeline({
     }
 
     return (
-      <div className="relative w-full h-full">
-        <img
-          ref={imageRef}
-          className={`
-            absolute inset-0 w-full h-full object-cover
-            transition-opacity duration-300
-            ${isLoading ? 'opacity-0' : 'opacity-100'}
-          `}
-          alt={figure.name}
-          loading="lazy"
-        />
-
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background-marble">
-            <div className="animate-pulse bg-primary/20 w-full h-full" />
-          </div>
-        )}
-      </div>
+      <img
+        src={figure.imageUrl}
+        alt={figure.name}
+        className="absolute inset-0 w-full h-full object-cover"
+        crossOrigin="anonymous"
+        loading="lazy"
+        onError={() => setHasError(true)}
+      />
     );
   };
 
