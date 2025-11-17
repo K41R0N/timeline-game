@@ -75,7 +75,7 @@ export function SearchBar({ figures, onSelect, onAddFigure }: SearchBarProps) {
       } finally {
         setIsLoading(false);
       }
-    }, 300),
+    }, 500),
     [figures]
   );
 
