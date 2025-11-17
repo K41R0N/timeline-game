@@ -618,7 +618,7 @@ export default function Timeline({
                       onClick={() => setSelectedFigure(node.figure)}
                     >
                       {/* Profile image/initials */}
-                      <div className={`w-[80px] h-[80px] rounded-full overflow-hidden relative ${borderClass} ${borderWidth} ${shadowClass} bg-background-marble transition-all duration-300`}>
+                      <div className={`w-[80px] h-[80px] rounded-full overflow-hidden relative ${borderClass} ${borderWidth} ${shadowClass} bg-background-marble transition-all duration-300 hover:scale-110`}>
                         <ProfileImage figure={node.figure} />
 
                         {/* Status badge */}
@@ -634,17 +634,26 @@ export default function Timeline({
                         )}
                       </div>
 
-                      {/* Info card on hover */}
-                      <div className={`
-                        timeline-card
-                        absolute ${node.isAbove ? 'bottom-full mb-3' : 'top-full mt-3'}
-                        left-1/2 -translate-x-1/2
-                        w-[320px]
-                        transition-all duration-300 ease-in-out
-                        ${hoveredNode === node.figure.id
-                          ? 'opacity-100 translate-y-0'
-                          : 'opacity-0 translate-y-2 pointer-events-none'}
-                      `}>
+                      {/* Info card on hover - clickable */}
+                      <div
+                        className={`
+                          timeline-card
+                          absolute ${node.isAbove ? 'bottom-full mb-3' : 'top-full mt-3'}
+                          left-1/2 -translate-x-1/2
+                          w-[320px]
+                          transition-all duration-300 ease-in-out
+                          cursor-pointer
+                          ${hoveredNode === node.figure.id
+                            ? 'opacity-100 translate-y-0'
+                            : 'opacity-0 translate-y-2 pointer-events-none'}
+                        `}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFigure(node.figure);
+                        }}
+                        onMouseEnter={() => setHoveredNode(node.figure.id)}
+                        onMouseLeave={() => setHoveredNode(null)}
+                      >
                         <div className="p-4">
                           <h3 className="text-lg font-semibold text-foreground mb-2">
                             {node.figure.name}
@@ -667,9 +676,14 @@ export default function Timeline({
                             {status === 'neutral' && '⏳ Exploring...'}
                           </div>
 
-                          <p className="text-foreground-muted leading-relaxed text-sm">
+                          <p className="text-foreground-muted leading-relaxed text-sm mb-3">
                             {node.figure.shortDescription}
                           </p>
+
+                          {/* Click hint */}
+                          <div className="text-xs text-primary font-medium border-t border-primary-bright-20 pt-2">
+                            👆 Click to view full details
+                          </div>
 
                           {/* Contemporary info */}
                           {prevNode && isContemporaryWithPrev && (
