@@ -24,7 +24,6 @@ export const Z_INDEX = {
 
   // UI Controls
   ZOOM_CONTROLS: 20,
-  SEARCH_BAR: 21,
   HEADER_CONTROLS: 22,
 
   // Floating elements
@@ -35,6 +34,10 @@ export const Z_INDEX = {
   DETAIL_PANEL: 50,
   MODAL_BACKDROP: 60,
   MODAL_CONTENT: 61,
+
+  // Search (must be above DetailPanel to remain accessible)
+  SEARCH_BAR: 70,
+  SEARCH_SUGGESTIONS: 80,
 
   // Critical alerts
   TOAST: 100,
