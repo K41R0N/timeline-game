@@ -19,3 +19,6 @@ export { TargetSelectionService } from './services/TargetSelectionService';
 // Utilities
 export * from './utils/ChainAnalyzer';
 export * from './utils/GameLogic';
+
+// Hooks
+export * from './hooks/useGameState';
