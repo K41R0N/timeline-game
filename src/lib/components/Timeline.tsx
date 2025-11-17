@@ -6,6 +6,7 @@ import { SearchInput } from './ui/SearchInput';
 import { DetailPanel } from './ui/DetailPanel';
 import { SearchBar } from './ui/SearchBar';
 import { WikipediaService } from '../services/WikipediaService';
+import { analyzeChain, areContemporaries, ChainAnalysis } from '../utils/ChainAnalyzer';
 
 interface TimelineProps {
   figures: HistoricalFigure[];
@@ -35,6 +36,7 @@ export default function Timeline({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [animationProgress, setAnimationProgress] = useState(0);
+  const [chainAnalysis, setChainAnalysis] = useState<ChainAnalysis | null>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -43,10 +45,9 @@ export default function Timeline({
   const TIMELINE_WIDTH = 1000;
   const TIMELINE_HEIGHT = 400;
   const MAX_PAN = 200;
-  const MIN_ZOOM = 0.5;  // Reduced to allow more zoom out
-  const MAX_ZOOM = 3;    // Increased to allow more zoom in
-  const BASE_EXTENSION = 500;  // Base extension of timeline beyond viewport
-  const ZOOM_SPEED = 0.05;
+  const MIN_ZOOM = 0.5;
+  const MAX_ZOOM = 3;
+  const BASE_EXTENSION = 500;
 
   // Calculate the dynamic timeline extension based on zoom
   const getTimelineExtension = (currentZoom: number) => {
@@ -55,14 +56,27 @@ export default function Timeline({
 
   // Calculate bubble scale based on zoom (inverse relationship)
   const getBubbleScale = (currentZoom: number) => {
-    return Math.min(1, 1 / (currentZoom * 0.8)); // 0.8 to make scaling less aggressive
+    return Math.min(1, 1 / (currentZoom * 0.8));
   };
+
+  // Analyze chain whenever figures change
+  useEffect(() => {
+    if (targetA && targetB && figures.length >= 2) {
+      const analysis = analyzeChain(targetA, targetB, figures);
+      setChainAnalysis(analysis);
+      console.log('📊 Chain Analysis:', {
+        isComplete: analysis.isComplete,
+        chainLength: analysis.chainLength,
+        path: analysis.shortestPath.map(f => f.name).join(' → ')
+      });
+    }
+  }, [figures, targetA, targetB]);
 
   // Handle figure addition animation
   useEffect(() => {
     if (isAnimating && figures.length > 0) {
       const startTime = Date.now();
-      const duration = 1000; // 1 second animation
+      const duration = 1000;
 
       const animate = () => {
         const elapsed = Date.now() - startTime;
@@ -78,13 +92,12 @@ export default function Timeline({
 
       requestAnimationFrame(animate);
     }
-  }, [isAnimating, figures]);
+  }, [isAnimating, figures, onAnimationComplete]);
 
   // Calculate node positions and center timeline
   useEffect(() => {
     if (figures.length === 0) return;
 
-    // Calculate node positions
     const allYears = figures.map(f => [f.birthYear, f.deathYear]).flat();
     const minYear = Math.min(...allYears);
     const maxYear = Math.max(...allYears);
@@ -98,33 +111,30 @@ export default function Timeline({
 
     setNodes(newNodes);
 
-    // Center timeline after nodes are set
+    // Center timeline
     const centerTimeline = () => {
       if (!viewportRef.current || !contentRef.current) return;
-      
+
       const viewport = viewportRef.current.getBoundingClientRect();
       const scaledWidth = TIMELINE_WIDTH * zoom;
       const scaledHeight = TIMELINE_HEIGHT * zoom;
-      
+
       setPan({
         x: (viewport.width - scaledWidth) / 2,
         y: (viewport.height - scaledHeight) / 2
       });
     };
 
-    // Initial centering with a slight delay to ensure rendering
     setTimeout(centerTimeline, 50);
   }, [figures, zoom]);
 
   useEffect(() => {
-    // Prevent browser zoom only within timeline viewport
     const preventBrowserZoom = (e: WheelEvent) => {
       if (viewportRef.current?.contains(e.target as Node) && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
       }
     };
 
-    // Add the listener with passive: false to allow preventDefault
     viewportRef.current?.addEventListener('wheel', preventBrowserZoom, { passive: false });
 
     return () => {
@@ -144,13 +154,12 @@ export default function Timeline({
       const viewport = viewportRef.current.getBoundingClientRect();
       const scaledWidth = TIMELINE_WIDTH * zoom;
       const scaledHeight = TIMELINE_HEIGHT * zoom;
-      
+
       const newPan = {
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y
       };
 
-      // Constrain pan to keep timeline visible
       const minX = (viewport.width - scaledWidth) / 2 - MAX_PAN;
       const maxX = (viewport.width - scaledWidth) / 2 + MAX_PAN;
       const minY = (viewport.height - scaledHeight) / 2 - MAX_PAN;
@@ -168,31 +177,24 @@ export default function Timeline({
   };
 
   const handleWheel = (e: React.WheelEvent) => {
-    // Handle zooming with Ctrl + Wheel or trackpad pinch
     if (e.ctrlKey || e.metaKey) {
-      e.stopPropagation(); // Stop event propagation
+      e.stopPropagation();
       const viewport = viewportRef.current?.getBoundingClientRect();
       if (!viewport) return;
 
       const cursorX = e.clientX - viewport.left;
       const cursorY = e.clientY - viewport.top;
 
-      // Normalize the zoom delta
       let zoomDelta;
       if (Math.abs(e.deltaY) < 50) {
-        // Trackpad pinch - smaller, smoother changes
         zoomDelta = -e.deltaY * 0.002;
       } else {
-        // Mouse wheel - larger, more discrete changes
         zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
       }
 
       const newZoom = Math.min(Math.max(zoom * (1 + zoomDelta), MIN_ZOOM), MAX_ZOOM);
-      
-      // Calculate the scaling factor change
       const scale = newZoom / zoom;
 
-      // Calculate new pan position to zoom toward cursor
       const newPan = {
         x: cursorX - (cursorX - pan.x) * scale,
         y: cursorY - (cursorY - pan.y) * scale
@@ -203,7 +205,6 @@ export default function Timeline({
       return;
     }
 
-    // Handle regular scrolling/panning
     const panSpeed = e.shiftKey ? 2 : 1;
     setPan(prev => ({
       x: prev.x - (e.shiftKey ? e.deltaY : 0) * panSpeed,
@@ -211,37 +212,16 @@ export default function Timeline({
     }));
   };
 
-  const handleSearch = (query: string) => {
-    if (!query.trim()) {
-      return;
-    }
-    const suggestions = figures
-      .filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
-      .map(f => f.name);
-  };
-
-  const handleSelect = (name: string) => {
-    const figure = figures.find(f => f.name === name);
-    if (figure) {
-      setSelectedFigure(figure);
-    }
-  };
-
   const getInitials = (name: string) => {
     return name.split(' ').map(part => part[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  // Utility function to get Wikimedia Commons image URL
   const getWikimediaUrl = (imageUrl: string): string => {
     try {
-      // If it's already a full URL, just ensure it's HTTPS
       if (imageUrl.startsWith('http')) {
         return imageUrl.replace(/^http:/, 'https:');
       }
-
-      // Handle both direct Wikimedia URLs and API response URLs
       const url = new URL(imageUrl);
-      console.log('Processing image URL:', url.toString());
       return url.toString();
     } catch (error) {
       console.error('Error processing image URL:', imageUrl, error);
@@ -249,49 +229,13 @@ export default function Timeline({
     }
   };
 
-  // Improved URL encoding function with Wikimedia-specific handling
-  const encodeWikiUrl = (url: string) => {
-    try {
-      // First, try to get a proper Wikimedia URL
-      const wikiUrl = getWikimediaUrl(url);
-      
-      // Then encode only necessary characters while preserving Wikimedia URL structure
-      return wikiUrl
-        .replace(/\s+/g, '_')           // Replace spaces with underscores (Wikimedia standard)
-        .replace(/\(/g, '%28')          // Left parenthesis
-        .replace(/\)/g, '%29')          // Right parenthesis
-        .replace(/'/g, '%27')           // Single quote
-        .replace(/&/g, '%26')           // Ampersand
-        .replace(/\[/g, '%5B')          // Left bracket
-        .replace(/\]/g, '%5D')          // Right bracket
-        .replace(/"/g, '%22')           // Double quote
-        .replace(/!/g, '%21')           // Exclamation mark
-        .replace(/\$/g, '%24')          // Dollar sign
-        .replace(/`/g, '%60')           // Backtick
-        .replace(/{/g, '%7B')           // Left brace
-        .replace(/}/g, '%7D');          // Right brace
-    } catch (error) {
-      console.error('Error encoding URL:', error);
-      return url;
-    }
-  };
-
-  // Image loading with detailed error handling
   const loadImage = (figure: HistoricalFigure) => {
-    if (!figure.imageUrl) {
-      console.log(`No image URL provided for ${figure.name}`);
-      return;
-    }
+    if (!figure.imageUrl) return;
 
     const img = new Image();
     const processedUrl = getWikimediaUrl(figure.imageUrl);
-    
+
     img.onload = () => {
-      console.log(`Successfully loaded image for ${figure.name}:`, {
-        originalUrl: figure.imageUrl,
-        processedUrl,
-        dimensions: `${img.width}x${img.height}`
-      });
       setImageErrors(prev => {
         const newSet = new Set(prev);
         newSet.delete(figure.id);
@@ -299,21 +243,14 @@ export default function Timeline({
       });
     };
 
-    img.onerror = (error) => {
-      console.error(`Failed to load image for ${figure.name}:`, {
-        originalUrl: figure.imageUrl,
-        processedUrl,
-        error
-      });
+    img.onerror = () => {
       setImageErrors(prev => new Set(prev).add(figure.id));
     };
 
-    // Set crossOrigin to allow loading from Wikipedia/Wikimedia
     img.crossOrigin = 'anonymous';
     img.src = processedUrl;
   };
 
-  // Modified image loading effect
   useEffect(() => {
     figures.forEach(figure => {
       if (figure.imageUrl) {
@@ -322,7 +259,6 @@ export default function Timeline({
     });
   }, [figures]);
 
-  // Profile image component with robust error handling
   const ProfileImage = ({ figure }: { figure: HistoricalFigure }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
@@ -340,7 +276,6 @@ export default function Timeline({
 
       const loadImage = async () => {
         try {
-          // First verify the image URL is accessible
           const response = await fetch(figure.imageUrl, {
             method: 'HEAD',
             signal: controller.signal
@@ -352,9 +287,8 @@ export default function Timeline({
 
           if (!isMounted) return;
 
-          // Create a new image element for loading
           const img = new Image();
-          
+
           img.onload = () => {
             if (!isMounted) return;
             setIsLoading(false);
@@ -375,7 +309,6 @@ export default function Timeline({
 
         } catch (error) {
           if (!isMounted) return;
-          console.error(`Error loading image for ${figure.name}:`, error);
           setIsLoading(false);
           setHasError(true);
         }
@@ -409,7 +342,7 @@ export default function Timeline({
           alt={figure.name}
           loading="lazy"
         />
-        
+
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background-marble">
             <div className="animate-pulse bg-primary/20 w-full h-full" />
@@ -419,25 +352,22 @@ export default function Timeline({
     );
   };
 
-  // Handle adding a new figure
   const handleAddFigure = async (name: string) => {
     try {
       setIsLoading(true);
       setError(null);
 
       const figure = await WikipediaService.getPersonDetails(name);
-      
+
       if (!figure) {
         setError(`Could not load details for ${name}`);
         return;
       }
 
-      // Check if figure already exists
       if (figures.some(f => f.id === figure.id)) {
         return;
       }
 
-      // Add the new figure and sort by birth year
       const updatedFigures = [...figures, figure].sort((a, b) => a.birthYear - b.birthYear);
       onFiguresChange?.(updatedFigures);
 
@@ -448,6 +378,28 @@ export default function Timeline({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Helper functions for figure status
+  const isTargetFigure = (figure: HistoricalFigure) => {
+    return figure.id === targetA?.id || figure.id === targetB?.id;
+  };
+
+  const isInChain = (figure: HistoricalFigure) => {
+    return chainAnalysis?.connectedFigures.has(figure.id) || false;
+  };
+
+  const getFigureStatus = (figure: HistoricalFigure) => {
+    if (isTargetFigure(figure)) return 'target';
+    if (!chainAnalysis || !chainAnalysis.isComplete) {
+      // Before chain is complete, check if contemporary with targets
+      const isContemporaryWithA = targetA && areContemporaries(figure, targetA);
+      const isContemporaryWithB = targetB && areContemporaries(figure, targetB);
+      if (isContemporaryWithA || isContemporaryWithB) return 'helpful';
+      return 'neutral';
+    }
+    if (isInChain(figure)) return 'in-chain';
+    return 'wasted';
   };
 
   if (isLoading) {
@@ -470,29 +422,61 @@ export default function Timeline({
   const endFigure = figures[figures.length - 1];
 
   return (
-    <div className="w-full h-full">
-      {/* Fixed UI Layer */}
-      <div className="fixed inset-0 pointer-events-none z-[100]">
-        <div className="absolute top-2 left-2 text-2xl pointer-events-auto">
-          🌟
+    <div className="w-full h-full relative">
+      {/* Visual Legend */}
+      <div className="fixed top-20 left-4 z-[90] pointer-events-auto">
+        <div className="timeline-card p-3 text-xs space-y-2 max-w-[200px]">
+          <div className="font-bold text-sm text-foreground mb-2">Legend:</div>
+
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full border-4 border-yellow-500 bg-primary flex-shrink-0" />
+            <span className="text-foreground-muted">Targets to connect</span>
+          </div>
+
+          {chainAnalysis?.isComplete && (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full border-3 border-green-500 bg-primary flex-shrink-0" />
+                <span className="text-foreground-muted">In winning chain</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full border-3 border-red-400 bg-primary opacity-50 flex-shrink-0" />
+                <span className="text-foreground-muted">Not needed</span>
+              </div>
+            </>
+          )}
+
+          {!chainAnalysis?.isComplete && (
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full border-3 border-blue-400 bg-primary flex-shrink-0" />
+              <span className="text-foreground-muted">Contemporary helper</span>
+            </div>
+          )}
+
+          <div className="pt-2 border-t border-primary-bright-20">
+            <div className="text-foreground-muted">
+              {chainAnalysis?.isComplete
+                ? `✅ Chain complete! ${chainAnalysis.chainLength} connections`
+                : '⏳ Build a chain...'}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Timeline Viewport */}
-      <div 
+      <div
         ref={viewportRef}
         className="w-full h-full relative overflow-hidden bg-background"
         onWheel={handleWheel}
       >
-        {/* Pan Container */}
-        <div 
+        <div
           className="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          {/* Timeline Content */}
           <div
             ref={contentRef}
             className="absolute"
@@ -504,29 +488,41 @@ export default function Timeline({
               willChange: 'transform'
             }}
           >
-            {/* Extend container to full width */}
             <div className="relative w-full h-[400px]" style={{ minWidth: TIMELINE_WIDTH }}>
-              {/* Timeline bar - now with dynamic extension */}
-              <div 
+              {/* Timeline bar */}
+              <div
                 className="absolute top-1/2 -translate-y-1/2"
                 style={{
                   left: `-${getTimelineExtension(zoom)}px`,
                   right: `-${getTimelineExtension(zoom)}px`
                 }}
               >
-                {/* Main timeline bar with extended background */}
                 <div className="absolute inset-x-0 h-[2px] bg-primary-bright-20" />
-                
-                {/* Active timeline segment - adjusted positioning */}
-                <div 
-                  className="absolute h-[2px] bg-primary-bright"
+
+                {/* Active timeline segment */}
+                <div
+                  className="absolute h-[3px] bg-primary-bright shadow-timeline"
                   style={{
                     left: `${nodes[0]?.position || 0}%`,
                     width: `${(nodes[nodes.length - 1]?.position || 100) - (nodes[0]?.position || 0)}%`
                   }}
                 />
 
-                {/* Year markers - positioned relative to content */}
+                {/* Chain connection line - thicker, animated */}
+                {chainAnalysis?.isComplete && chainAnalysis.shortestPath.length > 0 && (
+                  <div className="absolute h-[6px]" style={{
+                    left: `${nodes.find(n => n.figure.id === chainAnalysis.shortestPath[0].id)?.position || 0}%`,
+                    width: `${
+                      (nodes.find(n => n.figure.id === chainAnalysis.shortestPath[chainAnalysis.shortestPath.length - 1].id)?.position || 100) -
+                      (nodes.find(n => n.figure.id === chainAnalysis.shortestPath[0].id)?.position || 0)
+                    }%`,
+                    top: '-2px'
+                  }}>
+                    <div className="h-full bg-gradient-to-r from-green-400 via-green-500 to-green-400 animate-pulse shadow-lg shadow-green-500/50 rounded-full" />
+                  </div>
+                )}
+
+                {/* Year markers */}
                 <div
                   className="absolute -bottom-8 text-sm font-medium text-foreground"
                   style={{ left: `${getTimelineExtension(zoom)}px` }}
@@ -540,13 +536,12 @@ export default function Timeline({
                   {Math.abs(endFigure.deathYear)} {endFigure.deathYear < 0 ? 'BCE' : 'CE'}
                 </div>
 
-                {/* BCE/CE divider line */}
+                {/* BCE/CE divider */}
                 {(() => {
                   const allYears = figures.flatMap(f => [f.birthYear, f.deathYear]);
                   const minYear = Math.min(...allYears);
                   const maxYear = Math.max(...allYears);
 
-                  // Only show if timeline spans BCE and CE
                   if (minYear < 0 && maxYear > 0) {
                     const timespan = maxYear - minYear;
                     const bceCrossPosition = ((0 - minYear) / timespan) * 100;
@@ -572,147 +567,69 @@ export default function Timeline({
                 })()}
               </div>
 
-              {/* Nodes with progress bars */}
+              {/* Nodes */}
               {nodes.map((node, index) => {
-                const isIntermediate = index > 0 && index < nodes.length - 1;
-                const prevNode = nodes[index - 1];
-                const nextNode = nodes[index + 1];
-                
-                // Get the target figures (first and last added)
-                const startTarget = figures[0];
-                const endTarget = figures[1];
-                
-                // Calculate year differences with adjacent nodes
-                const yearDiff = isIntermediate ? {
-                  // For BCE dates (negative years), we need to account for counting backwards
-                  birthYearDiff: (node.figure.birthYear < 0 && prevNode.figure.birthYear < 0) 
-                    ? prevNode.figure.birthYear - node.figure.birthYear  // Both BCE (larger negative number means earlier)
-                    : (node.figure.birthYear >= 0 && prevNode.figure.birthYear >= 0)
-                    ? node.figure.birthYear - prevNode.figure.birthYear  // Both CE
-                    : node.figure.birthYear - prevNode.figure.birthYear,  // Crossing BCE/CE boundary
-                  deathYearDiff: (node.figure.deathYear < 0 && prevNode.figure.deathYear < 0)
-                    ? prevNode.figure.deathYear - node.figure.deathYear
-                    : (node.figure.deathYear >= 0 && prevNode.figure.deathYear >= 0)
-                    ? node.figure.deathYear - prevNode.figure.deathYear
-                    : node.figure.deathYear - prevNode.figure.deathYear,
-                  lifespan: node.figure.deathYear - node.figure.birthYear,
-                  prevLifespan: prevNode.figure.deathYear - prevNode.figure.birthYear,
-                  // Calculate if this connection is better than the previous one
-                  isImprovingConnection: function() {
-                    // For the first added figure (index 2), check if it's between the targets
-                    if (index === 2) {
-                      const [target1, target2] = figures.slice(0, 2);
-                      const earliestTarget = target1.birthYear < target2.birthYear ? target1 : target2;
-                      const latestTarget = target1.birthYear < target2.birthYear ? target2 : target1;
-                      return node.figure.birthYear > earliestTarget.birthYear && 
-                             node.figure.birthYear < latestTarget.birthYear;
-                    }
-                    // For subsequent figures, compare with previous connection
-                    return Math.abs(node.figure.birthYear - prevNode.figure.birthYear) < 
-                           Math.abs(prevNode.figure.birthYear - (index > 1 ? nodes[index - 2].figure.birthYear : prevNode.figure.birthYear));
-                  }()
-                } : null;
-
-                // Progress bar should be:
-                // - Green and pointing left if this addition improves the connection
-                // - Red and pointing right if this addition makes the connection worse
-                const isForward = yearDiff?.isImprovingConnection ?? false;
+                const status = getFigureStatus(node.figure);
                 const bubbleScale = getBubbleScale(zoom);
-                
-                // Calculate animation progress for the latest added node
-                const isLatestNode = index === nodes.length - 1;
-                const progressBarWidth = isLatestNode && isAnimating
-                  ? 50 * animationProgress
-                  : 50;
-                
+                const prevNode = index > 0 ? nodes[index - 1] : null;
+
+                // Determine border styling based on status
+                let borderClass = 'border-primary';
+                let borderWidth = 'border-3';
+                let shadowClass = 'shadow-holo';
+                let opacity = 'opacity-100';
+
+                if (status === 'target') {
+                  borderClass = 'border-yellow-500';
+                  borderWidth = 'border-4';
+                  shadowClass = 'shadow-lg shadow-yellow-500/50';
+                } else if (status === 'in-chain') {
+                  borderClass = 'border-green-500';
+                  borderWidth = 'border-4';
+                  shadowClass = 'shadow-lg shadow-green-500/50';
+                } else if (status === 'wasted') {
+                  borderClass = 'border-red-400';
+                  opacity = 'opacity-60';
+                  shadowClass = 'shadow-sm';
+                } else if (status === 'helpful') {
+                  borderClass = 'border-blue-400';
+                  borderWidth = 'border-3';
+                  shadowClass = 'shadow-lg shadow-blue-400/50';
+                }
+
+                // Check if contemporary with previous node
+                const isContemporaryWithPrev = prevNode && areContemporaries(node.figure, prevNode.figure);
+
                 return (
-        <div
-          key={node.figure.id}
+                  <div
+                    key={node.figure.id}
                     className={`absolute transition-all duration-300 ease-in-out ${
                       hoveredNode === node.figure.id ? 'z-hover' : 'z-nodes'
-                    }`}
+                    } ${opacity}`}
                     style={{
                       left: `${node.position}%`,
                       top: '50%',
                       transform: `translate(-50%, ${node.isAbove ? '-120px' : '120px'}) scale(${bubbleScale})`
                     }}
                   >
-                    {/* Progress bar for intermediate nodes */}
-                    {isIntermediate && yearDiff && (
-                      <div className="absolute" style={{
-                        // Position at the middle of the bubble
-                        top: node.isAbove ? '40px' : '-40px',
-                        // Align with the bubble edge
-                        left: '-40px',
-                        width: '100%',
-                        height: '2px'
-                      }}>
-                        {/* Progress bar container */}
-                        <div className="relative w-full h-full">
-                          {/* Progress bar line */}
-                          <div 
-                            className={`absolute h-full group
-                              ${isForward ? 'bg-green-500' : 'bg-red-500'} 
-                              transition-all duration-300 ease-in-out
-                              hover:opacity-100
-                              ${hoveredNode === node.figure.id ? 'opacity-80' : 'opacity-50'}`}
-                            style={{
-                              // Always extend towards the previous bubble
-                              right: '100%',
-                              width: `${Math.min(Math.max(Math.abs(yearDiff.birthYearDiff), 40), 600)}px`,
-                              transformOrigin: 'right center'
-                            }}
-                          >
-                            {/* Simple year difference on hover */}
-                            <div className={`
-                              absolute ${node.isAbove ? '-top-6' : '-bottom-6'} left-1/2 -translate-x-1/2
-                              px-2 py-1 rounded text-xs font-medium whitespace-nowrap
-                              ${isForward ? 'text-green-600' : 'text-red-600'}
-                              opacity-0 group-hover:opacity-100
-                              transition-all duration-200 ease-in-out
-                              pointer-events-none
-                              bg-background/90 backdrop-blur-sm
-                              shadow-sm
-                            `}>
-                              {node.figure.name} lived {Math.abs(yearDiff.birthYearDiff)} years {yearDiff.birthYearDiff > 0 ? 'after' : 'before'} {prevNode.figure.name}
-                            </div>
-
-                            {/* Detailed tooltip on hover */}
-                            <div className={`
-                              absolute ${node.isAbove ? '-top-24' : '-bottom-24'} left-1/2 -translate-x-1/2
-                              p-3 rounded bg-background/95 backdrop-blur-sm
-                              border border-primary-bright-20
-                              text-sm leading-relaxed whitespace-nowrap
-                              opacity-0 group-hover:opacity-100
-                              transition-all duration-200 ease-in-out
-                              shadow-glow z-[var(--z-tooltip)]
-                              pointer-events-none
-                            `}>
-                              <div className="font-medium text-foreground">
-                                {isForward ? 'Getting closer to target!' : 'Moving away from target'}
-                              </div>
-                              <div className="text-foreground-muted mt-1 text-xs">
-                                Birth year difference: {Math.abs(yearDiff.birthYearDiff)} years
-                                {yearDiff.birthYearDiff !== yearDiff.deathYearDiff && 
-                                  ` • Death year difference: ${Math.abs(yearDiff.deathYearDiff)} years`}
-                              </div>
-                            </div>
-
-                            {/* Arrow indicator */}
-                            <div 
-                              className={`absolute h-2 w-2 top-1/2 -mt-1
-                                ${isForward ? 'bg-green-500' : 'bg-red-500'} -left-1
-                                transform rotate-45
-                              `}
-                            />
-                          </div>
-                        </div>
+                    {/* Contemporary connection indicator */}
+                    {prevNode && isContemporaryWithPrev && (
+                      <div
+                        className="absolute h-[2px] bg-blue-300/30"
+                        style={{
+                          top: node.isAbove ? '40px' : '-40px',
+                          right: '100%',
+                          width: `${Math.abs(node.position - prevNode.position) * 10}px`,
+                        }}
+                      >
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-400 rounded-full" />
                       </div>
                     )}
 
-                    {/* Connection line to timeline - with constant width */}
-                    <div 
-                      className={`absolute left-1/2 w-[2px] bg-primary-bright transition-all duration-300 ease-in-out
+                    {/* Connection line to timeline */}
+                    <div
+                      className={`absolute left-1/2 w-[2px] transition-all duration-300 ease-in-out
+                        ${status === 'in-chain' ? 'bg-green-500' : status === 'target' ? 'bg-yellow-500' : 'bg-primary-bright'}
                         ${hoveredNode === node.figure.id ? 'opacity-100' : 'opacity-70'}`}
                       style={{
                         height: '60px',
@@ -728,19 +645,31 @@ export default function Timeline({
                       onClick={() => setSelectedFigure(node.figure)}
                     >
                       {/* Profile image/initials */}
-                      <div className="timeline-node w-[80px] h-[80px] bg-background-marble overflow-hidden relative">
+                      <div className={`w-[80px] h-[80px] rounded-full overflow-hidden relative ${borderClass} ${borderWidth} ${shadowClass} bg-background-marble transition-all duration-300`}>
                         <ProfileImage figure={node.figure} />
-          </div>
 
-                      {/* Info card */}
+                        {/* Status badge */}
+                        {status === 'target' && (
+                          <div className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
+                            TARGET
+                          </div>
+                        )}
+                        {status === 'in-chain' && chainAnalysis?.isComplete && (
+                          <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
+                            ✓
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info card on hover */}
                       <div className={`
                         timeline-card
                         absolute ${node.isAbove ? 'bottom-full mb-3' : 'top-full mt-3'}
                         left-1/2 -translate-x-1/2
-                        w-[300px]
+                        w-[320px]
                         transition-all duration-300 ease-in-out
-                        ${hoveredNode === node.figure.id 
-                          ? 'opacity-100 translate-y-0' 
+                        ${hoveredNode === node.figure.id
+                          ? 'opacity-100 translate-y-0'
                           : 'opacity-0 translate-y-2 pointer-events-none'}
                       `}>
                         <div className="p-4">
@@ -750,9 +679,31 @@ export default function Timeline({
                           <div className="text-primary font-medium mb-2 text-sm">
                             {`${Math.abs(node.figure.birthYear)} ${node.figure.birthYear < 0 ? 'BCE' : 'CE'} - ${Math.abs(node.figure.deathYear)} ${node.figure.deathYear < 0 ? 'BCE' : 'CE'}`}
                           </div>
+
+                          {/* Status indicator */}
+                          <div className={`text-xs font-medium mb-2 px-2 py-1 rounded inline-block
+                            ${status === 'target' ? 'bg-yellow-100 text-yellow-700' : ''}
+                            ${status === 'in-chain' ? 'bg-green-100 text-green-700' : ''}
+                            ${status === 'wasted' ? 'bg-red-100 text-red-700' : ''}
+                            ${status === 'helpful' ? 'bg-blue-100 text-blue-700' : ''}
+                          `}>
+                            {status === 'target' && '🎯 Target Figure'}
+                            {status === 'in-chain' && '✅ In Winning Chain'}
+                            {status === 'wasted' && '❌ Not Needed for Chain'}
+                            {status === 'helpful' && '💡 Contemporary with Target'}
+                            {status === 'neutral' && '⏳ Exploring...'}
+                          </div>
+
                           <p className="text-foreground-muted leading-relaxed text-sm">
                             {node.figure.shortDescription}
                           </p>
+
+                          {/* Contemporary info */}
+                          {prevNode && isContemporaryWithPrev && (
+                            <div className="mt-2 pt-2 border-t border-primary-bright-20 text-xs text-blue-600">
+                              ⏱️ Contemporary with {prevNode.figure.name}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -780,4 +731,4 @@ export default function Timeline({
       )}
     </div>
   );
-} 
+}
