@@ -214,45 +214,32 @@ export default function Timeline({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) {
-      // Don't set isDragging yet - wait for actual movement
+      setIsDragging(true);
       setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (e.buttons === 1 && dragStart.x !== 0 && viewportRef.current) {
-      // Calculate distance moved from start
-      const deltaX = Math.abs(e.clientX - (dragStart.x + pan.x));
-      const deltaY = Math.abs(e.clientY - (dragStart.y + pan.y));
-      const distanceMoved = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    if (!isDragging || !viewportRef.current) return;
 
-      // Only start dragging if moved more than 5px (prevents interfering with clicks)
-      if (!isDragging && distanceMoved > 5) {
-        setIsDragging(true);
-      }
+    const viewport = viewportRef.current.getBoundingClientRect();
+    const scaledWidth = TIMELINE_WIDTH * zoom;
+    const scaledHeight = TIMELINE_HEIGHT * zoom;
 
-      // If we're dragging, update pan position
-      if (isDragging || distanceMoved > 5) {
-        const viewport = viewportRef.current.getBoundingClientRect();
-        const scaledWidth = TIMELINE_WIDTH * zoom;
-        const scaledHeight = TIMELINE_HEIGHT * zoom;
+    const newPan = {
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    };
 
-        const newPan = {
-          x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y
-        };
+    const minX = (viewport.width - scaledWidth) / 2 - MAX_PAN;
+    const maxX = (viewport.width - scaledWidth) / 2 + MAX_PAN;
+    const minY = (viewport.height - scaledHeight) / 2 - MAX_PAN;
+    const maxY = (viewport.height - scaledHeight) / 2 + MAX_PAN;
 
-        const minX = (viewport.width - scaledWidth) / 2 - MAX_PAN;
-        const maxX = (viewport.width - scaledWidth) / 2 + MAX_PAN;
-        const minY = (viewport.height - scaledHeight) / 2 - MAX_PAN;
-        const maxY = (viewport.height - scaledHeight) / 2 + MAX_PAN;
-
-        setPan({
-          x: Math.min(Math.max(newPan.x, minX), maxX),
-          y: Math.min(Math.max(newPan.y, minY), maxY)
-        });
-      }
-    }
+    setPan({
+      x: Math.min(Math.max(newPan.x, minX), maxX),
+      y: Math.min(Math.max(newPan.y, minY), maxY)
+    });
   };
 
   const handleMouseUp = () => {
