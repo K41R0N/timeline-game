@@ -54,9 +54,9 @@ export default function Timeline({
     return BASE_EXTENSION * (1 + (1 / currentZoom));
   };
 
-  // Calculate bubble scale based on zoom (inverse relationship)
+  // Calculate bubble scale to maintain constant size (exact inverse of zoom)
   const getBubbleScale = (currentZoom: number) => {
-    return Math.min(1, 1 / (currentZoom * 0.8));
+    return 1 / currentZoom;
   };
 
   // Analyze chain whenever figures change
