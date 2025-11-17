@@ -2,21 +2,18 @@
 
 ## Vercel Deployment (Recommended)
 
-This project uses NPM workspaces (monorepo structure). Follow these steps for successful deployment:
+This is a standard Next.js project. Vercel will auto-detect all settings.
 
 ### Option 1: Using Vercel Dashboard (Easiest)
 
 1. **Import Project** to Vercel from your GitHub repository
-2. **Configure Build Settings**:
-   - **Framework Preset**: Next.js
-   - **Root Directory**: `timeline-project` ⚠️ **IMPORTANT**
-   - **Build Command**: `npm run build` (auto-detected)
-   - **Output Directory**: `.next` (auto-detected)
-   - **Install Command**: `npm install` (auto-detected)
+2. **Deploy**: That's it! Vercel auto-detects:
+   - Framework: Next.js
+   - Build Command: `npm run build`
+   - Output Directory: `.next`
+   - Install Command: `npm install`
 
 3. **Environment Variables**: None required (uses public Wikipedia API)
-
-4. **Deploy**: Click "Deploy"
 
 ### Option 2: Using Vercel CLI
 
@@ -24,34 +21,24 @@ This project uses NPM workspaces (monorepo structure). Follow these steps for su
 # Install Vercel CLI
 npm i -g vercel
 
-# Navigate to the timeline-project directory
-cd timeline-project
-
-# Deploy
+# Deploy from project root
 vercel
 
 # Or deploy to production
 vercel --prod
 ```
 
-### Option 3: Using vercel.json (Current Configuration)
+### vercel.json Configuration
 
-The repository includes a `vercel.json` that configures the build process:
+The repository includes a minimal `vercel.json`:
 
 ```json
 {
-  "buildCommand": "npm install && cd timeline-project && npm run build",
-  "devCommand": "cd timeline-project && npm run dev",
-  "installCommand": "npm install",
-  "framework": null,
-  "outputDirectory": "timeline-project/.next"
+  "$schema": "https://openapi.vercel.sh/vercel.json"
 }
 ```
 
-**With this configuration:**
-- Deploy from the **root directory**
-- Vercel will automatically use these settings
-- No manual configuration needed
+Vercel's auto-detection handles everything automatically.
 
 ---
 
@@ -59,9 +46,9 @@ The repository includes a `vercel.json` that configures the build process:
 
 ### Netlify
 
-1. **Build Command**: `cd timeline-project && npm run build`
-2. **Publish Directory**: `timeline-project/.next`
-3. **Base Directory**: Leave blank or set to root
+1. **Build Command**: `npm run build`
+2. **Publish Directory**: `.next`
+3. **Base Directory**: Leave blank (deploy from root)
 
 ### Self-Hosted
 
@@ -70,7 +57,6 @@ The repository includes a `vercel.json` that configures the build process:
 npm install
 
 # Build the project
-cd timeline-project
 npm run build
 
 # Start production server
@@ -82,6 +68,7 @@ npm run start
 For production, use a process manager like PM2:
 ```bash
 npm install -g pm2
+cd /path/to/timeline-game
 pm2 start npm --name "timeline-game" -- start
 ```
 
@@ -91,14 +78,14 @@ pm2 start npm --name "timeline-game" -- start
 
 ### Build Errors
 
-**Error**: `Could not read package.json`
-- **Solution**: Set Root Directory to `timeline-project` in Vercel settings
+**Error**: `Failed to fetch font 'Geist'`
+- **Solution**: Fixed in latest version (removed Google Fonts dependency)
 
-**Error**: `Cannot find module '@timeline/game-core'`
-- **Solution**: Ensure `npm install` runs at root level first (installs workspace)
+**Error**: `Module not found: Can't resolve '@/lib'`
+- **Solution**: Ensure TypeScript paths are configured (`@/*` maps to `./src/*`)
 
 **Error**: `Module not found: Can't resolve 'react'`
-- **Solution**: Verify all dependencies are installed with `npm install` at root
+- **Solution**: Run `npm install` to install all dependencies
 
 ### Runtime Errors
 
@@ -109,6 +96,10 @@ pm2 start npm --name "timeline-game" -- start
   - `https://en.wikipedia.org/w/api.php` (main API)
   - `https://commons.wikimedia.org` (images)
 
+**Blank/unstyled page**
+- Check that Tailwind CSS is scanning: `./src/lib/**/*.{js,ts,jsx,tsx}`
+- Verify `globals.css` is imported in `src/app/layout.tsx`
+
 ---
 
 ## Performance Optimization
@@ -116,8 +107,8 @@ pm2 start npm --name "timeline-game" -- start
 ### Recommended Vercel Settings
 
 - **Region**: Auto (or select closest to your users)
-- **Node.js Version**: 18.x or higher
-- **Enable Edge Functions**: No (uses standard serverless)
+- **Node.js Version**: 18.x or higher (auto-detected)
+- **Framework**: Next.js (auto-detected)
 
 ### Caching
 
@@ -132,11 +123,53 @@ The app currently makes fresh Wikipedia API calls. Future enhancements:
 
 ✅ App loads successfully
 ✅ Can search for historical figures
-✅ Timeline displays correctly
-✅ Score counter visible
+✅ Timeline displays correctly with glassmorphism styling
+✅ Score counter visible (top right)
 ✅ Win modal appears when targets connected
 ✅ "Play Again" generates new random targets
 ✅ Detail panel shows contemporary hints
+✅ All CSS styles are applied (check for glow effects)
+
+---
+
+## Development
+
+### Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start dev server
+npm run dev
+
+# Build for production
+npm run build
+
+# Run production build locally
+npm run start
+```
+
+### Project Structure
+
+```
+timeline-game/
+├── src/
+│   ├── app/              # Next.js App Router
+│   │   ├── page.tsx      # Main game page
+│   │   ├── layout.tsx    # Root layout
+│   │   └── globals.css   # Global styles
+│   └── lib/              # Game logic library
+│       ├── components/   # React components
+│       ├── services/     # Wikipedia API
+│       ├── types/        # TypeScript types
+│       └── utils/        # Game utilities
+├── public/               # Static assets
+├── package.json          # Dependencies
+├── next.config.js        # Next.js config
+├── tailwind.config.ts    # Tailwind CSS config
+└── tsconfig.json         # TypeScript config
+```
 
 ---
 
@@ -150,4 +183,4 @@ For deployment issues:
 For app issues:
 - Check browser console for errors
 - Verify Wikipedia API access
-- Review network requests
+- Review network requests in DevTools
