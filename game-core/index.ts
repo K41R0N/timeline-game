@@ -13,6 +13,7 @@ export * from './types/HistoricalFigure';
 
 // Services
 export { WikipediaService } from './services/WikipediaService';
+export { TargetSelectionService } from './services/TargetSelectionService';
 
 // Utilities
 export * from './utils/ChainAnalyzer';

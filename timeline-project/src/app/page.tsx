@@ -8,7 +8,8 @@ import {
   SearchBar,
   ScoreDisplay,
   WinModal,
-  analyzeChain
+  analyzeChain,
+  TargetSelectionService
 } from '@timeline/game-core';
 
 console.log('🚀 Initializing Timeline Game...');
@@ -31,29 +32,34 @@ export default function Home() {
   useEffect(() => {
     const loadInitialFigures = async () => {
       try {
-        console.log('🔄 Loading initial historical figures...');
+        console.log('🔄 Loading random historical figures for new game...');
         setIsLoading(true);
         setError(null);
 
-        // Fetch Alexander and Caesar as our initial timeline anchors
-        const [alexander, caesar] = await Promise.all([
-          WikipediaService.getPersonDetails('Alexander the Great'),
-          WikipediaService.getPersonDetails('Julius Caesar')
-        ]);
+        // Try to select random targets (medium difficulty)
+        let targets = await TargetSelectionService.selectRandomTargets('medium');
 
-        if (!alexander || !caesar) {
-          throw new Error('Failed to load initial historical figures');
+        // Fallback to default targets if random selection fails
+        if (!targets) {
+          console.warn('⚠️ Random selection failed, using default targets...');
+          targets = await TargetSelectionService.selectDefaultTargets();
         }
 
-        console.log('✅ Initial figures loaded:', {
-          alexander: { name: alexander.name, years: `${alexander.birthYear}-${alexander.deathYear}` },
-          caesar: { name: caesar.name, years: `${caesar.birthYear}-${caesar.deathYear}` }
+        if (!targets) {
+          throw new Error('Failed to load historical figures');
+        }
+
+        const [targetA, targetB] = targets;
+
+        console.log('✅ Game targets loaded:', {
+          targetA: { name: targetA.name, years: `${targetA.birthYear}-${targetA.deathYear}` },
+          targetB: { name: targetB.name, years: `${targetB.birthYear}-${targetB.deathYear}` }
         });
 
-        // Set targets (first and last in the list)
-        setTargetA(alexander);
-        setTargetB(caesar);
-        setFigures([alexander, caesar]);
+        // Set targets and initial figures
+        setTargetA(targetA);
+        setTargetB(targetB);
+        setFigures([targetA, targetB]);
       } catch (err) {
         console.error('❌ Error loading initial figures:', err);
         setError('Failed to load initial figures. Please refresh the page.');
@@ -99,7 +105,7 @@ export default function Home() {
   };
 
   const handlePlayAgain = () => {
-    console.log('🔄 Restarting game...');
+    console.log('🔄 Restarting game with new random targets...');
     setHasWon(false);
     setWinningChain([]);
     setScore(0);
@@ -109,19 +115,26 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
 
-    // Reload initial figures
+    // Load new random figures
     const loadInitialFigures = async () => {
       try {
-        const [alexander, caesar] = await Promise.all([
-          WikipediaService.getPersonDetails('Alexander the Great'),
-          WikipediaService.getPersonDetails('Julius Caesar')
-        ]);
+        // Try to select random targets (medium difficulty)
+        let targets = await TargetSelectionService.selectRandomTargets('medium');
 
-        if (alexander && caesar) {
-          setTargetA(alexander);
-          setTargetB(caesar);
-          setFigures([alexander, caesar]);
+        // Fallback to default targets if random selection fails
+        if (!targets) {
+          console.warn('⚠️ Random selection failed, using default targets...');
+          targets = await TargetSelectionService.selectDefaultTargets();
         }
+
+        if (!targets) {
+          throw new Error('Failed to load historical figures');
+        }
+
+        const [targetA, targetB] = targets;
+        setTargetA(targetA);
+        setTargetB(targetB);
+        setFigures([targetA, targetB]);
       } catch (err) {
         console.error('❌ Error reloading figures:', err);
         setError('Failed to restart game. Please refresh the page.');
