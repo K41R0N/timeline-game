@@ -37,6 +37,7 @@ export default function Timeline({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [animationProgress, setAnimationProgress] = useState(0);
   const [chainAnalysis, setChainAnalysis] = useState<ChainAnalysis | null>(null);
+  const [prevFiguresLength, setPrevFiguresLength] = useState(0);
   const timelineRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -111,22 +112,38 @@ export default function Timeline({
 
     setNodes(newNodes);
 
-    // Center timeline
-    const centerTimeline = () => {
+    // Auto-snap to latest figure if a new one was added
+    const snapToLatest = () => {
       if (!viewportRef.current || !contentRef.current) return;
 
       const viewport = viewportRef.current.getBoundingClientRect();
       const scaledWidth = TIMELINE_WIDTH * zoom;
       const scaledHeight = TIMELINE_HEIGHT * zoom;
 
-      setPan({
-        x: (viewport.width - scaledWidth) / 2,
-        y: (viewport.height - scaledHeight) / 2
-      });
+      // If a new figure was added (not initial load), snap to it
+      if (figures.length > prevFiguresLength && figures.length > 2) {
+        const latestNode = newNodes[newNodes.length - 1];
+        // Center on the latest node
+        const targetX = (viewport.width / 2) - (latestNode.position / 100) * scaledWidth * zoom;
+        const targetY = (viewport.height - scaledHeight) / 2;
+
+        setPan({
+          x: targetX,
+          y: targetY
+        });
+      } else {
+        // Initial centering
+        setPan({
+          x: (viewport.width - scaledWidth) / 2,
+          y: (viewport.height - scaledHeight) / 2
+        });
+      }
+
+      setPrevFiguresLength(figures.length);
     };
 
-    setTimeout(centerTimeline, 50);
-  }, [figures, zoom]);
+    setTimeout(snapToLatest, 50);
+  }, [figures, zoom, prevFiguresLength]);
 
   useEffect(() => {
     const preventBrowserZoom = (e: WheelEvent) => {
@@ -210,6 +227,29 @@ export default function Timeline({
       x: prev.x - (e.shiftKey ? e.deltaY : 0) * panSpeed,
       y: prev.y - (!e.shiftKey ? e.deltaY : 0) * panSpeed
     }));
+  };
+
+  // Zoom control handlers
+  const handleZoomIn = () => {
+    const newZoom = Math.min(zoom * 1.2, MAX_ZOOM);
+    setZoom(newZoom);
+  };
+
+  const handleZoomOut = () => {
+    const newZoom = Math.max(zoom / 1.2, MIN_ZOOM);
+    setZoom(newZoom);
+  };
+
+  const centerView = () => {
+    if (!viewportRef.current) return;
+    const viewport = viewportRef.current.getBoundingClientRect();
+    const scaledWidth = TIMELINE_WIDTH * zoom;
+    const scaledHeight = TIMELINE_HEIGHT * zoom;
+
+    setPan({
+      x: (viewport.width - scaledWidth) / 2,
+      y: (viewport.height - scaledHeight) / 2
+    });
   };
 
   const getInitials = (name: string) => {
@@ -462,6 +502,39 @@ export default function Timeline({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Zoom Controls - Bottom Right */}
+      <div className="fixed bottom-24 right-4 z-[90] pointer-events-auto flex flex-col gap-2">
+        <button
+          onClick={handleZoomIn}
+          className="timeline-card p-3 hover:bg-primary/10 transition-colors"
+          title="Zoom In (Ctrl + Scroll)"
+        >
+          <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+
+        <button
+          onClick={centerView}
+          className="timeline-card p-3 hover:bg-primary/10 transition-colors"
+          title="Center View"
+        >
+          <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-5l-5 5m-11 6v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+        </button>
+
+        <button
+          onClick={handleZoomOut}
+          className="timeline-card p-3 hover:bg-primary/10 transition-colors"
+          title="Zoom Out (Ctrl + Scroll)"
+        >
+          <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+          </svg>
+        </button>
       </div>
 
       {/* Timeline Viewport */}

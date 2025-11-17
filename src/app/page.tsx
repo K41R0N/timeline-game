@@ -19,6 +19,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showDifficultySelect, setShowDifficultySelect] = useState(false);
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
 
   // Game state
   const [score, setScore] = useState(0);
@@ -29,51 +31,50 @@ export default function Home() {
 
   // Load initial figures
   useEffect(() => {
-    const loadInitialFigures = async () => {
-      try {
-        console.log('🔄 Loading random historical figures for new game...');
-        setIsLoading(true);
-        setError(null);
-
-        // Try to select random targets (medium difficulty)
-        let targets = await TargetSelectionService.selectRandomTargets('medium');
-
-        // Fallback to default targets if random selection fails
-        if (!targets) {
-          console.warn('⚠️ Random selection failed, using default targets...');
-          targets = await TargetSelectionService.selectDefaultTargets();
-        }
-
-        if (!targets) {
-          throw new Error('Failed to load historical figures');
-        }
-
-        const [targetA, targetB] = targets;
-
-        console.log('✅ Game targets loaded:', {
-          targetA: { name: targetA.name, years: `${targetA.birthYear}-${targetA.deathYear}` },
-          targetB: { name: targetB.name, years: `${targetB.birthYear}-${targetB.deathYear}` }
-        });
-
-        // Set targets and initial figures
-        setTargetA(targetA);
-        setTargetB(targetB);
-        setFigures([targetA, targetB]);
-      } catch (err) {
-        console.error('❌ Error loading initial figures:', err);
-        setError('Failed to load initial figures. Please refresh the page.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadInitialFigures();
+    loadGame(difficulty);
   }, []);
 
-  // Calculate score (number of intermediate figures)
+  const loadGame = async (selectedDifficulty: 'easy' | 'medium' | 'hard') => {
+    try {
+      console.log(`🔄 Loading ${selectedDifficulty} difficulty game...`);
+      setIsLoading(true);
+      setError(null);
+
+      let targets = await TargetSelectionService.selectRandomTargets(selectedDifficulty);
+
+      if (!targets) {
+        console.warn('⚠️ Random selection failed, using default targets...');
+        targets = await TargetSelectionService.selectDefaultTargets();
+      }
+
+      if (!targets) {
+        throw new Error('Failed to load historical figures');
+      }
+
+      const [targetA, targetB] = targets;
+
+      console.log('✅ Game targets loaded:', {
+        difficulty: selectedDifficulty,
+        targetA: { name: targetA.name, years: `${targetA.birthYear}-${targetA.deathYear}` },
+        targetB: { name: targetB.name, years: `${targetB.birthYear}-${targetB.deathYear}` }
+      });
+
+      setTargetA(targetA);
+      setTargetB(targetB);
+      setFigures([targetA, targetB]);
+      setDifficulty(selectedDifficulty);
+      setShowDifficultySelect(false);
+    } catch (err) {
+      console.error('❌ Error loading initial figures:', err);
+      setError('Failed to load initial figures. Please refresh the page.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Calculate score
   useEffect(() => {
     if (figures.length >= 2) {
-      // Score = total figures minus the 2 targets
       const newScore = Math.max(0, figures.length - 2);
       setScore(newScore);
       console.log(`📊 Score updated: ${newScore}`);
@@ -97,83 +98,52 @@ export default function Home() {
   }, [figures, targetA, targetB, hasWon]);
 
   const handleFiguresChange = (updatedFigures: HistoricalFigure[]) => {
-    console.log('📝 Updating timeline with figures:', 
+    console.log('📝 Updating timeline with figures:',
       updatedFigures.map(f => ({ name: f.name, years: `${f.birthYear}-${f.deathYear}` }))
     );
     setFigures(updatedFigures);
   };
 
   const handlePlayAgain = () => {
-    console.log('🔄 Restarting game with new random targets...');
+    console.log('🔄 Showing difficulty selector...');
     setHasWon(false);
     setWinningChain([]);
     setScore(0);
     setFigures([]);
     setTargetA(null);
     setTargetB(null);
-    setIsLoading(true);
-    setError(null);
-
-    // Load new random figures
-    const loadInitialFigures = async () => {
-      try {
-        // Try to select random targets (medium difficulty)
-        let targets = await TargetSelectionService.selectRandomTargets('medium');
-
-        // Fallback to default targets if random selection fails
-        if (!targets) {
-          console.warn('⚠️ Random selection failed, using default targets...');
-          targets = await TargetSelectionService.selectDefaultTargets();
-        }
-
-        if (!targets) {
-          throw new Error('Failed to load historical figures');
-        }
-
-        const [targetA, targetB] = targets;
-        setTargetA(targetA);
-        setTargetB(targetB);
-        setFigures([targetA, targetB]);
-      } catch (err) {
-        console.error('❌ Error reloading figures:', err);
-        setError('Failed to restart game. Please refresh the page.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadInitialFigures();
+    setShowDifficultySelect(true);
   };
 
   const handleAddFigure = async (name: string) => {
     console.log(`🔍 Searching for historical figure: "${name}"`);
     setIsAnimating(true);
-    
+
     try {
-      // Check if figure already exists (case-insensitive)
-      const existingFigure = figures.find(f => 
+      const existingFigure = figures.find(f =>
         f.name.toLowerCase() === name.toLowerCase() ||
         f.id === name.toLowerCase().replace(/\s+/g, '_')
       );
 
       if (existingFigure) {
         console.log(`⚠️ Figure "${name}" already exists in timeline`);
-        setError(`${name} is already in the timeline`);
+        setError(`${existingFigure.name} is already in the timeline`);
+        setTimeout(() => setError(null), 3000);
         return;
       }
 
       const figure = await WikipediaService.getPersonDetails(name);
       if (figure) {
-        console.log('✨ Found figure details:', { 
-          name: figure.name, 
+        console.log('✨ Found figure details:', {
+          name: figure.name,
           years: `${figure.birthYear}-${figure.deathYear}`,
-          imageUrl: figure.imageUrl 
+          imageUrl: figure.imageUrl
         });
 
-        // Double check no duplicate by ID (in case name differs slightly)
         if (figures.some(f => f.id === figure.id)) {
           console.log(`⚠️ Figure with ID "${figure.id}" already exists in timeline`);
-          setError(`${name} is already in the timeline`);
+          setError(`${figure.name} is already in the timeline`);
+          setTimeout(() => setError(null), 3000);
           return;
         }
 
@@ -182,16 +152,57 @@ export default function Home() {
         setError(null);
       } else {
         console.warn(`⚠️ No details found for: "${name}"`);
-        setError(`Could not find historical details for ${name}`);
+        setError(`Could not find historical details for "${name}"`);
+        setTimeout(() => setError(null), 3000);
       }
     } catch (err) {
       console.error(`❌ Error adding figure "${name}":`, err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(`Error adding ${name}: ${errorMessage}`);
+      setTimeout(() => setError(null), 3000);
     } finally {
       setIsAnimating(false);
     }
   };
+
+  if (showDifficultySelect) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-background">
+        <div className="timeline-card p-8 max-w-md">
+          <h2 className="text-2xl font-bold text-primary mb-4">Select Difficulty</h2>
+          <p className="text-foreground-muted mb-6">
+            Choose how far apart the targets will be:
+          </p>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => loadGame('easy')}
+              className="w-full p-4 rounded-lg border-2 border-green-400 bg-green-50 hover:bg-green-100 transition-colors text-left"
+            >
+              <div className="font-bold text-green-700">Easy</div>
+              <div className="text-sm text-green-600">200-700 years apart</div>
+            </button>
+
+            <button
+              onClick={() => loadGame('medium')}
+              className="w-full p-4 rounded-lg border-2 border-yellow-400 bg-yellow-50 hover:bg-yellow-100 transition-colors text-left"
+            >
+              <div className="font-bold text-yellow-700">Medium</div>
+              <div className="text-sm text-yellow-600">600-1400 years apart</div>
+            </button>
+
+            <button
+              onClick={() => loadGame('hard')}
+              className="w-full p-4 rounded-lg border-2 border-red-400 bg-red-50 hover:bg-red-100 transition-colors text-left"
+            >
+              <div className="font-bold text-red-700">Hard</div>
+              <div className="text-sm text-red-600">1200+ years apart</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -215,6 +226,27 @@ export default function Home() {
 
   return (
     <>
+      {/* Goal Banner - Top Center */}
+      {targetA && targetB && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] pointer-events-auto">
+          <div className="timeline-card px-6 py-3 shadow-glow">
+            <div className="text-center">
+              <div className="text-xs text-foreground-muted uppercase tracking-wide mb-1">
+                Your Mission
+              </div>
+              <div className="text-sm font-bold text-primary">
+                Connect <span className="text-yellow-600">{targetA.name}</span>
+                {' '} to {' '}
+                <span className="text-yellow-600">{targetB.name}</span>
+              </div>
+              <div className="text-xs text-foreground-muted mt-1">
+                Use as few connections as possible • {difficulty === 'easy' ? '🟢 Easy' : difficulty === 'medium' ? '🟡 Medium' : '🔴 Hard'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Score Display - Top Right */}
       <div className="fixed top-4 right-4 z-[100] pointer-events-auto">
         <ScoreDisplay
@@ -235,6 +267,17 @@ export default function Home() {
           </p>
         </div>
       </div>
+
+      {/* Error Toast */}
+      {error && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[110] pointer-events-none">
+          <div className="timeline-card px-6 py-3 bg-red-50 border-2 border-red-400 animate-fadeIn">
+            <div className="text-sm text-red-700 font-medium">
+              ⚠️ {error}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Timeline Canvas Container */}
       <main className="w-full h-screen bg-background">
