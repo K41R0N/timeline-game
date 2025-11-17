@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { HistoricalFigure } from '../types/HistoricalFigure';
 
 interface GameState {
@@ -98,5 +98,7 @@ export function useAutoSave(
     }, AUTO_SAVE_DELAY);
 
     return () => clearTimeout(timer);
-  }, [figures, targetA, targetB, difficulty, score, saveState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [figures, targetA, targetB, difficulty, score]);
+  // Note: saveState is intentionally excluded - it's a stable function
 }
