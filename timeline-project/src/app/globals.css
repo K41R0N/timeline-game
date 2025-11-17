@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Color System */
+  --color-primary: #40B4E5;
+  --color-primary-glow: rgba(64, 180, 229, 0.15);
+  --color-primary-bright: #5CCFFF;
+  --color-primary-bright-20: rgba(92, 207, 255, 0.2);
+  
+  /* Background Colors */
+  --background: #FFFFF0;  /* Ivory */
+  --background-alt: #FDFDF5;
+  --background-hover: #F5F5E5;
+  --background-marble: rgba(255, 255, 240, 0.9);
+  
+  /* Foreground Colors */
+  --foreground: #2C3E50;  /* Dark blue-gray for better readability */
+  --foreground-muted: #34495E;
+  --foreground-subtle: #7F8C8D;
+  
+  /* Interactive Elements */
+  --interactive: var(--color-primary);
+  --interactive-hover: var(--color-primary-bright);
+  --interactive-glow: var(--color-primary-glow);
+  
+  /* Timeline Specific */
+  --timeline-color: var(--color-primary);
+  --timeline-glow: 0 0 20px var(--color-primary-glow),
+                  0 0 40px var(--color-primary-glow),
+                  inset 0 0 15px var(--color-primary-glow);
+  --timeline-connection: var(--color-primary-bright);
+  
+  /* UI Elements */
+  --card-background: var(--background-marble);
+  --card-border: rgba(0, 176, 189, 0.2);
+  --card-glow: 0 4px 20px var(--color-primary-glow);
+  --card-hover-glow: 0 8px 30px var(--color-primary-glow);
+  
+  /* Holographic Effects */
+  --holo-ring: 0 0 0 1px var(--color-primary-bright),
+               0 0 0 3px var(--color-primary-glow),
+               0 0 10px var(--color-primary-glow);
+  --holo-glow: 0 0 20px var(--color-primary-glow);
+  
+  /* Spacing System */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  
+  /* Z-index Layers */
+  --z-timeline: 1;
+  --z-nodes: 10;
+  --z-hover: 20;
+  --z-modal: 30;
+  --z-overlay: 40;
+  --z-tooltip: 50;
+  
+  /* Transitions */
+  --transition-fast: 200ms;
+  --transition-normal: 300ms;
+  --transition-slow: 500ms;
+  
+  /* Typography */
+  --font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply text-foreground bg-background min-h-screen overflow-hidden;
+    background-image: linear-gradient(
+      45deg,
+      var(--background) 0%,
+      var(--background-alt) 100%
+    );
+    font-family: var(--font-family);
+  }
+
+  h1 {
+    @apply text-4xl font-semibold text-foreground;
+    text-shadow: 0 0 10px var(--color-primary-glow);
+  }
+
+  /* Disable text selection during drag */
+  .cursor-grab, .cursor-grabbing {
+    user-select: none;
+  }
+}
+
+@layer components {
+  .timeline-card {
+    @apply bg-background-marble backdrop-blur-sm rounded-lg border shadow-glow 
+    transition-all duration-300 ease-in-out;
+    border-color: var(--color-primary-bright-20);
+  }
+  
+  .timeline-card:hover {
+    @apply shadow-glow-hover border-primary-bright;
+  }
+  
+  .timeline-node {
+    @apply rounded-full overflow-hidden shadow-holo 
+    transition-all duration-300 ease-in-out;
+  }
+  
+  .timeline-node:hover {
+    @apply shadow-holo-glow scale-105;
+  }
+  
+  .search-input {
+    @apply bg-background-marble backdrop-blur-sm rounded-lg px-4 py-2 
+    shadow-glow border transition-all duration-200 ease-in-out;
+    border-color: var(--color-primary-bright-20);
+  }
+  
+  .search-input:focus {
+    @apply shadow-holo border-primary-bright outline-none;
+  }
+  
+  .timeline-bar {
+    @apply rounded-full bg-primary-bright shadow-timeline animate-glow;
+  }
+}

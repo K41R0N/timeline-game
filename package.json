@@ -1,0 +1,14 @@
+{
+  "name": "timeline-game-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "game-core",
+    "timeline-project"
+  ],
+  "scripts": {
+    "dev": "cd timeline-project && npm run dev",
+    "build": "cd timeline-project && npm run build",
+    "start": "cd timeline-project && npm run start"
+  }
+} 
