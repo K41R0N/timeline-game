@@ -237,65 +237,58 @@ export default function Home() {
 
   return (
     <>
-      {/* Main Header - Top */}
-      <div className="fixed top-0 left-0 right-0 z-[100] pointer-events-none">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
-            {/* Game Title - Left */}
-            <div className="timeline-card px-4 py-2 pointer-events-auto">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">⏳</span>
-                <div>
-                  <h1 className="text-base font-bold text-primary leading-tight">
-                    History Links
-                  </h1>
-                  <p className="text-[10px] text-foreground-muted leading-tight">
-                    {difficulty === 'easy' ? 'Easy Mode' : difficulty === 'medium' ? 'Medium Mode' : 'Hard Mode'}
-                  </p>
-                </div>
+      {/* Compact Floating Score Badge - Top Right */}
+      <div className="fixed top-4 right-4 z-[22] pointer-events-auto group">
+        <div className="timeline-card p-3 shadow-glow hover:shadow-xl transition-shadow">
+          <div className="flex items-center gap-3">
+            {/* Score */}
+            <div className="text-center">
+              <div className={`text-2xl font-bold leading-none ${score === 0 ? 'text-green-600' : score <= 3 ? 'text-yellow-600' : 'text-red-600'}`}>
+                {score}
+              </div>
+              <div className="text-[9px] text-foreground-muted uppercase mt-0.5">
+                Score
               </div>
             </div>
 
-            {/* Goal Banner - Center */}
-            {targetA && targetB && (
-              <div className="timeline-card px-6 py-3 shadow-glow pointer-events-auto max-w-xl">
-                <div className="text-center">
-                  <div className="text-[10px] text-foreground-muted uppercase tracking-wider mb-1">
-                    Goal
-                  </div>
-                  <div className="text-sm font-bold text-primary leading-snug">
-                    <span className="text-yellow-600">{targetA.name}</span>
-                    <span className="mx-2 text-foreground-muted">→</span>
-                    <span className="text-yellow-600">{targetB.name}</span>
-                  </div>
-                  <div className="text-[10px] text-foreground-subtle mt-1">
-                    Find the shortest path • Lower score is better
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Divider */}
+            <div className="w-[1px] h-8 bg-primary-bright-20" />
 
-            {/* Score - Right */}
-            <div className="timeline-card px-5 py-2 pointer-events-auto min-w-[100px]">
-              <div className="text-center">
-                <div className="text-[10px] text-foreground-muted uppercase tracking-wider mb-0.5">
-                  Score
-                </div>
-                <div className={`text-3xl font-bold ${score === 0 ? 'text-green-600' : score <= 3 ? 'text-yellow-600' : 'text-red-600'} leading-none`}>
-                  {score}
-                </div>
-                <div className="text-[9px] text-foreground-subtle mt-0.5">
-                  {score === 0 ? 'Perfect start!' : score === 1 ? '1 connection' : `${score} connections`}
-                </div>
+            {/* Difficulty Badge */}
+            <div className="text-center">
+              <div className="text-xs font-bold text-primary">
+                {difficulty === 'easy' ? '⭐' : difficulty === 'medium' ? '⭐⭐' : '⭐⭐⭐'}
+              </div>
+              <div className="text-[9px] text-foreground-muted uppercase">
+                {difficulty}
               </div>
             </div>
           </div>
+
+          {/* Goal Tooltip on Hover */}
+          {targetA && targetB && (
+            <div className="absolute top-full right-0 mt-2 w-[300px] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity">
+              <div className="timeline-card p-3 shadow-lg">
+                <div className="text-[10px] text-foreground-muted uppercase mb-1">
+                  Goal
+                </div>
+                <div className="text-sm font-semibold text-primary">
+                  <span className="text-yellow-600">{targetA.name}</span>
+                  <span className="mx-1 text-foreground-muted">→</span>
+                  <span className="text-yellow-600">{targetB.name}</span>
+                </div>
+                <div className="text-[10px] text-foreground-subtle mt-1">
+                  Find the shortest path • Lower score is better
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Error Toast */}
       {error && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[110] pointer-events-none">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[101] pointer-events-none">
           <div className="timeline-card px-6 py-3 bg-red-50 border-2 border-red-400 animate-fadeIn">
             <div className="text-sm text-red-700 font-medium">
               ⚠️ {error}
@@ -316,14 +309,12 @@ export default function Home() {
         />
       </main>
 
-      {/* Search Bar Layer */}
-      <div className="fixed bottom-0 left-0 right-0 z-[100]">
-        <SearchBar
-          figures={figures}
-          onSelect={() => {}}
-          onAddFigure={handleAddFigure}
-        />
-      </div>
+      {/* Floating Search Bar */}
+      <SearchBar
+        figures={figures}
+        onSelect={() => {}}
+        onAddFigure={handleAddFigure}
+      />
 
       {/* Win Modal */}
       {hasWon && (

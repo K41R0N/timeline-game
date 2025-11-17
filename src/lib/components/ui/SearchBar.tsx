@@ -97,23 +97,21 @@ export function SearchBar({ figures, onSelect, onAddFigure }: SearchBarProps) {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[70]">
-      <div className="p-4 bg-background-marble backdrop-blur-lg border-t border-primary-bright-20 shadow-lg">
-        <div className="max-w-2xl mx-auto">
-          <SearchInput
-            onSearch={handleSearch}
-            onSelect={handleSelect}
-            onSubmit={onAddFigure}
-            suggestions={suggestions.map(s => ({
-              title: s.title,
-              description: s.snippet,
-              isExisting: s.isExisting
-            }))}
-            isLoading={isLoading}
-            error={error}
-            className="search-input"
-          />
-        </div>
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[21] w-full max-w-2xl px-4">
+      <div className="timeline-card p-3 shadow-glow backdrop-blur-lg">
+        <SearchInput
+          onSearch={handleSearch}
+          onSelect={handleSelect}
+          onSubmit={onAddFigure}
+          suggestions={suggestions.map(s => ({
+            title: s.title,
+            description: s.snippet,
+            isExisting: s.isExisting
+          }))}
+          isLoading={isLoading}
+          error={error}
+          className="search-input"
+        />
       </div>
     </div>
   );

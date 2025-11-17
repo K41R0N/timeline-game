@@ -80,15 +80,21 @@ export function DetailPanel({
   if (!figure) return null;
 
   return (
-    <div className="fixed inset-0 z-[var(--z-modal)] bg-foreground/20">
+    <>
+      {/* Semi-transparent backdrop - doesn't block timeline interaction */}
+      <div className="fixed inset-0 z-[50] bg-foreground/10 backdrop-blur-[2px] pointer-events-none animate-fadeIn" />
+
+      {/* Slide-in drawer from right */}
       <div
         ref={panelRef}
         className={`
-          absolute right-0 top-0 bottom-0
-          w-full max-w-lg
+          fixed right-0 top-0 bottom-0
+          w-[400px]
           bg-background
-          shadow-[-4px_0_20px_rgba(0,0,0,0.1)]
-          transition-transform duration-[var(--transition-normal)]
+          shadow-[-4px_0_20px_rgba(0,0,0,0.2)]
+          transition-transform duration-300 ease-out
+          animate-slideInRight
+          z-[50]
           ${className}
         `}
       >
@@ -182,6 +188,6 @@ export function DetailPanel({
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 } 

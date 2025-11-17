@@ -329,9 +329,9 @@ export default function Timeline({
     const bubbleRect = bubbleEl.getBoundingClientRect();
     const viewportRect = viewport.getBoundingClientRect();
 
-    // Card dimensions
-    const CARD_WIDTH = 320;
-    const CARD_HEIGHT = 250; // Approximate height
+    // Card dimensions (updated for compact tooltips)
+    const CARD_WIDTH = 200;
+    const CARD_HEIGHT = 120; // Approximate height for compact version
 
     // Calculate available space in each direction
     const spaceAbove = bubbleRect.top - viewportRect.top;
@@ -688,7 +688,7 @@ export default function Timeline({
                         <ProfileImage figure={node.figure} />
                       </div>
 
-                      {/* Info card on hover - clickable */}
+                      {/* Compact tooltip on hover - clickable */}
                       {(() => {
                         const cardPos = hoverCardPositions.get(node.figure.id) || {
                           vertical: node.isAbove ? 'top' : 'bottom',
@@ -696,7 +696,7 @@ export default function Timeline({
                         };
 
                         // Vertical positioning classes
-                        const verticalClass = cardPos.vertical === 'bottom' ? 'top-full mt-3' : 'bottom-full mb-3';
+                        const verticalClass = cardPos.vertical === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2';
 
                         // Horizontal positioning classes
                         let horizontalClass = 'left-1/2 -translate-x-1/2'; // center (default)
@@ -711,12 +711,13 @@ export default function Timeline({
                             className={`
                               timeline-card
                               absolute ${verticalClass} ${horizontalClass}
-                              w-[320px]
-                              transition-all duration-300 ease-in-out
+                              w-[200px]
+                              transition-all duration-150 ease-out
                               cursor-pointer
+                              z-[30]
                               ${hoveredNode === node.figure.id
                                 ? 'opacity-100 translate-y-0'
-                                : 'opacity-0 translate-y-2 pointer-events-none'}
+                                : 'opacity-0 scale-95 pointer-events-none'}
                             `}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -725,44 +726,33 @@ export default function Timeline({
                             onMouseEnter={() => handleNodeHover(node.figure.id)}
                             onMouseLeave={() => setHoveredNode(null)}
                           >
-                            <div className="p-4">
-                              <h3 className="text-lg font-semibold text-foreground mb-2">
+                            <div className="p-3">
+                              <h3 className="text-sm font-bold text-foreground leading-tight">
                                 {node.figure.name}
                               </h3>
-                              <div className="text-primary font-medium mb-2 text-sm">
+                              <div className="text-[11px] text-primary font-medium mt-1">
                                 {`${Math.abs(node.figure.birthYear)} ${node.figure.birthYear < 0 ? 'BCE' : 'CE'} - ${Math.abs(node.figure.deathYear)} ${node.figure.deathYear < 0 ? 'BCE' : 'CE'}`}
                               </div>
 
-                              {/* Status indicator - Simplified */}
+                              {/* Status badge - compact */}
                               {status !== 'neutral' && (
-                                <div className={`text-xs font-medium mb-2 px-2 py-1 rounded inline-block
+                                <div className={`text-[10px] font-bold mt-2 px-1.5 py-0.5 rounded inline-block
                                   ${status === 'target' ? 'bg-yellow-100 text-yellow-700' : ''}
                                   ${status === 'in-chain' ? 'bg-green-100 text-green-700' : ''}
                                   ${status === 'wasted' ? 'bg-red-100 text-red-700' : ''}
                                   ${status === 'helpful' ? 'bg-green-100 text-green-700' : ''}
                                 `}>
-                                  {status === 'target' && '🎯 TARGET'}
-                                  {status === 'in-chain' && '✓ IN CHAIN'}
-                                  {status === 'wasted' && '✗ NOT NEEDED'}
-                                  {status === 'helpful' && '✓ GOOD CONNECTION'}
+                                  {status === 'target' && '🎯'}
+                                  {status === 'in-chain' && '✓'}
+                                  {status === 'wasted' && '✗'}
+                                  {status === 'helpful' && '✓'}
                                 </div>
                               )}
-
-                              <p className="text-foreground-muted leading-relaxed text-sm mb-3">
-                                {node.figure.shortDescription}
-                              </p>
 
                               {/* Click hint */}
-                              <div className="text-xs text-primary font-medium border-t border-primary-bright-20 pt-2">
-                                👆 Click to view full details
+                              <div className="text-[10px] text-primary font-medium mt-2 pt-2 border-t border-primary-bright-20">
+                                Click for details
                               </div>
-
-                              {/* Contemporary info */}
-                              {prevNode && isContemporaryWithPrev && (
-                                <div className="mt-2 pt-2 border-t border-primary-bright-20 text-xs text-blue-600">
-                                  ⏱️ Contemporary with {prevNode.figure.name}
-                                </div>
-                              )}
                             </div>
                           </div>
                         );
