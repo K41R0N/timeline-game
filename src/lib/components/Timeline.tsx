@@ -361,43 +361,34 @@ export default function Timeline({
     const [hasError, setHasError] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
 
-    // Reset error state when figure changes
+    // Reset states when figure changes
     useEffect(() => {
       setHasError(false);
       setImageLoaded(false);
     }, [figure.id]);
 
-    // If no image URL or error occurred, show initials immediately
-    if (!figure.imageUrl || hasError) {
-      return (
+    // Always render initials as base layer to prevent jitter
+    return (
+      <>
+        {/* Initials background - always visible */}
         <div className="w-full h-full flex items-center justify-center bg-primary text-2xl text-background font-medium">
           {getInitials(figure.name)}
         </div>
-      );
-    }
 
-    return (
-      <>
-        {/* Show initials while image is loading to prevent jitter */}
-        {!imageLoaded && (
-          <div className="w-full h-full flex items-center justify-center bg-primary text-2xl text-background font-medium">
-            {getInitials(figure.name)}
-          </div>
+        {/* Image overlay - only render if URL exists and no error */}
+        {figure.imageUrl && !hasError && (
+          <img
+            src={figure.imageUrl}
+            alt={figure.name}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            crossOrigin="anonymous"
+            loading="lazy"
+            onLoad={() => setImageLoaded(true)}
+            onError={() => setHasError(true)}
+          />
         )}
-        <img
-          src={figure.imageUrl}
-          alt={figure.name}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${
-            imageLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-          crossOrigin="anonymous"
-          loading="lazy"
-          onLoad={() => setImageLoaded(true)}
-          onError={() => {
-            setHasError(true);
-            setImageLoaded(false);
-          }}
-        />
       </>
     );
   });
