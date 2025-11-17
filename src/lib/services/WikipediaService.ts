@@ -208,6 +208,10 @@ export class WikipediaService {
       let deathCentury: number | null = null;
       let birthDecade: number | null = null;
       let deathDecade: number | null = null;
+      let birthCenturyBC = false;
+      let deathCenturyBC = false;
+      let birthDecadeBC = false;
+      let deathDecadeBC = false;
       const categories = page.categories || [];
 
       console.log(`[WikipediaService] 📅 Processing categories for "${title}":`, 
@@ -220,49 +224,54 @@ export class WikipediaService {
         
         // Check for birth year
         if (catTitle.includes('births')) {
-          // Exact year (e.g., "453 births" or "453 BC births")
-          const exactYearMatch = catTitle.match(/(\d+)\s*(?:bc\s+)?births/i);
+          // Exact year (e.g., "453 births", "453 BC births", or "453_bc_births")
+          // Use [\s_]* to match both spaces and underscores
+          const exactYearMatch = catTitle.match(/(\d+)[\s_]*(?:bc[\s_]+)?births/i);
           if (exactYearMatch) {
             birthYear = catTitle.includes('bc') ? -parseInt(exactYearMatch[1]) : parseInt(exactYearMatch[1]);
             console.log(`[WikipediaService] 📅 Found exact birth year: ${birthYear}`);
           }
-          
+
           // Century (e.g., "5th century BC births" or "15th-century births")
-          const centuryMatch = catTitle.match(/(\d+)(?:st|nd|rd|th)[- ]century(?:\s+bc)?\s+births/i);
+          const centuryMatch = catTitle.match(/(\d+)(?:st|nd|rd|th)[- _]century(?:[\s_]+bc)?[\s_]+births/i);
           if (centuryMatch) {
             birthCentury = parseInt(centuryMatch[1]);
-            console.log(`[WikipediaService] 📅 Found birth century: ${birthCentury}`);
+            birthCenturyBC = catTitle.includes('bc');
+            console.log(`[WikipediaService] 📅 Found birth century: ${birthCentury}${birthCenturyBC ? ' BC' : ''}`);
           }
 
-          // Decade (e.g., "400s births")
-          const decadeMatch = catTitle.match(/(\d+)0s(?:\s+bc)?\s+births/i);
+          // Decade (e.g., "400s births" or "400s_bc_births")
+          const decadeMatch = catTitle.match(/(\d+)0s(?:[\s_]+bc)?[\s_]+births/i);
           if (decadeMatch) {
             birthDecade = parseInt(decadeMatch[1] + '0');
-            console.log(`[WikipediaService] 📅 Found birth decade: ${birthDecade}`);
+            birthDecadeBC = catTitle.includes('bc');
+            console.log(`[WikipediaService] 📅 Found birth decade: ${birthDecade}${birthDecadeBC ? ' BC' : ''}`);
           }
         }
-        
+
         // Check for death year
         if (catTitle.includes('deaths')) {
-          // Exact year
-          const exactYearMatch = catTitle.match(/(\d+)\s*(?:bc\s+)?deaths/i);
+          // Exact year (e.g., "453 deaths", "453 BC deaths", or "453_bc_deaths")
+          const exactYearMatch = catTitle.match(/(\d+)[\s_]*(?:bc[\s_]+)?deaths/i);
           if (exactYearMatch) {
             deathYear = catTitle.includes('bc') ? -parseInt(exactYearMatch[1]) : parseInt(exactYearMatch[1]);
             console.log(`[WikipediaService] 📅 Found exact death year: ${deathYear}`);
           }
-          
+
           // Century
-          const centuryMatch = catTitle.match(/(\d+)(?:st|nd|rd|th)[- ]century(?:\s+bc)?\s+deaths/i);
+          const centuryMatch = catTitle.match(/(\d+)(?:st|nd|rd|th)[- _]century(?:[\s_]+bc)?[\s_]+deaths/i);
           if (centuryMatch) {
             deathCentury = parseInt(centuryMatch[1]);
-            console.log(`[WikipediaService] 📅 Found death century: ${deathCentury}`);
+            deathCenturyBC = catTitle.includes('bc');
+            console.log(`[WikipediaService] 📅 Found death century: ${deathCentury}${deathCenturyBC ? ' BC' : ''}`);
           }
 
           // Decade
-          const decadeMatch = catTitle.match(/(\d+)0s(?:\s+bc)?\s+deaths/i);
+          const decadeMatch = catTitle.match(/(\d+)0s(?:[\s_]+bc)?[\s_]+deaths/i);
           if (decadeMatch) {
             deathDecade = parseInt(decadeMatch[1] + '0');
-            console.log(`[WikipediaService] 📅 Found death decade: ${deathDecade}`);
+            deathDecadeBC = catTitle.includes('bc');
+            console.log(`[WikipediaService] 📅 Found death decade: ${deathDecade}${deathDecadeBC ? ' BC' : ''}`);
           }
         }
       }
@@ -288,24 +297,28 @@ export class WikipediaService {
       }
 
       // Third pass: Use available information to approximate missing years
-      
+
       // Handle decade information first
       if (!birthYear && birthDecade !== null) {
         birthYear = birthDecade + 5; // Mid-decade approximation
+        if (birthDecadeBC) birthYear = -birthYear; // Convert to negative for BCE
         console.log(`[WikipediaService] 📅 Approximated birth year from decade: ${birthYear}`);
       }
       if (!deathYear && deathDecade !== null) {
         deathYear = deathDecade + 5;
+        if (deathDecadeBC) deathYear = -deathYear; // Convert to negative for BCE
         console.log(`[WikipediaService] 📅 Approximated death year from decade: ${deathYear}`);
       }
 
       // Then handle century information
       if (!birthYear && birthCentury !== null) {
         birthYear = (birthCentury - 1) * 100 + 50; // Mid-century approximation
+        if (birthCenturyBC) birthYear = -birthYear; // Convert to negative for BCE
         console.log(`[WikipediaService] 📅 Approximated birth year from century: ${birthYear}`);
       }
       if (!deathYear && deathCentury !== null) {
         deathYear = (deathCentury - 1) * 100 + 50;
+        if (deathCenturyBC) deathYear = -deathYear; // Convert to negative for BCE
         console.log(`[WikipediaService] 📅 Approximated death year from century: ${deathYear}`);
       }
 
