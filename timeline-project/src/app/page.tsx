@@ -18,7 +18,6 @@ export default function Home() {
   const [figures, setFigures] = useState<HistoricalFigure[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedFigure, setSelectedFigure] = useState<HistoricalFigure | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
 
   // Game state
@@ -253,7 +252,7 @@ export default function Home() {
       <div className="fixed bottom-0 left-0 right-0 z-[100]">
         <SearchBar
           figures={figures}
-          onSelect={setSelectedFigure}
+          onSelect={() => {}}
           onAddFigure={handleAddFigure}
         />
       </div>
