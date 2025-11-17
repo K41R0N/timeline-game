@@ -124,7 +124,7 @@ export function SearchInput({
         <div
           ref={suggestionsRef}
           className="
-            absolute z-[60] w-full
+            absolute z-[80] w-full
             bottom-full mb-2
             bg-background rounded-lg
             border border-[var(--card-border)]
