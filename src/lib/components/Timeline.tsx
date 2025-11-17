@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef, memo, useMemo } from 'react';
 import { HistoricalFigure, TimelineNode } from '../types/HistoricalFigure';
 import { DetailPanel } from './ui/DetailPanel';
-import { SearchBar } from './ui/SearchBar';
-import { WikipediaService } from '../services/WikipediaService';
 import { analyzeChain, areContemporaries, ChainAnalysis } from '../utils/ChainAnalyzer';
 
 interface TimelineProps {
@@ -25,8 +23,6 @@ export default function Timeline({
   targetB = null
 }: TimelineProps) {
   const [nodes, setNodes] = useState<TimelineNode[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [selectedFigure, setSelectedFigure] = useState<HistoricalFigure | null>(null);
   const [zoom, setZoom] = useState(0.9);
@@ -385,34 +381,6 @@ export default function Timeline({
   });
   ProfileImage.displayName = 'ProfileImage';
 
-  const handleAddFigure = async (name: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const figure = await WikipediaService.getPersonDetails(name);
-
-      if (!figure) {
-        setError(`Could not load details for ${name}`);
-        return;
-      }
-
-      if (figures.some(f => f.id === figure.id)) {
-        return;
-      }
-
-      const updatedFigures = [...figures, figure].sort((a, b) => a.birthYear - b.birthYear);
-      onFiguresChange?.(updatedFigures);
-
-    } catch (error) {
-      console.error(`Error adding figure ${name}:`, error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      setError(`Error adding ${name}: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Helper functions for figure status
   const isTargetFigure = (figure: HistoricalFigure) => {
     return figure.id === targetA?.id || figure.id === targetB?.id;
@@ -435,18 +403,10 @@ export default function Timeline({
     return 'wasted';
   };
 
-  if (isLoading) {
+  if (figures.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <div className="animate-pulse text-primary">Loading timeline...</div>
-      </div>
-    );
-  }
-
-  if (error || figures.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="text-red-500">{error || 'No historical figures loaded'}</div>
+        <div className="text-foreground-muted">No historical figures loaded</div>
       </div>
     );
   }
@@ -755,13 +715,6 @@ export default function Timeline({
           </div>
         </div>
       </div>
-
-      {/* Search Bar */}
-      <SearchBar
-        figures={figures}
-        onSelect={setSelectedFigure}
-        onAddFigure={handleAddFigure}
-      />
 
       {/* Detail Panel */}
       {selectedFigure && (
