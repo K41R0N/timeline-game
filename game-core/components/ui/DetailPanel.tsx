@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { HistoricalFigure } from '../../types/HistoricalFigure';
+import { WikipediaService } from '../../services/WikipediaService';
+import { formatYearRange } from '../../utils/GameLogic';
 
 interface DetailPanelProps {
   figure: HistoricalFigure | null;
@@ -15,6 +17,43 @@ export function DetailPanel({
   className = ""
 }: DetailPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [contemporaries, setContemporaries] = useState<HistoricalFigure[]>([]);
+  const [loadingContemporaries, setLoadingContemporaries] = useState(false);
+
+  // Load contemporaries when figure changes
+  useEffect(() => {
+    if (!figure) {
+      setContemporaries([]);
+      return;
+    }
+
+    const loadContemporaries = async () => {
+      setLoadingContemporaries(true);
+      try {
+        console.log(`🔍 Loading contemporaries for ${figure.name}...`);
+        const titles = await WikipediaService.findContemporaries(figure);
+        console.log(`✅ Found ${titles.length} potential contemporaries for ${figure.name}`);
+
+        // Fetch details for the first 5 contemporaries
+        const detailsPromises = titles.slice(0, 5).map(title =>
+          WikipediaService.getPersonDetails(title)
+        );
+        const details = await Promise.all(detailsPromises);
+
+        // Filter out any null results
+        const validContemporaries = details.filter((c): c is HistoricalFigure => c !== null);
+        setContemporaries(validContemporaries);
+        console.log(`📊 Loaded ${validContemporaries.length} contemporary details`);
+      } catch (error) {
+        console.error('❌ Error loading contemporaries:', error);
+        setContemporaries([]);
+      } finally {
+        setLoadingContemporaries(false);
+      }
+    };
+
+    loadContemporaries();
+  }, [figure]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -31,7 +70,7 @@ export function DetailPanel({
 
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
@@ -99,25 +138,46 @@ export function DetailPanel({
               </p>
             </div>
 
-            {/* Timeline Context */}
-            <div className="rounded-lg border border-[var(--card-border)] p-4">
-              <h3 className="text-lg font-medium text-foreground mb-3">
-                Historical Context
+            {/* Contemporary Hints */}
+            <div className="rounded-lg border border-primary-bright/30 bg-primary-glow p-4">
+              <h3 className="text-lg font-medium text-foreground mb-2 flex items-center gap-2">
+                <span>💡</span>
+                <span>Connection Hints</span>
               </h3>
-              <div className="space-y-2">
-                {figure.contemporaries?.map((contemporary) => (
-                  <div
-                    key={contemporary}
-                    className="
-                      p-2 rounded
-                      bg-background-alt
-                      text-sm text-foreground-muted
-                    "
-                  >
-                    Contemporary: {contemporary}
-                  </div>
-                ))}
-              </div>
+              <p className="text-xs text-foreground-muted mb-3">
+                Historical figures who lived during the same time period:
+              </p>
+
+              {loadingContemporaries ? (
+                <div className="text-sm text-foreground-muted animate-pulse">
+                  Searching for contemporaries...
+                </div>
+              ) : contemporaries.length > 0 ? (
+                <div className="space-y-2">
+                  {contemporaries.map((contemporary) => (
+                    <div
+                      key={contemporary.id}
+                      className="p-3 rounded-lg bg-background-alt hover:bg-background-hover transition-colors border border-primary-bright/10"
+                    >
+                      <div className="font-medium text-sm text-foreground">
+                        {contemporary.name}
+                      </div>
+                      <div className="text-xs text-foreground-muted mt-1">
+                        {formatYearRange(contemporary.birthYear, contemporary.deathYear)}
+                      </div>
+                      {contemporary.shortDescription && (
+                        <div className="text-xs text-foreground-subtle mt-1 line-clamp-2">
+                          {contemporary.shortDescription}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-foreground-muted">
+                  No contemporary suggestions found. Try searching for historical figures from this era!
+                </div>
+              )}
             </div>
           </div>
         </div>

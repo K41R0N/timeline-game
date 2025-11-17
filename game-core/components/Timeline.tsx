@@ -12,13 +12,17 @@ interface TimelineProps {
   onFiguresChange?: (figures: HistoricalFigure[]) => void;
   isAnimating?: boolean;
   onAnimationComplete?: () => void;
+  targetA?: HistoricalFigure | null;
+  targetB?: HistoricalFigure | null;
 }
 
-export default function Timeline({ 
+export default function Timeline({
   figures,
   onFiguresChange,
   isAnimating = false,
-  onAnimationComplete
+  onAnimationComplete,
+  targetA = null,
+  targetB = null
 }: TimelineProps) {
   const [nodes, setNodes] = useState<TimelineNode[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -523,18 +527,49 @@ export default function Timeline({
                 />
 
                 {/* Year markers - positioned relative to content */}
-                <div 
+                <div
                   className="absolute -bottom-8 text-sm font-medium text-foreground"
                   style={{ left: `${getTimelineExtension(zoom)}px` }}
                 >
                   {Math.abs(startFigure.birthYear)} {startFigure.birthYear < 0 ? 'BCE' : 'CE'}
                 </div>
-                <div 
+                <div
                   className="absolute -bottom-8 text-sm font-medium text-foreground"
                   style={{ right: `${getTimelineExtension(zoom)}px` }}
                 >
                   {Math.abs(endFigure.deathYear)} {endFigure.deathYear < 0 ? 'BCE' : 'CE'}
                 </div>
+
+                {/* BCE/CE divider line */}
+                {(() => {
+                  const allYears = figures.flatMap(f => [f.birthYear, f.deathYear]);
+                  const minYear = Math.min(...allYears);
+                  const maxYear = Math.max(...allYears);
+
+                  // Only show if timeline spans BCE and CE
+                  if (minYear < 0 && maxYear > 0) {
+                    const timespan = maxYear - minYear;
+                    const bceCrossPosition = ((0 - minYear) / timespan) * 100;
+
+                    return (
+                      <div
+                        className="absolute -top-8 bottom-8 w-[3px] bg-gradient-to-b from-primary/50 via-primary-bright to-primary/50"
+                        style={{ left: `${bceCrossPosition}%` }}
+                      >
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-xs font-bold whitespace-nowrap text-primary-bright">
+                          <div className="flex items-center gap-1">
+                            <span>BCE</span>
+                            <span>←</span>
+                            <span>|</span>
+                            <span>→</span>
+                            <span>CE</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               {/* Nodes with progress bars */}
