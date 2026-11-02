@@ -9,7 +9,8 @@ interface GameState {
   score: number;
 }
 
-const STORAGE_KEY = 'timeline-game-state';
+// v2: figures are keyed by Wikidata QID with corrected dates; v1 saves are discarded.
+const STORAGE_KEY = 'timeline-game-state-v2';
 const AUTO_SAVE_DELAY = 2000; // 2 seconds debounce
 
 /**
