@@ -1,15 +1,16 @@
 # CLAUDE.md - AI Assistant Guide for History Links
 
-Start with these two documents:
+Start with these documents:
 
-- `docs/audits/2026-11-02-current-state-audit.md`: what the game is as built, verified defects, why it is not fun yet, and the design levers still open.
-- `STRATEGY.md` (once it exists): what the game should become. Check proposed work against it.
+- `STRATEGY.md`: what the game should become (streamer-first, score the overlap). Check proposed work against it.
+- `ROADMAP.md` / GitHub issue #37: the prioritised work, as GitHub issues under four epics (#38–#41).
+- `docs/audits/2026-11-02-current-state-audit.md`: the as-built baseline, verified defects, and the design levers still open.
 
 ## Project overview
 
 **History Links** (repo `timeline-game`) is a history puzzle. The player gets two target figures and adds people whose lifespans overlap until a chain connects the targets. Each added person costs one point, and lower is better.
 
-- The design intent is in `Gameplay-loop.md`. The original phase plan is in `ROADMAP.md`, but Phase 1's JSON dataset was never built.
+- The original design intent is in `Gameplay-loop.md`.
 - The rules as implemented are in the audit, section 3.
 
 ## Repository layout
@@ -27,40 +28,50 @@ src/
     │   ├── Timeline.tsx  # Pan/zoom canvas, bubbles, hover cards, status colours
     │   └── ui/           # SearchBar, SearchInput, DetailPanel, WinModal, SplashScreen, ScoreDisplay (unused)
     ├── services/
-    │   ├── WikipediaService.ts       # Search, person details, date parsing, images, "contemporaries"
+    │   ├── wikimediaClient.ts        # The ONLY module that fetches Wikimedia: throttle, retry, cache
+    │   ├── WikipediaService.ts       # lookupPerson (Wikidata-backed), searchPerson, findContemporaries (#51)
+    │   ├── personData.ts             # Pure parsing: Wikidata claims, category fallback, living, summary
+    │   ├── __fixtures__/             # Recorded Wikimedia responses for offline tests
     │   └── TargetSelectionService.ts # 58 hard-coded names in 4 era pools; difficulty by birth-year gap
     ├── utils/
     │   ├── ChainAnalyzer.ts  # areContemporaries + BFS shortest path between targets
-    │   └── GameLogic.ts      # formatYear/formatYearRange, getScoreColor (several helpers unused)
+    │   └── GameLogic.ts      # formatYear, formatLifespan, getScoreColor (several helpers unused)
     ├── hooks/useGameState.ts # localStorage persistence, 2 s debounced autosave
     ├── constants/zIndex.ts   # Token list (not referenced; components use literal z-[..] classes)
     └── types/HistoricalFigure.ts
 docs/
-└── audits/               # Dated snapshots of the as-built game
+├── audits/               # Dated snapshots of the as-built game
+└── research/             # Inputs to strategy (streamer research)
 ```
 
 ## Stack and commands
 
-Next.js 15.1.9 (App Router), React 19, TypeScript strict, Tailwind 3.4 and lodash (`debounce`). Data comes only from the public Wikipedia API at runtime. There is no backend, database or test framework.
+Next.js 15.1.9 (App Router), React 19, TypeScript strict, Tailwind 3.4, lodash (`debounce`) and Vitest. Data comes only from Wikimedia (Wikipedia + Wikidata) at runtime; there is no backend or database. CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests and build on every PR.
 
 ```bash
 npm install
 npm run dev        # http://localhost:3000
 npm run build      # must pass before committing
-npm run lint       # 22 warnings at 2026-11-02, no errors
-npx tsc --noEmit   # clean at 2026-11-02
+npm test           # Vitest, offline (replays __fixtures__)
+npm run lint       # warnings only; tracked in #44
+npx tsc --noEmit
+
+# Re-record Wikimedia fixtures after changing request URLs (slow; Wikimedia rate-limits):
+CAPTURE_WIKIMEDIA=1 npx vitest run src/lib/services/wikimedia.capture.test.ts
 ```
 
 ## Data flow
 
 1. `page.tsx` calls `TargetSelectionService.selectRandomTargets(difficulty)`, which makes 2 `getPersonDetails` calls per attempt (each is 2 HTTP requests), with up to 10 attempts and then a fallback to Alexander and Caesar.
-2. The player submits a name. `page.tsx` `handleAddFigure` calls `WikipediaService.getPersonDetails(name)`, appends the result, and sorts by `birthYear`.
+2. The player submits a name. `page.tsx` `handleAddFigure` locks input, calls `WikipediaService.lookupPerson(name)` (1 Wikipedia query + 3 `wbgetclaims`), shows the typed rejection reason or appends with a functional update, and sorts by `birthYear`.
 3. The score is `figures.length - 2`. An effect runs `analyzeChain`, and a complete path sets `hasWon`.
 4. `Timeline` re-runs `analyzeChain` to colour bubbles. `DetailPanel` calls `findContemporaries` for hints.
 
 ## Conventions
 
-- **BCE years are negative integers** (`-356` is 356 BCE). Keep this. Sorting and overlap maths depend on it. Year 0 is not skipped anywhere.
+- **BCE years are negative integers** (`-356` is 356 BCE). Keep this. Sorting and overlap maths depend on it. Wikidata JSON uses the same numbering (`-0069` = 69 BCE). Year 0 is not skipped anywhere yet (#53).
+- **Figure identity**: `id` is the Wikidata QID; `name` is the canonical Wikipedia title. Living people have `isLiving: true` and `deathYear` = current year.
+- **Network**: never call `fetch` for Wikimedia outside `wikimediaClient.ts`.
 - **Contemporaries**: `a.birthYear <= b.deathYear && b.birthYear <= a.deathYear` (`ChainAnalyzer.ts`).
 - **Imports**: use `@/lib` for library code and `@/*` for anything under `src/`.
 - **Client components**: anything with hooks or browser APIs starts with `'use client'`.
@@ -70,16 +81,11 @@ npx tsc --noEmit   # clean at 2026-11-02
 
 ## Gotchas
 
-These were verified in the 2026-11-02 audit. Fix them, or keep them in mind when touching nearby code.
-
-- **Wikipedia dates are unreliable as parsed.** Century midpoints, "death - 30" and "birth + 60" heuristics give wrong lifespans (Cleopatra, Genghis Khan, Gutenberg) and invent death years for living people. Test date changes against real figures, not mocks.
-- **`getPersonDetails` does not check that the page is a person.** Only autocomplete filters. Free-text submit accepts "Rome".
-- **CirrusSearch reads `-123` as "exclude 123".** Never put negative (BCE) years in a `srsearch` or `gsrsearch` string. This is why `findContemporaries` returns year articles.
-- **`extractShortDescription` regex matches "is" inside words** ("Aristotle" becomes "istotle was…").
-- **Scripts hitting Wikipedia need a `User-Agent` and about 350 ms spacing**, or they get HTTP 429 HTML instead of JSON. The app has no 429 handling.
-- **`handleAddFigure` appends to a stale `figures` closure.** Concurrent adds lose updates. Use a functional `setFigures(prev => …)` if you touch it.
-- **The `Timeline` snap effect depends on `zoom`**, so zooming re-centres the view. `ProfileImage` is declared inside render and remounts every render.
-- **`id` and `name` come from the raw input title**, not the resolved page title. Redirects and casing create duplicates.
+- **Wikimedia rate-limits hard.** Shared or scripted IPs get HTTP 429 with a plain-text body. The client retries with backoff; scripts also need a `User-Agent`. Tests must stay offline.
+- **CirrusSearch reads `-123` as "exclude 123".** Never put negative (BCE) years in a `srsearch` or `gsrsearch` string. `findContemporaries` still does this and returns year articles (#51).
+- **Full Wikidata entities are ~300 KB.** Fetch single properties with `wbgetclaims`, not `wbgetentities&props=claims`.
+- **Changing a request URL invalidates fixtures.** Tests replay by exact URL; re-record with the capture command above.
+- **The `Timeline` snap effect depends on `zoom`**, so zooming re-centres the view. `ProfileImage` is declared inside render and remounts every render (#63).
 
 ## Working rules for AI assistants
 
@@ -87,4 +93,4 @@ These were verified in the 2026-11-02 audit. Fix them, or keep them in mind when
 - Keep game rules in `src/lib/utils/` as pure functions, and keep network code in `src/lib/services/`.
 - Never change the negative-BCE convention.
 - When the as-built game changes materially, add a new dated audit or update this file. Do not edit old audits in place.
-- Run `npm run build` before committing. There are no automated tests yet, so verify gameplay changes in the browser.
+- Run `npm test` and `npm run build` before committing. Close issues from commits/PRs with `Fixes #N`. Verify gameplay changes in the browser too.
