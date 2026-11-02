@@ -28,17 +28,9 @@ vercel
 vercel --prod
 ```
 
-### vercel.json Configuration
+### Configuration
 
-The repository includes a minimal `vercel.json`:
-
-```json
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json"
-}
-```
-
-Vercel's auto-detection handles everything automatically.
+No `vercel.json` is needed; Vercel's Next.js auto-detection handles the build.
 
 ---
 
