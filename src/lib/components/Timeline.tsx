@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, memo, useMemo } from 'react';
 import { HistoricalFigure, TimelineNode } from '../types/HistoricalFigure';
 import { DetailPanel } from './ui/DetailPanel';
 import { analyzeChain, areContemporaries, ChainAnalysis } from '../utils/ChainAnalyzer';
+import { formatLifespan } from '../utils/GameLogic';
 
 interface TimelineProps {
   figures: HistoricalFigure[];
@@ -12,6 +13,9 @@ interface TimelineProps {
   onAnimationComplete?: () => void;
   targetA?: HistoricalFigure | null;
   targetB?: HistoricalFigure | null;
+  /** Controlled selection (detail panel). Falls back to internal state when omitted. */
+  selectedFigure?: HistoricalFigure | null;
+  onSelectFigure?: (figure: HistoricalFigure | null) => void;
 }
 
 export default function Timeline({
@@ -20,11 +24,15 @@ export default function Timeline({
   isAnimating = false,
   onAnimationComplete,
   targetA = null,
-  targetB = null
+  targetB = null,
+  selectedFigure: controlledSelectedFigure,
+  onSelectFigure
 }: TimelineProps) {
   const [nodes, setNodes] = useState<TimelineNode[]>([]);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-  const [selectedFigure, setSelectedFigure] = useState<HistoricalFigure | null>(null);
+  const [internalSelectedFigure, setInternalSelectedFigure] = useState<HistoricalFigure | null>(null);
+  const selectedFigure = controlledSelectedFigure !== undefined ? controlledSelectedFigure : internalSelectedFigure;
+  const setSelectedFigure = onSelectFigure ?? setInternalSelectedFigure;
   const [zoom, setZoom] = useState(0.9);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -687,7 +695,7 @@ export default function Timeline({
                                 {node.figure.name}
                               </h3>
                               <div className="text-[11px] text-primary font-medium mt-1">
-                                {`${Math.abs(node.figure.birthYear)} ${node.figure.birthYear < 0 ? 'BCE' : 'CE'} - ${Math.abs(node.figure.deathYear)} ${node.figure.deathYear < 0 ? 'BCE' : 'CE'}`}
+                                {formatLifespan(node.figure)}
                               </div>
 
                               {/* Brief description */}

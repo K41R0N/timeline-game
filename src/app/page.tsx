@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Timeline,
   HistoricalFigure,
   WikipediaService,
+  lookupFailureMessage,
   SearchBar,
   WinModal,
   SplashScreen,
@@ -21,6 +22,12 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [selectedFigure, setSelectedFigure] = useState<HistoricalFigure | null>(null);
+  // Latest figures for async handlers; avoids appending to a stale list (#62).
+  const figuresRef = useRef<HistoricalFigure[]>([]);
+  const isAddingRef = useRef(false);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showDifficultySelect, setShowDifficultySelect] = useState(false);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
 
@@ -98,6 +105,16 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    figuresRef.current = figures;
+  }, [figures]);
+
+  const showError = (message: string) => {
+    setError(message);
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    errorTimerRef.current = setTimeout(() => setError(null), 3000);
+  };
+
   // Calculate score
   useEffect(() => {
     if (figures.length >= 2) {
@@ -139,56 +156,48 @@ export default function Home() {
     setFigures([]);
     setTargetA(null);
     setTargetB(null);
+    setSelectedFigure(null);
     setShowDifficultySelect(false);
     setShowSplash(true);
   };
 
   const handleAddFigure = async (name: string) => {
-    console.log(`🔍 Searching for historical figure: "${name}"`);
+    const query = name.trim();
+    if (!query || isAddingRef.current) return;
+
+    const nameMatch = figuresRef.current.find(f => f.name.toLowerCase() === query.toLowerCase());
+    if (nameMatch) {
+      showError(`${nameMatch.name} is already in the timeline`);
+      setSelectedFigure(nameMatch);
+      return;
+    }
+
+    console.log(`🔍 Looking up historical figure: "${query}"`);
+    isAddingRef.current = true;
+    setIsAdding(true);
     setIsAnimating(true);
 
     try {
-      const existingFigure = figures.find(f =>
-        f.name.toLowerCase() === name.toLowerCase() ||
-        f.id === name.toLowerCase().replace(/\s+/g, '_')
-      );
-
-      if (existingFigure) {
-        console.log(`⚠️ Figure "${name}" already exists in timeline`);
-        setError(`${existingFigure.name} is already in the timeline`);
-        setTimeout(() => setError(null), 3000);
+      const result = await WikipediaService.lookupPerson(query);
+      if (!result.ok) {
+        console.warn(`⚠️ Rejected "${query}": ${result.reason}`);
+        showError(lookupFailureMessage(result.reason, result.title));
         return;
       }
 
-      const figure = await WikipediaService.getPersonDetails(name);
-      if (figure) {
-        console.log('✨ Found figure details:', {
-          name: figure.name,
-          years: `${figure.birthYear}-${figure.deathYear}`,
-          imageUrl: figure.imageUrl
-        });
-
-        if (figures.some(f => f.id === figure.id)) {
-          console.log(`⚠️ Figure with ID "${figure.id}" already exists in timeline`);
-          setError(`${figure.name} is already in the timeline`);
-          setTimeout(() => setError(null), 3000);
-          return;
-        }
-
-        const updatedFigures = [...figures, figure].sort((a, b) => a.birthYear - b.birthYear);
-        setFigures(updatedFigures);
-        setError(null);
-      } else {
-        console.warn(`⚠️ No details found for: "${name}"`);
-        setError(`Could not find historical details for "${name}"`);
-        setTimeout(() => setError(null), 3000);
+      const figure = result.figure;
+      if (figuresRef.current.some(f => f.id === figure.id)) {
+        showError(`${figure.name} is already in the timeline`);
+        return;
       }
-    } catch (err) {
-      console.error(`❌ Error adding figure "${name}":`, err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(`Error adding ${name}: ${errorMessage}`);
-      setTimeout(() => setError(null), 3000);
+
+      // Functional update so concurrent renders never drop an addition (#62).
+      setFigures(prev =>
+        prev.some(f => f.id === figure.id) ? prev : [...prev, figure].sort((a, b) => a.birthYear - b.birthYear)
+      );
     } finally {
+      isAddingRef.current = false;
+      setIsAdding(false);
       setIsAnimating(false);
     }
   };
@@ -345,14 +354,17 @@ export default function Home() {
           onAnimationComplete={() => setIsAnimating(false)}
           targetA={targetA}
           targetB={targetB}
+          selectedFigure={selectedFigure}
+          onSelectFigure={setSelectedFigure}
         />
       </main>
 
       {/* Floating Search Bar */}
       <SearchBar
         figures={figures}
-        onSelect={() => {}}
+        onSelect={setSelectedFigure}
         onAddFigure={handleAddFigure}
+        isAdding={isAdding}
       />
 
       {/* Win Modal */}

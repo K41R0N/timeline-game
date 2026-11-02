@@ -1,7 +1,7 @@
 'use client';
 
 import { HistoricalFigure } from '../../types/HistoricalFigure';
-import { formatYearRange, getScoreColor } from '../../utils/GameLogic';
+import { formatLifespan, getScoreColor } from '../../utils/GameLogic';
 
 interface WinModalProps {
   score: number;
@@ -69,7 +69,7 @@ export function WinModal({ score, winningChain, onPlayAgain }: WinModalProps) {
                         {figure.name}
                       </div>
                       <div className="text-xs text-foreground-muted">
-                        {formatYearRange(figure.birthYear, figure.deathYear)}
+                        {formatLifespan(figure)}
                       </div>
                       {figure.shortDescription && (
                         <div className="text-xs text-foreground-subtle mt-1 line-clamp-2">
