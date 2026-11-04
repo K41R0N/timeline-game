@@ -11,7 +11,7 @@
   "dependencies": {
     "@types/lodash": "^4.17.15",
     "lodash": "^4.17.21",
-    "next": "15.1.9",
+    "next": "15.5.25",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
