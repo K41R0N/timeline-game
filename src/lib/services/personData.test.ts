@@ -31,6 +31,12 @@ describe('yearFromClaims', () => {
     expect(yearFromClaims([time('-0350-00-00T00:00:00Z', 7)])).toEqual({ year: -350, approximate: true });
   });
 
+  it('reads century precision with Wikidata\'s strict ranges (1401–1500 is the 15th century)', () => {
+    expect(yearFromClaims([time('+1500-00-00T00:00:00Z', 7)])).toEqual({ year: 1450, approximate: true });
+    expect(yearFromClaims([time('+1501-00-00T00:00:00Z', 7)])).toEqual({ year: 1550, approximate: true });
+    expect(yearFromClaims([time('-0400-00-00T00:00:00Z', 7)])).toEqual({ year: -350, approximate: true });
+  });
+
   it('ignores unknown-value statements', () => {
     expect(yearFromClaims([{ rank: 'normal', mainsnak: { snaktype: 'somevalue' } }])).toBeNull();
   });

@@ -65,10 +65,18 @@ export function parseWikidataYear(time: string): number {
   return match[1] === '-' ? -year : year;
 }
 
-function midpointOf(year: number, span: 10 | 100): number {
-  const magnitude = Math.abs(year);
-  const start = Math.floor(magnitude / span) * span;
-  const mid = start + span / 2;
+/** Decade precision: "1160" means the 1160s (1160–1169). */
+function decadeMidpointOf(year: number): number {
+  const mid = Math.floor(Math.abs(year) / 10) * 10 + 5;
+  return year < 0 ? -mid : mid;
+}
+
+/**
+ * Century precision uses Wikidata's strict ranges: 1401–1500 is the 15th century,
+ * so "+1500" and "+1450" both mean 1450, and "-0400" (400–301 BCE) means -350.
+ */
+function centuryMidpointOf(year: number): number {
+  const mid = Math.ceil(Math.abs(year) / 100) * 100 - 50;
   return year < 0 ? -mid : mid;
 }
 
@@ -83,8 +91,8 @@ export function yearFromClaims(claims: WikidataClaim[] | undefined): YearValue |
     const circa = (claim.qualifiers?.[SOURCING_CIRCUMSTANCES] ?? []).some(q => q.datavalue?.value?.id === CIRCA_QID);
 
     if (value.precision >= PRECISION_YEAR) return { year: raw, approximate: circa };
-    if (value.precision === PRECISION_DECADE) return { year: midpointOf(raw, 10), approximate: true };
-    if (value.precision === PRECISION_CENTURY) return { year: midpointOf(raw, 100), approximate: true };
+    if (value.precision === PRECISION_DECADE) return { year: decadeMidpointOf(raw), approximate: true };
+    if (value.precision === PRECISION_CENTURY) return { year: centuryMidpointOf(raw), approximate: true };
     return { year: raw, approximate: true };
   }
   return null;

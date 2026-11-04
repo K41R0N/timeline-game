@@ -1,5 +1,5 @@
 import { HistoricalFigure } from '../types/HistoricalFigure';
-import { WIKIDATA_API, WIKIPEDIA_API, WikimediaClient, buildApiUrl, wikimedia } from './wikimediaClient';
+import { WIKIDATA_API, WIKIPEDIA_API, WikimediaClient, WikimediaRequestError, buildApiUrl, wikimedia } from './wikimediaClient';
 import { WikidataClaim, isHuman, resolveLifespan, summarize } from './personData';
 
 export interface WikipediaSearchResult {
@@ -116,7 +116,9 @@ export class WikipediaService {
       return { ok: true, figure };
     } catch (error) {
       console.error(`[WikipediaService] ❌ Lookup failed for "${trimmed}":`, error);
-      return { ok: false, reason: 'network', title: trimmed };
+      // Only request failures are worth retrying; malformed data fails the same way every time.
+      const reason: PersonLookupFailure = error instanceof WikimediaRequestError ? 'network' : 'no_dates';
+      return { ok: false, reason, title: trimmed };
     }
   }
 

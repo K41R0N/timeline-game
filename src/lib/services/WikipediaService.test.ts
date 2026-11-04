@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fixtures from './__fixtures__/wikimedia-responses.json';
-import { createWikimediaClient } from './wikimediaClient';
+import { createWikimediaClient, type WikimediaClient } from './wikimediaClient';
 import { WikipediaService, type PersonLookupResult } from './WikipediaService';
 
 const recorded = fixtures as Record<string, unknown>;
@@ -81,6 +81,22 @@ describe('WikipediaService.lookupPerson (recorded fixtures)', () => {
     expect(f.shortDescription.length).toBeGreaterThan(0);
     expect(f.shortDescription).not.toMatch(/^istotle/);
     expect(f.summary).toMatch(/^Aristotle/);
+  });
+
+  it('reports malformed Wikidata dates as no_dates, not as a network failure', async () => {
+    const malformed: WikimediaClient = {
+      clearCache() {},
+      async getJson<T>(url: string): Promise<T> {
+        if (url.includes('wbgetclaims')) {
+          const property = new URL(url).searchParams.get('property') ?? '';
+          const value = property === 'P31' ? { id: 'Q5' } : { time: 'not-a-time', precision: 9 };
+          return { claims: { [property]: [{ rank: 'normal', mainsnak: { snaktype: 'value', datavalue: { value } } }] } } as T;
+        }
+        return { query: { pages: [{ title: 'Someone', pageprops: { wikibase_item: 'Q1' } }] } } as T;
+      },
+    };
+    const result = await WikipediaService.lookupPerson('Someone', malformed, 2026);
+    expect(result).toMatchObject({ ok: false, reason: 'no_dates' });
   });
 
   it('reports a network failure without throwing', async () => {

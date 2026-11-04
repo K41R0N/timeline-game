@@ -28,7 +28,7 @@ src/
     │   ├── Timeline.tsx  # Pan/zoom canvas, bubbles, hover cards, status colours
     │   └── ui/           # SearchBar, SearchInput, DetailPanel, WinModal, SplashScreen, ScoreDisplay (unused)
     ├── services/
-    │   ├── wikimediaClient.ts        # The ONLY module that fetches Wikimedia: throttle, retry, cache
+    │   ├── wikimediaClient.ts        # The only app module that fetches Wikimedia: throttle, retry, cache
     │   ├── WikipediaService.ts       # lookupPerson (Wikidata-backed), searchPerson, findContemporaries (#51)
     │   ├── personData.ts             # Pure parsing: Wikidata claims, category fallback, living, summary
     │   ├── __fixtures__/             # Recorded Wikimedia responses for offline tests
@@ -46,7 +46,7 @@ docs/
 
 ## Stack and commands
 
-Next.js 15.1.9 (App Router), React 19, TypeScript strict, Tailwind 3.4, lodash (`debounce`) and Vitest. Data comes only from Wikimedia (Wikipedia + Wikidata) at runtime; there is no backend or database. CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests and build on every PR.
+Next.js 15.5 (App Router), React 19, TypeScript strict, Tailwind 3.4, lodash (`debounce`) and Vitest. Data comes only from Wikimedia (Wikipedia + Wikidata) at runtime; there is no backend or database. CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests and build on every PR.
 
 ```bash
 npm install
@@ -62,7 +62,7 @@ CAPTURE_WIKIMEDIA=1 npx vitest run src/lib/services/wikimedia.capture.test.ts
 
 ## Data flow
 
-1. `page.tsx` calls `TargetSelectionService.selectRandomTargets(difficulty)`, which makes 2 `getPersonDetails` calls per attempt (each is 2 HTTP requests), with up to 10 attempts and then a fallback to Alexander and Caesar.
+1. `page.tsx` calls `TargetSelectionService.selectRandomTargets(difficulty)`, which makes 2 `getPersonDetails` calls per attempt (each is 4 HTTP requests: 1 Wikipedia query + 3 Wikidata `wbgetclaims`, before retries and cache hits), with up to 10 attempts and then a fallback to Alexander and Caesar.
 2. The player submits a name. `page.tsx` `handleAddFigure` locks input, calls `WikipediaService.lookupPerson(name)` (1 Wikipedia query + 3 `wbgetclaims`), shows the typed rejection reason or appends with a functional update, and sorts by `birthYear`.
 3. The score is `figures.length - 2`. An effect runs `analyzeChain`, and a complete path sets `hasWon`.
 4. `Timeline` re-runs `analyzeChain` to colour bubbles. `DetailPanel` calls `findContemporaries` for hints.
@@ -71,12 +71,12 @@ CAPTURE_WIKIMEDIA=1 npx vitest run src/lib/services/wikimedia.capture.test.ts
 
 - **BCE years are negative integers** (`-356` is 356 BCE). Keep this. Sorting and overlap maths depend on it. Wikidata JSON uses the same numbering (`-0069` = 69 BCE). Year 0 is not skipped anywhere yet (#53).
 - **Figure identity**: `id` is the Wikidata QID; `name` is the canonical Wikipedia title. Living people have `isLiving: true` and `deathYear` = current year.
-- **Network**: never call `fetch` for Wikimedia outside `wikimediaClient.ts`.
+- **Network**: app code never calls `fetch` for Wikimedia outside `wikimediaClient.ts`. The one exception is `wikimedia.capture.test.ts`, which injects a recording `fetchImpl` into the client to re-record fixtures.
 - **Contemporaries**: `a.birthYear <= b.deathYear && b.birthYear <= a.deathYear` (`ChainAnalyzer.ts`).
 - **Imports**: use `@/lib` for library code and `@/*` for anything under `src/`.
 - **Client components**: anything with hooks or browser APIs starts with `'use client'`.
 - **Styling**: Tailwind utilities first. Colours and shadows come from CSS variables in `globals.css`, mapped in `tailwind.config.ts`.
-- **Logging**: emoji-prefixed `console.*` (🚀 start, ✅ success, ⚠️ warn, ❌ error, 📊 data, 🔍 search). The service logs raw API responses, which is noisy.
+- **Logging**: emoji-prefixed `console.*` (🚀 start, ✅ success, ⚠️ warn, ❌ error, 📊 data, 🔍 search). `WikipediaService` logs one line per resolved figure and each lookup error.
 - **Naming**: PascalCase for components, services and types. camelCase for functions. kebab-case for CSS classes and JSON data files.
 
 ## Gotchas
