@@ -27,6 +27,8 @@ export default function Home() {
   // Latest figures for async handlers; avoids appending to a stale list (#62).
   const figuresRef = useRef<HistoricalFigure[]>([]);
   const isAddingRef = useRef(false);
+  // Bumped on every new game; lookups started in an earlier game are ignored when they resolve.
+  const gameGenerationRef = useRef(0);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showDifficultySelect, setShowDifficultySelect] = useState(false);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
@@ -149,6 +151,12 @@ export default function Home() {
 
   const handlePlayAgain = () => {
     console.log('🔄 Returning to splash screen...');
+    // Abandon any lookup still in flight: its result belongs to the old game, and the
+    // new game should not stay locked waiting for it.
+    gameGenerationRef.current += 1;
+    isAddingRef.current = false;
+    setIsAdding(false);
+    setIsAnimating(false);
     clearState(); // Clear saved progress
     setHasWon(false);
     setWinningChain([]);
@@ -173,12 +181,17 @@ export default function Home() {
     }
 
     console.log(`🔍 Looking up historical figure: "${query}"`);
+    const generation = gameGenerationRef.current;
     isAddingRef.current = true;
     setIsAdding(true);
     setIsAnimating(true);
 
     try {
       const result = await WikipediaService.lookupPerson(query);
+      if (generation !== gameGenerationRef.current) {
+        console.log(`⚠️ Ignoring "${query}": the game it was added to has ended`);
+        return;
+      }
       if (!result.ok) {
         console.warn(`⚠️ Rejected "${query}": ${result.reason}`);
         showError(lookupFailureMessage(result.reason, result.title));
@@ -196,9 +209,12 @@ export default function Home() {
         prev.some(f => f.id === figure.id) ? prev : [...prev, figure].sort((a, b) => a.birthYear - b.birthYear)
       );
     } finally {
-      isAddingRef.current = false;
-      setIsAdding(false);
-      setIsAnimating(false);
+      // A new game already released the lock; don't release one a newer lookup holds.
+      if (generation === gameGenerationRef.current) {
+        isAddingRef.current = false;
+        setIsAdding(false);
+        setIsAnimating(false);
+      }
     }
   };
 
