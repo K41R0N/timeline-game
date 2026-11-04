@@ -46,14 +46,14 @@ docs/
 
 ## Stack and commands
 
-Next.js 15.5 (App Router), React 19, TypeScript strict, Tailwind 3.4, lodash (`debounce`) and Vitest. Data comes only from Wikimedia (Wikipedia + Wikidata) at runtime; there is no backend or database. CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests and build on every PR.
+Next.js 16 (App Router), React 19, TypeScript strict, Tailwind 3.4, lodash (`debounce`) and Vitest. Data comes only from Wikimedia (Wikipedia + Wikidata) at runtime; there is no backend or database. CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests and build on every PR.
 
 ```bash
 npm install
 npm run dev        # http://localhost:3000
 npm run build      # must pass before committing
 npm test           # Vitest, offline (replays __fixtures__)
-npm run lint       # warnings only; tracked in #44
+npm run lint       # ESLint CLI (Next 16 removed `next lint`); warnings only, tracked in #44
 npx tsc --noEmit
 
 # Re-record Wikimedia fixtures after changing request URLs (slow; Wikimedia rate-limits):
@@ -73,7 +73,7 @@ CAPTURE_WIKIMEDIA=1 npx vitest run src/lib/services/wikimedia.capture.test.ts
 - **Figure identity**: `id` is the Wikidata QID; `name` is the canonical Wikipedia title. Living people have `isLiving: true` and `deathYear` = current year.
 - **Network**: app code never calls `fetch` for Wikimedia outside `wikimediaClient.ts`. The one exception is `wikimedia.capture.test.ts`, which injects a recording `fetchImpl` into the client to re-record fixtures.
 - **Contemporaries**: `a.birthYear <= b.deathYear && b.birthYear <= a.deathYear` (`ChainAnalyzer.ts`).
-- **Imports**: use `@/lib` for library code and `@/*` for anything under `src/`.
+- **Imports**: code in `src/app` imports library code from `@/lib`. Inside `src/lib`, modules import each other by relative path; never import the `@/lib` barrel from inside `src/lib` (it re-exports everything and would create cycles).
 - **Client components**: anything with hooks or browser APIs starts with `'use client'`.
 - **Styling**: Tailwind utilities first. Colours and shadows come from CSS variables in `globals.css`, mapped in `tailwind.config.ts`.
 - **Logging**: emoji-prefixed `console.*` (🚀 start, ✅ success, ⚠️ warn, ❌ error, 📊 data, 🔍 search). `WikipediaService` logs one line per resolved figure and each lookup error.

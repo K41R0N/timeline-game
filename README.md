@@ -54,11 +54,11 @@ The app will be available at `http://localhost:3000`
 
 ## 🛠️ Technology Stack
 
-- **Framework**: Next.js 15.1.7 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript 5 (Strict mode)
 - **Styling**: Tailwind CSS 3.4.1 + CSS Variables
 - **State**: React Hooks (no external state management)
-- **Data**: Wikipedia API (MediaWiki + Wikimedia Commons)
+- **Data**: Wikimedia APIs: Wikipedia (search, summaries, images) and Wikidata (birth/death dates, people-only check)
 - **Deployment**: Vercel (auto-detected)
 
 ## ✨ Features
@@ -151,7 +151,8 @@ npm run build            # Build for production
 npm run start            # Start production server
 
 # Quality checks
-npm run lint             # Run ESLint
+npm run lint             # Run ESLint (eslint .)
+npm test                 # Unit tests (Vitest, offline fixtures)
 npx tsc --noEmit         # Type checking
 ```
 

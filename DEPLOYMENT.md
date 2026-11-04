@@ -13,7 +13,7 @@ This is a standard Next.js project. Vercel will auto-detect all settings.
    - Output Directory: `.next`
    - Install Command: `npm install`
 
-3. **Environment Variables**: None required (uses public Wikipedia API)
+3. **Environment Variables**: None required (uses the public Wikipedia and Wikidata APIs)
 
 ### Option 2: Using Vercel CLI
 
