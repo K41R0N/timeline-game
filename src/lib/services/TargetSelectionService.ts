@@ -106,10 +106,20 @@ export class TargetSelectionService {
 
       // Fetch details from Wikipedia
       try {
-        const [figA, figB] = await Promise.all([
-          WikipediaService.getPersonDetails(figureNameA),
-          WikipediaService.getPersonDetails(figureNameB)
+        const [resultA, resultB] = await Promise.all([
+          WikipediaService.lookupPerson(figureNameA),
+          WikipediaService.lookupPerson(figureNameB)
         ]);
+
+        // The client has already retried with backoff; another candidate pair won't
+        // help if Wikimedia itself is unreachable, so hand over to the fallback now.
+        if ((!resultA.ok && resultA.reason === 'network') || (!resultB.ok && resultB.reason === 'network')) {
+          console.warn('⚠️ Wikimedia is unavailable; stopping random target selection');
+          return null;
+        }
+
+        const figA = resultA.ok ? resultA.figure : null;
+        const figB = resultB.ok ? resultB.figure : null;
 
         if (!figA || !figB) {
           console.warn(`⚠️ Failed to load one or both figures, retrying...`);

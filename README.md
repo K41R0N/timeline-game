@@ -31,8 +31,7 @@ timeline-game/
 ├── package.json          # Dependencies
 ├── next.config.js        # Next.js config
 ├── tailwind.config.ts    # Tailwind CSS config
-├── tsconfig.json         # TypeScript config
-└── vercel.json           # Vercel deployment config
+└── tsconfig.json         # TypeScript config
 ```
 
 ## 🚀 Quick Start
@@ -55,11 +54,11 @@ The app will be available at `http://localhost:3000`
 
 ## 🛠️ Technology Stack
 
-- **Framework**: Next.js 15.1.7 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript 5 (Strict mode)
 - **Styling**: Tailwind CSS 3.4.1 + CSS Variables
 - **State**: React Hooks (no external state management)
-- **Data**: Wikipedia API (MediaWiki + Wikimedia Commons)
+- **Data**: Wikimedia APIs: Wikipedia (search, summaries, images) and Wikidata (birth/death dates, people-only check)
 - **Deployment**: Vercel (auto-detected)
 
 ## ✨ Features
@@ -69,7 +68,7 @@ The app will be available at `http://localhost:3000`
 - ✅ Chain connection algorithm (BFS pathfinding)
 - ✅ Score tracking with golf scoring
 - ✅ Win detection and victory modal
-- ✅ Contemporary figure hints
+- ⚠️ Contemporary figure hints (panel exists; results currently unreliable, see audit)
 - ✅ BCE/CE visual timeline divider
 - ✅ Responsive glassmorphism UI design
 
@@ -79,6 +78,7 @@ The app will be available at `http://localhost:3000`
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deployment instructions for Vercel/Netlify
 - **[ROADMAP.md](./ROADMAP.md)** - Development roadmap and phases
 - **[Gameplay-loop.md](./Gameplay-loop.md)** - Detailed gameplay mechanics
+- **[Current-state audit](./docs/audits/2026-11-02-current-state-audit.md)** - What the game is as built, verified defects, design levers
 
 ## 🎯 Game Features
 
@@ -151,7 +151,8 @@ npm run build            # Build for production
 npm run start            # Start production server
 
 # Quality checks
-npm run lint             # Run ESLint
+npm run lint             # Run ESLint (eslint .)
+npm test                 # Unit tests (Vitest, offline fixtures)
 npx tsc --noEmit         # Type checking
 ```
 

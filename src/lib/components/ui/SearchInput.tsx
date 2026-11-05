@@ -15,6 +15,8 @@ interface SearchInputProps {
   placeholder?: string;
   suggestions?: Suggestion[];
   isLoading?: boolean;
+  /** Blocks submits while the previous name is still being looked up. */
+  isSubmitting?: boolean;
   error?: string | null;
   className?: string;
 }
@@ -26,6 +28,7 @@ export function SearchInput({
   placeholder = "Search historical figures...",
   suggestions = [],
   isLoading = false,
+  isSubmitting = false,
   error = null,
   className = ""
 }: SearchInputProps) {
@@ -63,6 +66,7 @@ export function SearchInput({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      if (isSubmitting) return;
       if (selectedIndex >= 0 && isOpen && suggestions.length > 0) {
         handleSuggestionClick(suggestions[selectedIndex].title);
       } else if (value.trim()) {
@@ -91,8 +95,9 @@ export function SearchInput({
   };
 
   const handleSuggestionClick = (title: string) => {
+    if (isSubmitting) return;
     console.log(`🎯 Selecting suggestion: "${title}"`);
-    setValue(title);
+    setValue('');
     onSelect(title);
     setIsOpen(false);
     setSelectedIndex(-1);
@@ -100,7 +105,7 @@ export function SearchInput({
   };
 
   const handleSubmit = () => {
-    if (!value.trim()) return;
+    if (!value.trim() || isSubmitting) return;
 
     console.log(`📥 Submitting search: "${value}"`);
     setSubmitAttempted(true);
@@ -213,17 +218,17 @@ export function SearchInput({
         
         <button
           onClick={handleSubmit}
-          disabled={!value.trim() || isLoading}
+          disabled={!value.trim() || isLoading || isSubmitting}
           className={`
             px-4 py-2 rounded-lg
             font-medium
             transition-all duration-200
-            ${value.trim() && !isLoading
+            ${value.trim() && !isLoading && !isSubmitting
               ? 'bg-primary text-white hover:bg-primary-bright'
               : 'bg-primary/20 text-foreground-muted cursor-not-allowed'}
           `}
         >
-          Search
+          {isSubmitting ? 'Adding…' : 'Add'}
         </button>
       </div>
     </div>

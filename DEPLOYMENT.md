@@ -13,7 +13,7 @@ This is a standard Next.js project. Vercel will auto-detect all settings.
    - Output Directory: `.next`
    - Install Command: `npm install`
 
-3. **Environment Variables**: None required (uses public Wikipedia API)
+3. **Environment Variables**: None required (uses the public Wikipedia and Wikidata APIs)
 
 ### Option 2: Using Vercel CLI
 
@@ -28,17 +28,9 @@ vercel
 vercel --prod
 ```
 
-### vercel.json Configuration
+### Configuration
 
-The repository includes a minimal `vercel.json`:
-
-```json
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json"
-}
-```
-
-Vercel's auto-detection handles everything automatically.
+No `vercel.json` is needed; Vercel's Next.js auto-detection handles the build.
 
 ---
 

@@ -13,7 +13,8 @@ export { SplashScreen } from './components/ui/SplashScreen';
 export * from './types/HistoricalFigure';
 
 // Services
-export { WikipediaService } from './services/WikipediaService';
+export { WikipediaService, lookupFailureMessage } from './services/WikipediaService';
+export type { PersonLookupResult, PersonLookupFailure } from './services/WikipediaService';
 export { TargetSelectionService } from './services/TargetSelectionService';
 
 // Utilities

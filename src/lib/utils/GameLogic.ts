@@ -37,6 +37,18 @@ export function formatYear(year: number): string {
 }
 
 /**
+ * Format a figure's lifespan, marking approximate dates ("c.") and living people.
+ */
+export function formatLifespan(
+  figure: Pick<HistoricalFigure, 'birthYear' | 'deathYear' | 'birthApproximate' | 'deathApproximate' | 'isLiving'>
+): string {
+  const birth = `${figure.birthApproximate ? 'c. ' : ''}${formatYear(figure.birthYear)}`;
+  if (figure.isLiving) return `born ${birth}`;
+  const death = `${figure.deathApproximate ? 'c. ' : ''}${formatYear(figure.deathYear)}`;
+  return `${birth} – ${death}`;
+}
+
+/**
  * Format a year range for display
  */
 export function formatYearRange(birthYear: number, deathYear: number): string {

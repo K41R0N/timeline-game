@@ -5,11 +5,14 @@ import { HistoricalFigure } from '../../types/HistoricalFigure';
 import { SearchInput } from './SearchInput';
 import { WikipediaService } from '../../services/WikipediaService';
 import debounce from 'lodash/debounce';
+import { formatLifespan } from '../../utils/GameLogic';
 
 interface SearchBarProps {
   figures: HistoricalFigure[];
   onSelect: (figure: HistoricalFigure) => void;
   onAddFigure: (name: string) => void;
+  /** True while a submitted name is being looked up; blocks further submits. */
+  isAdding?: boolean;
 }
 
 interface SearchSuggestion {
@@ -18,7 +21,7 @@ interface SearchSuggestion {
   isExisting?: boolean;
 }
 
-export function SearchBar({ figures, onSelect, onAddFigure }: SearchBarProps) {
+export function SearchBar({ figures, onSelect, onAddFigure, isAdding = false }: SearchBarProps) {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +46,7 @@ export function SearchBar({ figures, onSelect, onAddFigure }: SearchBarProps) {
           .filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
           .map(f => ({
             title: f.name,
-            snippet: `${Math.abs(f.birthYear)} ${f.birthYear < 0 ? 'BCE' : 'CE'} - ${Math.abs(f.deathYear)} ${f.deathYear < 0 ? 'BCE' : 'CE'}`,
+            snippet: formatLifespan(f),
             isExisting: true
           }));
 
@@ -109,6 +112,7 @@ export function SearchBar({ figures, onSelect, onAddFigure }: SearchBarProps) {
             isExisting: s.isExisting
           }))}
           isLoading={isLoading}
+          isSubmitting={isAdding}
           error={error}
           className="search-input"
         />

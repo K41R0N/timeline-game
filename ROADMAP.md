@@ -1,193 +1,62 @@
-# Historical Timeline Connection Game - Development Roadmap
+# History Links Roadmap
 
-## Project Overview
-A competitive game where players connect historical figures across time by naming intermediate historical figures, creating a path through history. Players score points based on the efficiency of their connections.
+GitHub issues are the source of truth. This file mirrors the tracking issue [#37](https://github.com/K41R0N/timeline-game/issues/37), so update both together.
 
-## Data Management Strategy
-We will implement a hybrid approach to data management:
+- **Direction:** [`STRATEGY.md`](./STRATEGY.md), which is streamer-first and commits to scoring the overlap itself.
+- **Starting point:** [`docs/audits/2026-11-02-current-state-audit.md`](./docs/audits/2026-11-02-current-state-audit.md).
+- **Research:** [`docs/research/2026-11-02-streamer-guessing-games.md`](./docs/research/2026-11-02-streamer-guessing-games.md).
+- The original six-phase plan (2025) is in git history, before commit `8f5a304`.
 
-1. **Initial Phase (JSON-based)**
-   - Store 100-200 pre-processed historical figures in JSON files
-   - Host data files in the GitHub repository
-   - Implement data validation and processing scripts
-   - Use GitHub Actions for periodic data updates
+## Structure
 
-2. **Future Scale-up (Database)**
-   - Transition to Supabase when needed for:
-     - User accounts and scoring
-     - Dynamic data updates
-     - Advanced game features
-     - Performance optimization
-   - Maintain backward compatibility during transition
+| Epic | Strategy track |
+|---|---|
+| [#38 Foundations](https://github.com/K41R0N/timeline-game/issues/38) | Supports all tracks: tests, CI, API client, analytics, deploy |
+| [#39 Wikimedia data, made usable](https://github.com/K41R0N/timeline-game/issues/39) | Wikimedia data, made usable |
+| [#40 Overlap scoring, reveals and sharing](https://github.com/K41R0N/timeline-game/issues/40) | Overlap scoring, reveals and sharing |
+| [#41 UI polish and mobile](https://github.com/K41R0N/timeline-game/issues/41) | UI polish and mobile |
 
-## Phase 1: Foundation Setup
-1. **Project Initialization**
-   - Set up React/Next.js project structure
-   - Configure TypeScript
-   - Set up basic styling framework (Tailwind CSS)
-   - Initialize Git repository
-   - Create basic project documentation
-   - Configure Netlify deployment
+**Labels:** `track:foundation|data|gameplay|ui` for the area, and `P0` (now), `P1` (next) or `P2` (later) for order. The issue type is Bug, Feature or Task. PRs close issues with `Fixes #N`.
 
-2. **Data Structure Design**
-   - Design historical figure data schema
-   - Create initial JSON dataset (100-200 figures)
-   - Implement data validation
-   - Create Wikipedia data extraction scripts
-   - Set up GitHub Actions for data updates
+## Now (P0): make the data trustworthy and decide the loop
 
-**Testing Milestone 1:**
-- ✓ Project builds successfully
-- ✓ JSON data loads correctly
-- ✓ Basic data validation works
-- ✓ Netlify deployment successful
+- [#42](https://github.com/K41R0N/timeline-game/issues/42) Set up Vitest with unit tests for date parsing and chain analysis
+- [#45](https://github.com/K41R0N/timeline-game/issues/45) Add CI: lint, typecheck, test and build on every PR
+- [#46](https://github.com/K41R0N/timeline-game/issues/46) One Wikimedia API client: User-Agent, throttling, 429 retry, caching
+- [#48](https://github.com/K41R0N/timeline-game/issues/48) Read lifespans from Wikidata and stop inventing death years for living people
+- [#49](https://github.com/K41R0N/timeline-game/issues/49) Accept only humans on every add path
+- [#50](https://github.com/K41R0N/timeline-game/issues/50) Canonical identity and clean descriptions for every figure
+- [#62](https://github.com/K41R0N/timeline-game/issues/62) Fix lost additions from stale state and lock input while adding
+- [#54](https://github.com/K41R0N/timeline-game/issues/54) Spec core loop v2: overlap scoring, rounds, par and modes
 
-## Phase 2: Core Game Logic
-1. **Historical Figure Management**
-   - Create API endpoints for historical figure data
-   - Implement Wikipedia data extraction system
-   - Design caching system for frequently accessed data
-   - Create data sanitization and validation
+## Next (P1): the shareable loop
 
-2. **Timeline Logic**
-   - Develop timeline visualization component
-   - Implement year calculation system (including BC/AD handling)
-   - Create timeline positioning algorithm
-   - Build connection validation system
+- [#57](https://github.com/K41R0N/timeline-game/issues/57) Compute par and reveal the best possible chain
+- [#55](https://github.com/K41R0N/timeline-game/issues/55) Draw lifespans on the timeline and show the gap left to bridge
+- [#56](https://github.com/K41R0N/timeline-game/issues/56) Overlap reveal on every link
+- [#58](https://github.com/K41R0N/timeline-game/issues/58) Daily shared puzzle
+- [#59](https://github.com/K41R0N/timeline-game/issues/59) Share card and challenge links
+- [#43](https://github.com/K41R0N/timeline-game/issues/43) Configure PostHog and instrument the three strategy metrics
+- [#47](https://github.com/K41R0N/timeline-game/issues/47) Confirm production deploy target and PR preview deploys
+- [#51](https://github.com/K41R0N/timeline-game/issues/51) Replace broken contemporary hints with real overlapping people
+- [#52](https://github.com/K41R0N/timeline-game/issues/52) Target selection: fix era pools, difficulty gaps and fallback
+- [#63](https://github.com/K41R0N/timeline-game/issues/63) Stop zoom from re-centering and bubbles from remounting
+- [#64](https://github.com/K41R0N/timeline-game/issues/64) One score scale across the badge and the win screen
+- [#65](https://github.com/K41R0N/timeline-game/issues/65) On-screen rules and an always-visible goal
+- [#66](https://github.com/K41R0N/timeline-game/issues/66) Touch, mobile and stream-readable layout
 
-**Testing Milestone 2:**
-- ✓ Historical figure data correctly loads
-- ✓ Timeline displays correctly with proper scaling
-- ✓ Year calculations work for both BC and AD dates
+## Later (P2)
 
-## Phase 3: Game Mechanics
-1. **Game Flow Implementation**
-   - Create player session management
-   - Implement random historical figure assignment
-   - Build connection validation logic
-   - Develop scoring system
-   - Create turn management system
+- [#60](https://github.com/K41R0N/timeline-game/issues/60) Suggestion-pick input mode for viewers and chat
+- [#61](https://github.com/K41R0N/timeline-game/issues/61) Versus and race mode for streamers
+- [#44](https://github.com/K41R0N/timeline-game/issues/44) Remove dead code and clear lint warnings
+- [#53](https://github.com/K41R0N/timeline-game/issues/53) Handle the missing year 0 in overlap and gap maths
 
-2. **User Interface Development**
-   - Design and implement main game interface
-   - Create historical figure bubbles with info cards
-   - Build timeline interaction system
-   - Implement drag-and-drop or click-to-place mechanics
+## Critical path
 
-**Testing Milestone 3:**
-- ✓ Game flow works end-to-end
-- ✓ Scoring system functions correctly
-- ✓ UI responds properly to user interactions
-
-## Phase 4: Data Integration
-1. **Wikipedia Integration**
-   - Implement Wikipedia API connection
-   - Create data extraction system for:
-     - Basic biographical data
-     - Life span dates
-     - Historical figure images via Wikimedia Commons API
-   - Build caching system for API responses
-   - Store image URLs rather than actual images
-   - Implement Cloudinary integration for image optimization
-
-2. **Data Management**
-   - Create admin interface for data management
-   - Implement data validation and cleaning
-   - Set up periodic data updates
-   - Create backup systems
-   - Design efficient JSON structure for storing:
-     - Basic biographical data
-     - Image URLs
-     - Timeline connections
-     - Historical co-existence hints
-
-**Testing Milestone 4:**
-- ✓ Wikipedia data fetches correctly
-- ✓ Images load and optimize through Cloudinary
-- ✓ Data updates work as expected
-- ✓ JSON structure efficiently stores all required data
-
-## Phase 4B: Enhanced Biographical Content (V2)
-1. **LLM Integration**
-   - Set up self-hosted Ollama or similar free LLM
-   - Create prompt engineering system for:
-     - Engaging biographical content
-     - Historical co-existence hints
-     - Achievement timelines
-   - Implement content validation and moderation
-
-2. **Content Management**
-   - Create biography generation pipeline
-   - Implement content review system
-   - Set up periodic content refreshes
-   - Create fallback system for LLM failures
-
-**Testing Milestone 4B:**
-- ✓ LLM generates appropriate biographical content
-- ✓ Content includes relevant historical connections
-- ✓ Generation pipeline works reliably
-- ✓ Content is stored efficiently in JSON structure
-
-## Phase 5: User Experience & Polish
-1. **Visual Enhancement**
-   - Implement animations for connections
-   - Add visual feedback for valid/invalid moves
-   - Create loading states and transitions
-   - Polish UI elements
-
-2. **Game Features**
-   - Add difficulty levels
-   - Implement hint system
-   - Create tutorial mode
-   - Add achievement system
-
-**Testing Milestone 5:**
-- ✓ Animations work smoothly
-- ✓ Game is intuitive to new users
-- ✓ All features function without bugs
-
-## Phase 6: Deployment & Launch
-1. **Performance Optimization**
-   - Implement code splitting
-   - Optimize database queries
-   - Set up CDN for static assets
-   - Configure caching strategies
-
-2. **Deployment Setup**
-   - Set up CI/CD pipeline
-   - Configure production environment
-   - Implement monitoring and logging
-   - Create backup strategies
-
-**Testing Milestone 6:**
-- ✓ Application performs well under load
-- ✓ Deployment process works smoothly
-- ✓ Monitoring systems function correctly
-
-## Future Enhancements
-- Multiplayer support
-- Additional game modes
-- Mobile app version
-- Social features (leaderboards, sharing)
-- Extended historical figure database
-
-## Technical Stack
-- Frontend: Next.js + TypeScript
-- Styling: Tailwind CSS
-- Initial Data Storage: JSON + GitHub
-- Future Database: Supabase (Free Tier)
-- API: RESTful + GraphQL
-- Hosting: Netlify (with possible migration to Vercel)
-- Image Storage: Cloudinary Free Tier
-- Content Generation: Self-hosted Ollama (V2)
-- Image Pipeline: Wikimedia API → Cloudinary
-- Content Storage: JSON + GitHub (with compression)
-
-## Notes for Beginners
-- Each phase builds upon the previous one
-- Complex features are broken down into smaller, manageable tasks
-- Testing is integrated throughout development
-- Focus on getting core functionality working before adding advanced features
-- Data management starts simple and scales as needed
-- V2 features are clearly separated for gradual implementation
-- Content generation can be manually reviewed initially 
+1. Correct data (#48, #49, #50) and the core loop spec (#54).
+2. Par (#57).
+3. Daily puzzle (#58).
+4. Share card and challenge links (#59).
+5. PostHog metrics (#43).
+6. Versus (#61).

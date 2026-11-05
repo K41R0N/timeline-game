@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { HistoricalFigure } from '../../types/HistoricalFigure';
 import { WikipediaService } from '../../services/WikipediaService';
-import { formatYearRange } from '../../utils/GameLogic';
+import { formatLifespan } from '../../utils/GameLogic';
 
 interface DetailPanelProps {
   figure: HistoricalFigure | null;
@@ -106,7 +106,7 @@ export function DetailPanel({
                 {figure.name}
               </h2>
               <div className="text-[var(--interactive)] font-medium">
-                {`${Math.abs(figure.birthYear)} ${figure.birthYear < 0 ? 'BCE' : 'CE'} - ${Math.abs(figure.deathYear)} ${figure.deathYear < 0 ? 'BCE' : 'CE'}`}
+                {formatLifespan(figure)}
               </div>
             </div>
             <button
@@ -140,7 +140,7 @@ export function DetailPanel({
             {/* Description */}
             <div className="prose prose-sm max-w-none">
               <p className="text-foreground/80 leading-relaxed">
-                {figure.shortDescription}
+                {figure.summary || figure.shortDescription}
               </p>
             </div>
 
@@ -169,7 +169,7 @@ export function DetailPanel({
                         {contemporary.name}
                       </div>
                       <div className="text-xs text-foreground-muted mt-1">
-                        {formatYearRange(contemporary.birthYear, contemporary.deathYear)}
+                        {formatLifespan(contemporary)}
                       </div>
                       {contemporary.shortDescription && (
                         <div className="text-xs text-foreground-subtle mt-1 line-clamp-2">
