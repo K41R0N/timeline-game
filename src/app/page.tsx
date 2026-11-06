@@ -138,7 +138,6 @@ export default function Home() {
     errorTimerRef.current = setTimeout(() => setError(null), 3000);
   };
 
-  // Par comes from the roster, for new and restored rounds alike.
   useEffect(() => {
     if (!targetA || !targetB) return;
     let cancelled = false;
@@ -356,7 +355,6 @@ export default function Home() {
       <div className="fixed top-4 right-4 z-[22] pointer-events-auto group">
         <div className="timeline-card p-3 shadow-glow hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-3">
-            {/* Strokes against par */}
             <div className="text-center">
               <div className={`text-2xl font-bold leading-none ${par !== null && strokes > par ? 'text-amber-600' : 'text-green-600'}`}>
                 {strokes}
@@ -412,7 +410,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Hint control - under the score badge */}
       {targetA && targetB && !hasWon && (
         <div className="fixed top-24 right-4 z-[21] pointer-events-auto">
           <HintButton
@@ -425,7 +422,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Placement reveal */}
       {reveal && !hasWon && (
         <PlacementReveal figure={reveal.figure} reveal={reveal.reveal} onDismiss={() => setReveal(null)} />
       )}

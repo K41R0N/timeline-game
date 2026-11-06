@@ -98,8 +98,9 @@ export function ambiguousProperties(statements: ItemStatements): Array<'P569' | 
   for (const [property, claims] of [['P569', statements.births], ['P570', statements.deaths]] as const) {
     const valued = rankedClaims(claims).filter(c => c.mainsnak.snaktype === 'value');
     if (valued.length < 2) continue;
-    const bestRank = valued[0].rank === 'preferred' ? 'preferred' : 'normal';
-    const years = new Set(valued.filter(c => (c.rank === 'preferred') === (bestRank === 'preferred')).map(c => yearFromClaims([c])?.year));
+    const topIsPreferred = valued[0].rank === 'preferred';
+    const top = valued.filter(c => (c.rank === 'preferred') === topIsPreferred);
+    const years = new Set(top.map(c => yearFromClaims([c])?.year));
     if (years.size > 1) ambiguous.push(property);
   }
   return ambiguous;

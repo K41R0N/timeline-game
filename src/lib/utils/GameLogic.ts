@@ -83,7 +83,6 @@ const HINT_POLICIES: Record<Difficulty, HintPolicy> = {
   hard: { recorded: true, costsStroke: true, label: '+1 stroke' },
 };
 
-/** Help costs more as the player claims more skill. */
 export function hintPolicy(difficulty: Difficulty): HintPolicy {
   return HINT_POLICIES[difficulty];
 }
@@ -103,11 +102,23 @@ export interface RoundResult {
 
 const GOLF_NAMES: Record<number, string> = { [-2]: 'eagle', [-1]: 'birdie', 1: 'bogey' };
 
+export function golfName(difference: number): string | null {
+  return GOLF_NAMES[difference] ?? null;
+}
+
+export function signedDifference(difference: number): string {
+  return difference < 0 ? `−${-difference}` : `+${difference}`;
+}
+
 /** Strokes relative to par, in golf terms. */
 export function describeResult(strokes: number, par: number): RoundResult {
   const difference = strokes - par;
   if (difference === 0) return { difference, label: 'Par', tone: 'par' };
-  const signed = difference < 0 ? `−${-difference}` : `+${difference}`;
-  const name = GOLF_NAMES[difference];
+  const signed = signedDifference(difference);
+  const name = golfName(difference);
   return { difference, label: name ? `${signed}, ${name}` : signed, tone: difference < 0 ? 'under' : 'over' };
+}
+
+export function formatSharedYears(years: number): string {
+  return years === 0 ? 'less than a year' : years === 1 ? '1 year' : `${years} years`;
 }

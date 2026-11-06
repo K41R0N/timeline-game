@@ -57,7 +57,6 @@ describe.skipIf(!process.env.CAPTURE_ROSTER)('build the roster', () => {
       },
     });
 
-    // 1. Every article the list links to, plus the revision it was read at.
     const titles: string[] = [];
     let revision = 0;
     let cont: Record<string, string> = {};
@@ -75,7 +74,6 @@ describe.skipIf(!process.env.CAPTURE_ROSTER)('build the roster', () => {
     } while (Object.keys(cont).length > 0);
     console.log(`📊 ${titles.length} linked articles at revision ${revision}`);
 
-    // 2. Canonical titles and Wikidata items, following redirects.
     const nameByQid = new Map<string, string>();
     for (const batch of chunk(titles, TITLE_BATCH)) {
       const data = await client.getJson<PagePropsResponse>(
@@ -92,7 +90,6 @@ describe.skipIf(!process.env.CAPTURE_ROSTER)('build the roster', () => {
     }
     console.log(`📊 ${nameByQid.size} Wikidata items`);
 
-    // 3. Birth, death and instance-of statements in batches.
     const statements = new Map<string, ItemStatements>();
     for (const batch of chunk([...nameByQid.keys()], SPARQL_BATCH)) {
       const data = await client.getJson<{ results: { bindings: SparqlBinding[] } }>(
@@ -101,7 +98,6 @@ describe.skipIf(!process.env.CAPTURE_ROSTER)('build the roster', () => {
       for (const [qid, item] of statementsFromSparql(data.results.bindings)) statements.set(qid, item);
     }
 
-    // 4. Re-read properties whose best statements disagree, so the roster matches a lookup.
     let reread = 0;
     for (const [qid, item] of statements) {
       for (const property of ambiguousProperties(item)) {
@@ -114,7 +110,6 @@ describe.skipIf(!process.env.CAPTURE_ROSTER)('build the roster', () => {
     }
     console.log(`📊 Re-read ${reread} ambiguous properties from the JSON API`);
 
-    // 5. Dead humans with both years, sorted by birth.
     const currentYear = new Date().getUTCFullYear();
     const people: RosterPerson[] = [];
     for (const [qid, name] of nameByQid) {

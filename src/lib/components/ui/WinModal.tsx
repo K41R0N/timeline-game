@@ -1,7 +1,7 @@
 'use client';
 
 import { HistoricalFigure } from '../../types/HistoricalFigure';
-import { describeResult, formatLifespan } from '../../utils/GameLogic';
+import { describeResult, formatLifespan, formatSharedYears, golfName, signedDifference } from '../../utils/GameLogic';
 import { sharedYears } from '../../utils/overlap';
 import type { StyleBadge } from '../../utils/style';
 
@@ -20,8 +20,6 @@ interface WinModalProps {
   onPlayAgain: () => void;
 }
 
-const sharedLabel = (years: number) => (years === 0 ? 'less than a year' : years === 1 ? '1 year' : `${years} years`);
-
 function ChainList({ title, people, badges }: { title: string; people: ChainPerson[]; badges: StyleBadge[] }) {
   const clutch = (a: ChainPerson, b: ChainPerson) =>
     badges.some(badge => badge.kind === 'clutch' && badge.from.id === a.id && badge.to.id === b.id);
@@ -35,7 +33,7 @@ function ChainList({ title, people, badges }: { title: string; people: ChainPers
           <li key={person.id}>
             {i > 0 && (
               <div className="flex items-center gap-2 pl-3 py-0.5 text-xs text-foreground-subtle">
-                <span>↓ shared {sharedLabel(sharedYears(people[i - 1], person) ?? 0)}</span>
+                <span>↓ shared {formatSharedYears(sharedYears(people[i - 1], person) ?? 0)}</span>
                 {clutch(people[i - 1], person) && (
                   <span className="font-bold uppercase rounded px-1.5 bg-amber-100 text-amber-800">Clutch overlap</span>
                 )}
@@ -62,7 +60,7 @@ export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onP
   const underPar = result?.tone === 'under';
   const sameAsPar = parChain !== null && parChain.map(p => p.id).join('|') === chain.map(p => p.id).join('|');
 
-  const headline = !result ? 'Connected' : underPar ? `${result.label.split(', ')[1] ?? 'Under par'}!` : result.tone === 'par' ? 'Par' : 'Connected';
+  const headline = underPar ? `${golfName(result.difference) ?? 'Under par'}!` : result?.tone === 'par' ? 'Par' : 'Connected';
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn">
@@ -85,7 +83,7 @@ export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onP
           {result && (
             <div>
               <div className={`text-4xl font-bold ${underPar ? 'text-amber-600' : result.tone === 'par' ? 'text-green-600' : 'text-foreground-muted'}`}>
-                {result.label.split(', ')[0]}
+                {result.tone === 'par' ? 'Par' : signedDifference(result.difference)}
               </div>
               <div className="text-xs uppercase text-foreground-muted">Result</div>
             </div>

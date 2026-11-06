@@ -23,7 +23,6 @@ export function finalChain(targetA: HistoricalFigure, targetB: HistoricalFigure,
   const nodeStyle = (f: HistoricalFigure) => (!isTarget(f) && isLongLife(f) ? 1 : 0);
   const linkStyle = (a: HistoricalFigure, b: HistoricalFigure) => (isClutchLink(a, b) ? 1 : 0);
 
-  // Breadth-first layers from target A.
   const distance = new Map<string, number>([[targetA.id, 0]]);
   const layers: HistoricalFigure[][] = [[targetA]];
   while (!distance.has(targetB.id)) {
@@ -40,7 +39,6 @@ export function finalChain(targetA: HistoricalFigure, targetB: HistoricalFigure,
     layers.push(next);
   }
 
-  // Most style reachable at each node along shortest paths only.
   const best = new Map<string, { score: number; previous: HistoricalFigure | null }>([[targetA.id, { score: 0, previous: null }]]);
   for (let depth = 1; depth < layers.length; depth++) {
     for (const node of layers[depth]) {

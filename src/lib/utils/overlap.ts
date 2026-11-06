@@ -1,5 +1,6 @@
 import { HistoricalFigure } from '../types/HistoricalFigure';
-import { areContemporaries } from './ChainAnalyzer';
+import { livesConnectedTo } from './ChainAnalyzer';
+import { calculateYearGap } from './GameLogic';
 
 type Life = Pick<HistoricalFigure, 'birthYear' | 'deathYear' | 'birthApproximate' | 'deathApproximate' | 'isLiving'>;
 
@@ -14,12 +15,6 @@ export function sharedYears(a: Life, b: Life): number | null {
   return shared >= 0 ? shared : null;
 }
 
-/** Years between two lives that never met. */
-export function gapYears(a: Life, b: Life): number {
-  return Math.max(a.birthYear, b.birthYear) - Math.min(a.deathYear, b.deathYear);
-}
-
-/** Both years known exactly; a living person's death year is a placeholder, so it never counts. */
 function hasExactYears(life: Life): boolean {
   return !life.birthApproximate && !life.deathApproximate && !life.isLiving;
 }
@@ -48,22 +43,6 @@ export interface RevealResult {
   longBridge: boolean;
 }
 
-/** Everyone on the board connected to either target through overlapping lives. */
-function connectedToTargets(board: HistoricalFigure[], targets: HistoricalFigure[]): Set<string> {
-  const reached = new Set(targets.map(t => t.id));
-  const queue = [...targets];
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    for (const other of board) {
-      if (!reached.has(other.id) && areContemporaries(current, other)) {
-        reached.add(other.id);
-        queue.push(other);
-      }
-    }
-  }
-  return reached;
-}
-
 /** What placing `figure` reveals against the board as it was just before the placement. */
 export function revealPlacement(
   figure: HistoricalFigure,
@@ -72,7 +51,7 @@ export function revealPlacement(
   targetB: HistoricalFigure
 ): RevealResult {
   const others = board.filter(other => other.id !== figure.id);
-  const connected = connectedToTargets(others, [targetA, targetB]);
+  const connected = livesConnectedTo(others, [targetA, targetB]);
 
   const overlaps = others
     .map(other => ({ other, shared: sharedYears(figure, other) }))
@@ -87,8 +66,8 @@ export function revealPlacement(
 
   let miss: RevealResult['miss'] = null;
   if (overlaps.length === 0 && others.length > 0) {
-    const nearest = others.reduce((best, other) => (gapYears(figure, other) < gapYears(figure, best) ? other : best));
-    miss = { nearest, gapYears: gapYears(figure, nearest) };
+    const nearest = others.reduce((best, other) => (calculateYearGap(figure, other) < calculateYearGap(figure, best) ? other : best));
+    miss = { nearest, gapYears: calculateYearGap(figure, nearest) };
   }
 
   return { overlaps, miss, longBridge: isLongLife(figure) };

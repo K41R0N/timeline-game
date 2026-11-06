@@ -1,6 +1,6 @@
 import type { RosterPerson } from '../data/roster';
 import { HistoricalFigure } from '../types/HistoricalFigure';
-import { areContemporaries } from './ChainAnalyzer';
+import { areContemporaries, livesConnectedTo } from './ChainAnalyzer';
 
 type Life = Pick<HistoricalFigure, 'id' | 'birthYear' | 'deathYear'>;
 
@@ -10,10 +10,6 @@ export type ParResult =
 
 const byBirth = <T extends Life>(x: T, y: T) => x.birthYear - y.birthYear;
 
-/**
- * The roster person to add next from `reach`: born no later than it and dying last.
- * On overlapping lifespans this greedy step always gives a shortest chain.
- */
 function furthestStep(roster: RosterPerson[], reach: number, excluded: Set<string>): RosterPerson | null {
   let best: RosterPerson | null = null;
   for (const person of roster) {
@@ -47,19 +43,9 @@ export function computePar(roster: RosterPerson[], targetA: Life, targetB: Life)
 export function nextHint(roster: RosterPerson[], targetA: Life, targetB: Life, board: Life[]): RosterPerson | null {
   const [earlier, later] = [targetA, targetB].sort(byBirth);
 
-  const reached = new Set([earlier.id]);
-  const queue: Life[] = [earlier];
-  let reach = earlier.deathYear;
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    for (const other of board) {
-      if (reached.has(other.id) || !areContemporaries(current, other)) continue;
-      if (other.id === later.id) return null;
-      reached.add(other.id);
-      queue.push(other);
-      reach = Math.max(reach, other.deathYear);
-    }
-  }
+  const connected = livesConnectedTo(board, [earlier]);
+  if (connected.has(later.id)) return null;
+  const reach = Math.max(...[...connected.values()].map(life => life.deathYear));
 
   return furthestStep(roster, reach, new Set([...board.map(f => f.id), targetA.id, targetB.id]));
 }

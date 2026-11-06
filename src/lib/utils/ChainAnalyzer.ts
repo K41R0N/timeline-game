@@ -20,6 +20,22 @@ export function areContemporaries(
   return fig1.birthYear <= fig2.deathYear && fig2.birthYear <= fig1.deathYear;
 }
 
+/** Every life on the board linked to one of `starts` through a run of overlapping lives, starts included, by id. */
+export function livesConnectedTo<T extends Pick<HistoricalFigure, 'id' | 'birthYear' | 'deathYear'>>(board: T[], starts: T[]): Map<string, T> {
+  const reached = new Map(starts.map(start => [start.id, start] as const));
+  const queue = [...starts];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const other of board) {
+      if (!reached.has(other.id) && areContemporaries(current, other)) {
+        reached.set(other.id, other);
+        queue.push(other);
+      }
+    }
+  }
+  return reached;
+}
+
 /**
  * Find the shortest path between two figures using BFS (Breadth-First Search)
  * Returns the path including both start and end figures, or null if no path exists

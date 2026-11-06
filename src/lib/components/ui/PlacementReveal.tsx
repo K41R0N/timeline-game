@@ -1,7 +1,7 @@
 'use client';
 
 import { HistoricalFigure } from '../../types/HistoricalFigure';
-import { formatLifespan } from '../../utils/GameLogic';
+import { formatLifespan, formatSharedYears } from '../../utils/GameLogic';
 import { LONG_BRIDGE_MIN_YEARS, type RevealResult } from '../../utils/overlap';
 
 interface PlacementRevealProps {
@@ -10,10 +10,7 @@ interface PlacementRevealProps {
   onDismiss: () => void;
 }
 
-/** How many overlaps to list before summarising the rest. */
 const MAX_LISTED_OVERLAPS = 3;
-
-const shared = (years: number) => (years === 0 ? 'less than a year' : years === 1 ? '1 year' : `${years} years`);
 
 /** The moment a placement lands: when they lived, and who they overlapped or how far they missed. */
 export function PlacementReveal({ figure, reveal, onDismiss }: PlacementRevealProps) {
@@ -47,7 +44,7 @@ export function PlacementReveal({ figure, reveal, onDismiss }: PlacementRevealPr
             {listed.map(overlap => (
               <li key={overlap.other.id} className="flex flex-wrap items-center gap-2 text-base">
                 <span className={overlap.extendsChain ? 'font-semibold text-green-700' : 'text-foreground-muted'}>
-                  Shared {shared(overlap.sharedYears)} with {overlap.other.name}
+                  Shared {formatSharedYears(overlap.sharedYears)} with {overlap.other.name}
                 </span>
                 {overlap.clutch && (
                   <span className="text-xs font-bold uppercase tracking-wide rounded px-2 py-0.5 bg-amber-100 text-amber-800">Clutch overlap</span>
