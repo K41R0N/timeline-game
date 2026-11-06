@@ -1,8 +1,8 @@
 'use client';
 
 import { HistoricalFigure } from '../../types/HistoricalFigure';
-import { formatLifespan, formatSharedYears } from '../../utils/GameLogic';
-import { LONG_BRIDGE_MIN_YEARS, type RevealResult } from '../../utils/overlap';
+import { formatLifespan } from '../../utils/GameLogic';
+import { LONG_BRIDGE_MIN_YEARS, describeShared, type RevealResult } from '../../utils/overlap';
 
 interface PlacementRevealProps {
   figure: HistoricalFigure;
@@ -29,6 +29,7 @@ export function PlacementReveal({ figure, reveal, onDismiss }: PlacementRevealPr
           <div>
             <div className="text-lg font-bold text-foreground leading-tight">{figure.name}</div>
             <div className="text-base font-semibold text-[var(--interactive)]">{formatLifespan(figure)}</div>
+            {figure.shortDescription && <div className="text-sm text-foreground-muted">{figure.shortDescription}</div>}
           </div>
           <button onClick={onDismiss} aria-label="Dismiss" className="text-foreground-subtle hover:text-foreground text-xl leading-none px-1">
             ×
@@ -44,7 +45,7 @@ export function PlacementReveal({ figure, reveal, onDismiss }: PlacementRevealPr
             {listed.map(overlap => (
               <li key={overlap.other.id} className="flex flex-wrap items-center gap-2 text-base">
                 <span className={overlap.extendsChain ? 'font-semibold text-green-700' : 'text-foreground-muted'}>
-                  Shared {formatSharedYears(overlap.sharedYears)} with {overlap.other.name}
+                  Shared {describeShared(figure, overlap.other)} with {overlap.other.name}
                 </span>
                 {overlap.clutch && (
                   <span className="text-xs font-bold uppercase tracking-wide rounded px-2 py-0.5 bg-amber-100 text-amber-800">Clutch overlap</span>

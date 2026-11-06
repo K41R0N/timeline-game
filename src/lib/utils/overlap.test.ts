@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { HistoricalFigure } from '../types/HistoricalFigure';
-import { revealPlacement, sharedYears } from './overlap';
+import { describeShared, revealPlacement, sharedYears } from './overlap';
 
 const person = (name: string, birthYear: number, deathYear: number, extra: Partial<HistoricalFigure> = {}): HistoricalFigure => ({
   id: name, name, birthYear, deathYear, shortDescription: '', imageUrl: '', contemporaries: [], ...extra,
@@ -23,6 +23,14 @@ describe('sharedYears', () => {
   it('is 0 when the lives share only part of one year, and null when they never meet', () => {
     expect(sharedYears(michelangelo, galileo)).toBe(0);
     expect(sharedYears(mozart, lincoln)).toBeNull();
+  });
+});
+
+describe('describeShared', () => {
+  it('names how long two lives overlapped and when', () => {
+    expect(describeShared(austen, dickens)).toBe('5 years (1812 CE – 1817 CE)');
+    expect(describeShared(michelangelo, galileo)).toBe('less than a year (1564 CE)');
+    expect(describeShared(mozart, lincoln)).toBeNull();
   });
 });
 

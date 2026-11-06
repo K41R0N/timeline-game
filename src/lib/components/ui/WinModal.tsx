@@ -1,8 +1,8 @@
 'use client';
 
 import { HistoricalFigure } from '../../types/HistoricalFigure';
-import { describeResult, formatLifespan, formatSharedYears, golfName, signedDifference } from '../../utils/GameLogic';
-import { sharedYears } from '../../utils/overlap';
+import { describeResult, formatLifespan, golfName, signedDifference } from '../../utils/GameLogic';
+import { describeShared } from '../../utils/overlap';
 import type { StyleBadge } from '../../utils/style';
 
 type ChainPerson = Pick<HistoricalFigure, 'id' | 'name' | 'birthYear' | 'deathYear' | 'birthApproximate' | 'deathApproximate' | 'isLiving'>;
@@ -33,7 +33,7 @@ function ChainList({ title, people, badges }: { title: string; people: ChainPers
           <li key={person.id}>
             {i > 0 && (
               <div className="flex items-center gap-2 pl-3 py-0.5 text-xs text-foreground-subtle">
-                <span>↓ shared {formatSharedYears(sharedYears(people[i - 1], person) ?? 0)}</span>
+                <span>↓ shared {describeShared(people[i - 1], person)}</span>
                 {clutch(people[i - 1], person) && (
                   <span className="font-bold uppercase rounded px-1.5 bg-amber-100 text-amber-800">Clutch overlap</span>
                 )}

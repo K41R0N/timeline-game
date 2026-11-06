@@ -1,6 +1,6 @@
 import { HistoricalFigure } from '../types/HistoricalFigure';
 import { livesConnectedTo } from './ChainAnalyzer';
-import { calculateYearGap } from './GameLogic';
+import { calculateYearGap, formatSharedYears, formatYear, formatYearRange } from './GameLogic';
 
 type Life = Pick<HistoricalFigure, 'birthYear' | 'deathYear' | 'birthApproximate' | 'deathApproximate' | 'isLiving'>;
 
@@ -13,6 +13,15 @@ export const LONG_BRIDGE_MIN_YEARS = 90;
 export function sharedYears(a: Life, b: Life): number | null {
   const shared = Math.min(a.deathYear, b.deathYear) - Math.max(a.birthYear, b.birthYear);
   return shared >= 0 ? shared : null;
+}
+
+/** How long and when two lives overlapped, as the reveal and end screen say it, or null when they never met. */
+export function describeShared(a: Life, b: Life): string | null {
+  const years = sharedYears(a, b);
+  if (years === null) return null;
+  const from = Math.max(a.birthYear, b.birthYear);
+  const to = Math.min(a.deathYear, b.deathYear);
+  return `${formatSharedYears(years)} (${years === 0 ? formatYear(from) : formatYearRange(from, to)})`;
 }
 
 function hasExactYears(life: Life): boolean {
