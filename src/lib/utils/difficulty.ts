@@ -39,15 +39,9 @@ export const FALLBACK_TARGETS: Record<Difficulty, [string, string]> = {
 };
 
 const MAX_PICK_ATTEMPTS = 400;
-/** Generous bounds on years per step, used only to shortlist candidates before measuring them. */
-const MIN_YEARS_PER_STEP = 40;
-const MAX_YEARS_PER_STEP = 90;
+const SHORTLIST_MIN_YEARS_PER_STEP = 40;
+const SHORTLIST_MAX_YEARS_PER_STEP = 90;
 
-/**
- * Steps from `start` to every roster person it can reach, stopping once `until` is reached.
- * The lives reached within k steps always cover one unbroken span of years, so each step
- * adds everyone who overlaps the span so far.
- */
 function stepsFrom(roster: RosterPerson[], start: Life, excluded: Set<string>, until: (lo: number, hi: number) => boolean) {
   const steps = new Map<string, number>();
   let lo = start.birthYear;
@@ -102,8 +96,8 @@ export function famousPeople(roster: RosterPerson[]): RosterPerson[] {
 export function pickTargets(roster: RosterPerson[], difficulty: Difficulty, random: () => number = Math.random): [RosterPerson, RosterPerson] | null {
   const band = DIFFICULTY_BANDS[difficulty];
   const famous = famousPeople(roster);
-  const minGap = band.minPar * MIN_YEARS_PER_STEP;
-  const maxGap = band.maxPar * MAX_YEARS_PER_STEP;
+  const minGap = band.minPar * SHORTLIST_MIN_YEARS_PER_STEP;
+  const maxGap = band.maxPar * SHORTLIST_MAX_YEARS_PER_STEP;
 
   for (let attempt = 0; attempt < MAX_PICK_ATTEMPTS; attempt++) {
     const earlier = famous[Math.floor(random() * famous.length)];
