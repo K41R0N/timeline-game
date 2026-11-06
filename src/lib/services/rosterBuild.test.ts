@@ -37,7 +37,7 @@ describe('toHistoricalTime', () => {
 describe('rosterPersonFrom (recorded SPARQL rows)', () => {
   it('reads Caesar from the preferred statement in historical years', () => {
     expect(person('Q1048', 'Julius Caesar')).toEqual({
-      id: 'Q1048', name: 'Julius Caesar', birthYear: -100, deathYear: -44, birthApproximate: false, deathApproximate: false,
+      id: 'Q1048', name: 'Julius Caesar', birthYear: -100, deathYear: -44, birthApproximate: false, deathApproximate: false, sitelinks: 283,
     });
   });
 

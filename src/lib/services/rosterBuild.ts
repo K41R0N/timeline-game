@@ -12,6 +12,8 @@ import { WikidataClaim, rankedClaims, resolveLifespan, yearFromClaims } from './
 export type SparqlBinding = Record<string, { value: string }>;
 
 export interface ItemStatements {
+  /** Wikipedia language editions with an article on the item: the roster's measure of fame. */
+  sitelinks: number;
   human: WikidataClaim[];
   births: WikidataClaim[];
   deaths: WikidataClaim[];
@@ -42,7 +44,8 @@ export function rosterStatementsQuery(qids: string[]): string {
     `OPTIONAL { ?st psv:${property} ?v. ?v wikibase:timeValue ?time; wikibase:timePrecision ?prec. } ` +
     `OPTIONAL { ?st pq:P1480 ?q. } }`;
   return (
-    `SELECT ?item ?kind ?st ?rank ?time ?prec ?q WHERE { VALUES ?item { ${qids.map(q => `wd:${q}`).join(' ')} } ` +
+    `SELECT ?item ?sl ?kind ?st ?rank ?time ?prec ?q WHERE { VALUES ?item { ${qids.map(q => `wd:${q}`).join(' ')} } ` +
+    `?item wikibase:sitelinks ?sl. ` +
     `{ ?item p:P31 ?st. ?st ps:P31 wd:Q5; wikibase:rank ?rank. BIND("human" AS ?kind) } UNION ` +
     `${dateBlock('birth', 'P569')} UNION ${dateBlock('death', 'P570')} }`
   );
@@ -57,7 +60,8 @@ export function statementsFromSparql(bindings: SparqlBinding[]): Map<string, Ite
     const qid = lastSegment(binding.item.value);
     const kind = binding.kind.value as 'human' | 'birth' | 'death';
     const statementId = binding.st.value;
-    if (!items.has(qid)) items.set(qid, { human: [], births: [], deaths: [] });
+    if (!items.has(qid)) items.set(qid, { sitelinks: 0, human: [], births: [], deaths: [] });
+    if (binding.sl) items.get(qid)!.sitelinks = Number(binding.sl.value);
 
     let claim = claimsById.get(statementId);
     if (!claim) {
@@ -118,6 +122,7 @@ export function rosterPersonFrom(qid: string, name: string, statements: ItemStat
     deathYear: lifespan.deathYear,
     birthApproximate: lifespan.birthApproximate,
     deathApproximate: lifespan.deathApproximate,
+    sitelinks: statements.sitelinks,
   };
 }
 

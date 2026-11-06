@@ -21,6 +21,7 @@ describe('committed roster', () => {
     expect(new Set(people.map(p => p.id)).size).toBe(people.length);
     for (let i = 0; i < people.length; i++) {
       expect(people[i].deathYear).toBeGreaterThanOrEqual(people[i].birthYear);
+      expect(people[i].sitelinks).toBeGreaterThan(0);
       if (i > 0) expect(people[i].birthYear).toBeGreaterThanOrEqual(people[i - 1].birthYear);
     }
   });

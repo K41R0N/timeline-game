@@ -5,7 +5,7 @@ import type { HistoricalFigure } from '../types/HistoricalFigure';
 import { computePar, nextHint } from './par';
 
 const rosterPerson = (name: string, birthYear: number, deathYear: number): RosterPerson => ({
-  id: name, name, birthYear, deathYear, birthApproximate: false, deathApproximate: false,
+  id: name, name, birthYear, deathYear, birthApproximate: false, deathApproximate: false, sitelinks: 100,
 });
 const figure = (name: string, birthYear: number, deathYear: number): HistoricalFigure => ({
   id: name, name, birthYear, deathYear, shortDescription: '', imageUrl: '', contemporaries: [],

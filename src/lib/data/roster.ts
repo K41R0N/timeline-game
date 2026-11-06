@@ -14,10 +14,12 @@ export interface RosterPerson {
   deathYear: number;
   birthApproximate: boolean;
   deathApproximate: boolean;
+  /** Wikipedia language editions with an article on the person: how widely known they are. */
+  sitelinks: number;
 }
 
-/** One compact row per person: QID, title, birth, death, flags (1 = approximate birth, 2 = approximate death). */
-export type RosterRow = [string, string, number, number, number];
+/** One compact row per person: QID, title, birth, death, flags (1 = approximate birth, 2 = approximate death), sitelinks. */
+export type RosterRow = [string, string, number, number, number, number];
 
 export interface RosterFile {
   source: string;
@@ -32,10 +34,10 @@ export const APPROXIMATE_DEATH = 2;
 
 export function toRosterRow(person: RosterPerson): RosterRow {
   const flags = (person.birthApproximate ? APPROXIMATE_BIRTH : 0) | (person.deathApproximate ? APPROXIMATE_DEATH : 0);
-  return [person.id, person.name, person.birthYear, person.deathYear, flags];
+  return [person.id, person.name, person.birthYear, person.deathYear, flags, person.sitelinks];
 }
 
-export function fromRosterRow([id, name, birthYear, deathYear, flags]: RosterRow): RosterPerson {
+export function fromRosterRow([id, name, birthYear, deathYear, flags, sitelinks]: RosterRow): RosterPerson {
   return {
     id,
     name,
@@ -43,6 +45,7 @@ export function fromRosterRow([id, name, birthYear, deathYear, flags]: RosterRow
     deathYear,
     birthApproximate: (flags & APPROXIMATE_BIRTH) !== 0,
     deathApproximate: (flags & APPROXIMATE_DEATH) !== 0,
+    sitelinks,
   };
 }
 
