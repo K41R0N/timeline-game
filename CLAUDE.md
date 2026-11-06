@@ -33,6 +33,7 @@ src/
     │   ├── WikipediaService.ts       # lookupPerson (Wikidata-backed), searchPerson (dateless descriptions)
     │   ├── personData.ts             # Pure parsing: Wikidata claims, category fallback, living, summary, datelessDescription
     │   ├── rosterBuild.ts            # Pure roster building from SPARQL rows (BCE year shift, ambiguity, coverage gaps)
+    │   ├── analytics.ts              # PostHog, off unless NEXT_PUBLIC_POSTHOG_KEY is set; anonymous only
     │   ├── roster.capture.test.ts    # Network builder for data/roster.json (skipped unless CAPTURE_ROSTER=1)
     │   ├── __fixtures__/             # Recorded Wikimedia and SPARQL responses for offline tests
     │   └── TargetSelectionService.ts # selectTargets: band-fitting pair from the roster, then 2 lookups for display
@@ -45,6 +46,7 @@ src/
     │   ├── difficulty.ts     # chainShape (par + options per step), DIFFICULTY_BANDS, pickTargets from the 400 best-known people
     │   ├── overlap.ts        # sharedYears, revealPlacement, clutch / long-life thresholds
     │   ├── style.ts          # finalChain: shortest chain with the most style, plus its badges
+    │   ├── roundEvents.ts    # Analytics event properties for round start, completion and abandonment
     │   └── GameLogic.ts      # formatYear, formatLifespan, countStrokes, hintPolicy, describeResult
     ├── hooks/useGameState.ts # localStorage persistence (hint count and current hint), 2 s debounced autosave
     ├── constants/zIndex.ts   # Token list (not referenced; components use literal z-[..] classes)
@@ -86,6 +88,7 @@ CAPTURE_ROSTER=1 npx vitest run src/lib/services/roster.capture.test.ts --silent
 
 - **BCE years are negative integers** (`-356` is 356 BCE). Keep this. Sorting and overlap maths depend on it. Wikidata JSON uses the same numbering (`-0069` = 69 BCE). Year 0 is not skipped anywhere yet (#53).
 - **Figure identity**: `id` is the Wikidata QID; `name` is the canonical Wikipedia title. Living people have `isLiving: true` and `deathYear` = current year.
+- **Analytics**: events go only through `analytics.track` (`services/analytics.ts`); the event list and environment variables are in `DEPLOYMENT.md`. Never add identifying data: players are anonymous.
 - **Network**: app code never calls `fetch` for Wikimedia outside `wikimediaClient.ts`. The exceptions are the two capture tests, `wikimedia.capture.test.ts` and `roster.capture.test.ts`, which inject a throttled `fetchImpl` into the client; neither runs in CI.
 - **Par and hints** come only from the committed roster. A roster row's years must match what `lookupPerson` returns for the same QID, so the builder parses claims with the same `personData.ts` functions.
 - **Shared years** are the earlier death minus the later birth; 0 means the lives shared part of one calendar year and still count as overlapping.

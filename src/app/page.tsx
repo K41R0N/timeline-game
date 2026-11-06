@@ -22,6 +22,10 @@ import {
   countStrokes,
   hintPolicy,
   DIFFICULTY_BANDS,
+  analytics,
+  currentTime,
+  roundStartedProps,
+  roundCompletedProps,
 } from '@/lib';
 import type { Difficulty, RosterPerson, RevealResult, SavedHint, StyleBadge } from '@/lib';
 
@@ -43,6 +47,7 @@ export default function Home() {
   // Latest figures for async handlers; avoids appending to a stale list (#62).
   const figuresRef = useRef<HistoricalFigure[]>([]);
   const isAddingRef = useRef(false);
+  const roundStartedAtRef = useRef(0);
   // Bumped on every new game; lookups started in an earlier game are ignored when they resolve.
   const gameGenerationRef = useRef(0);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -75,6 +80,7 @@ export default function Home() {
 
   // Load saved state on mount - runs ONCE only
   useEffect(() => {
+    roundStartedAtRef.current = currentTime();
     const savedState = loadSavedState();
     if (savedState && savedState.figures.length > 0) {
       console.log('🔄 Restoring saved game...');
@@ -121,6 +127,8 @@ export default function Home() {
       setTargetB(targetB);
       setFigures([targetA, targetB]);
       setDifficulty(selectedDifficulty);
+      roundStartedAtRef.current = currentTime();
+      analytics.track('game_started', roundStartedProps(rosterPeople, selectedDifficulty, targetA, targetB));
       setShowDifficultySelect(false);
     } catch (err) {
       console.error('❌ Error loading initial figures:', err);
@@ -175,8 +183,20 @@ export default function Home() {
       setHasWon(true);
       setWinningChain(final.chain);
       setWinningBadges(final.badges);
+      analytics.track(
+        'game_completed',
+        roundCompletedProps({
+          difficulty,
+          strokes: countStrokes(figures, hintsUsed, difficulty),
+          par: parChain?.length ?? null,
+          hintsUsed,
+          badgeKinds: final.badges.map(badge => badge.kind),
+          startedAt: roundStartedAtRef.current,
+          now: currentTime(),
+        })
+      );
     }
-  }, [figures, targetA, targetB, hasWon]);
+  }, [figures, targetA, targetB, hasWon, difficulty, hintsUsed, parChain]);
 
   const handleFiguresChange = (updatedFigures: HistoricalFigure[]) => {
     console.log('📝 Updating timeline with figures:',
@@ -186,6 +206,20 @@ export default function Home() {
   };
 
   const handlePlayAgain = () => {
+    if (targetA && targetB && !hasWon) {
+      analytics.track(
+        'game_abandoned',
+        roundCompletedProps({
+          difficulty,
+          strokes,
+          par,
+          hintsUsed,
+          badgeKinds: [],
+          startedAt: roundStartedAtRef.current,
+          now: currentTime(),
+        })
+      );
+    }
     console.log('🔄 Returning to splash screen...');
     // Abandon any lookup still in flight: its result belongs to the old game, and the
     // new game should not stay locked waiting for it.
@@ -216,6 +250,7 @@ export default function Home() {
     const nameMatch = figuresRef.current.find(f => f.name.toLowerCase() === query.toLowerCase());
     if (nameMatch) {
       showError(`${nameMatch.name} is already in the timeline`);
+      analytics.track('figure_added', { accepted: false, reason: 'duplicate' });
       setSelectedFigure(nameMatch);
       return;
     }
@@ -235,17 +270,27 @@ export default function Home() {
       if (!result.ok) {
         console.warn(`⚠️ Rejected "${query}": ${result.reason}`);
         showError(lookupFailureMessage(result.reason, result.title));
+        analytics.track('figure_added', { accepted: false, reason: result.reason });
         return;
       }
 
       const figure = result.figure;
       if (figuresRef.current.some(f => f.id === figure.id)) {
         showError(`${figure.name} is already in the timeline`);
+        analytics.track('figure_added', { accepted: false, reason: 'duplicate' });
         return;
       }
 
       if (targetA && targetB) {
-        setReveal({ figure, reveal: revealPlacement(figure, figuresRef.current, targetA, targetB) });
+        const placement = revealPlacement(figure, figuresRef.current, targetA, targetB);
+        setReveal({ figure, reveal: placement });
+        analytics.track('figure_added', {
+          accepted: true,
+          overlaps: placement.overlaps.length,
+          extends_chain: placement.overlaps.some(overlap => overlap.extendsChain),
+          miss_years: placement.miss?.gapYears ?? null,
+          from_hint: hint?.id === figure.id,
+        });
       }
       setHint(current => (current?.id === figure.id ? null : current));
 
@@ -272,6 +317,7 @@ export default function Home() {
     }
     setHint({ id: next.id, name: next.name });
     setHintsUsed(count => count + 1);
+    analytics.track('hint_taken', { difficulty, costs_stroke: policy.costsStroke });
   };
 
   // Show splash screen first

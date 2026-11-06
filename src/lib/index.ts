@@ -17,6 +17,7 @@ export * from './types/HistoricalFigure';
 export { WikipediaService, lookupFailureMessage } from './services/WikipediaService';
 export type { PersonLookupResult, PersonLookupFailure } from './services/WikipediaService';
 export { TargetSelectionService } from './services/TargetSelectionService';
+export { analytics, currentTime } from './services/analytics';
 
 // Utilities
 export * from './utils/ChainAnalyzer';
@@ -25,6 +26,7 @@ export * from './utils/overlap';
 export * from './utils/style';
 export * from './utils/par';
 export * from './utils/difficulty';
+export * from './utils/roundEvents';
 
 // Data
 export { loadRoster } from './data/roster';
