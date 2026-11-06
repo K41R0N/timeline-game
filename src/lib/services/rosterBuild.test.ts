@@ -55,6 +55,17 @@ describe('rosterPersonFrom (recorded SPARQL rows)', () => {
     expect(rosterPersonFrom('Q1', 'Not a person', map.get('Q1')!, 2026)).toBeNull();
   });
 
+  it('leaves out lifespans no one could have lived', () => {
+    const circa = { P1480: [{ datavalue: { value: { id: 'Q5727902' } } }] };
+    const map = statementsFromSparql([
+      row('Q5', 'human', 'h5'), row('Q5', 'birth', 'b5', '-0349-01-01T00:00:00Z'), row('Q5', 'death', 'd5', '-0129-01-01T00:00:00Z'),
+      row('Q6', 'human', 'h6'), row('Q6', 'birth', 'b6', '1875-02-21T00:00:00Z'), row('Q6', 'death', 'd6', '1997-08-04T00:00:00Z'),
+    ]);
+    map.get('Q5')!.births[0].qualifiers = circa;
+    expect(rosterPersonFrom('Q5', 'Menander I', map.get('Q5')!, 2026)).toBeNull();
+    expect(rosterPersonFrom('Q6', 'Jeanne Calment', map.get('Q6')!, 2026)).toMatchObject({ birthYear: 1875, deathYear: 1997 });
+  });
+
   it('excludes living people', () => {
     const map = statementsFromSparql([row('Q2', 'human', 'h'), row('Q2', 'birth', 'b', '1961-08-04T00:00:00Z')]);
     expect(rosterPersonFrom('Q2', 'Someone alive', map.get('Q2')!, 2026)).toBeNull();
