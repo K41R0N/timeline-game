@@ -4,15 +4,15 @@ Reproduces the numbers in docs/research/2026-11-06-difficulty-balancing.md:
 
     python3 docs/research/difficulty-analysis.py
 
-Reads src/lib/data/roster.json and the target pools in src/lib/services/TargetSelectionService.ts.
+Reads src/lib/data/roster.json. The target pools the game used before #52 are kept below as
+research data, so the comparison with year-gap difficulty stays reproducible.
 Offline and deterministic (fixed random seed). Takes a few minutes.
 """
-import json, random, re, statistics, sys, collections
+import json, random, statistics, sys, collections
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 ROSTER = REPO / 'src/lib/data/roster.json'
-SERVICE = REPO / 'src/lib/services/TargetSelectionService.ts'
 people = [dict(id=r[0], name=r[1], b=r[2], d=r[3], approx=r[4]) for r in json.load(open(ROSTER))['people']]
 by_name = {p['name']: p for p in people}
 
@@ -80,11 +80,20 @@ for c in range(-800, 2000, 200):
     print(f'{c:>5}..{c+199:<5} {alive:6.1f} alive on average')
 
 print('\n== Current target pools: par per difficulty ==')
-service = SERVICE.read_text()
-pools = []
-for era in ('ANCIENT', 'MEDIEVAL', 'RENAISSANCE', 'MODERN'):
-    block = re.search(era + r"_FIGURES = \[(.*?)\];", service, re.S).group(1)
-    pools.append(re.findall(r"'([^']*)'", block))
+# Target pools from TargetSelectionService.ts before #52 (commit e73a18e): ancient, medieval, renaissance, modern.
+pools = [
+    ['Alexander the Great', 'Julius Caesar', 'Cleopatra', 'Aristotle', 'Plato', 'Socrates', 'Augustus', 'Hannibal',
+     'Confucius', 'Ramesses II', 'Hammurabi', 'Pericles', 'Archimedes', 'Herodotus', 'Marcus Aurelius'],
+    ['Charlemagne', 'Genghis Khan', 'Saladin', 'William the Conqueror', 'Richard the Lionheart', 'Joan of Arc',
+     'Marco Polo', 'Dante Alighieri', 'Thomas Aquinas', 'Kublai Khan', 'Eleanor of Aquitaine', 'Frederick Barbarossa',
+     'Akbar the Great', 'Suleiman the Magnificent'],
+    ['Leonardo da Vinci', 'Michelangelo', 'William Shakespeare', 'Christopher Columbus', 'Martin Luther',
+     'Galileo Galilei', 'Johannes Gutenberg', 'Elizabeth I', 'Isaac Newton', 'René Descartes', 'Nicolaus Copernicus',
+     'Raphael', 'Erasmus', 'Machiavelli'],
+    ['Napoleon Bonaparte', 'George Washington', 'Abraham Lincoln', 'Queen Victoria', 'Charles Darwin', 'Karl Marx',
+     'Thomas Edison', 'Vincent van Gogh', 'Marie Curie', 'Albert Einstein', 'Winston Churchill', 'Mahatma Gandhi',
+     'Franklin D. Roosevelt', 'Pablo Picasso', 'Nelson Mandela'],
+]
 eras4 = pools
 def pool_pairs(i, j):
     out = []

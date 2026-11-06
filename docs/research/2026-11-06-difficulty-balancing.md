@@ -82,7 +82,7 @@ The same par plays very differently:
 These rules hold at every difficulty:
 
 - Both targets come from the roster, so viewers recognise them. Difficulty never comes from obscure targets.
-- Every step has at least 2 options, except in deliberate one-answer puzzles.
+- On Easy and Medium every step has at least 2 options. Hard may include a step with a single well-known answer; a round built around such a step is a one-answer puzzle (#81).
 
 | Difficulty | Par | Narrowest step | Typical years apart | Where it tends to land |
 |---|---|---|---|---|

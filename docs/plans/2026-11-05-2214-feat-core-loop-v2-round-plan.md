@@ -79,7 +79,7 @@ This plan covers the round. The breakdown below is the current understanding, no
 - **Par counts only well-known people.** Knowing someone outside the roster is the way to beat par, which rewards obscure knowledge before the deep cut badge exists. Governs R2, R4.
 - **One roster feeds par, hints and the par chain.** A hint then always names someone par could have used, and the end screen compares against the same source. Governs R2, R18, R21.
 - **Misses are revealed, not just counted.** "Missed by 18 years" is a stream moment and costs nothing beyond date arithmetic. Governs R10.
-- **Difficulty keeps today's target gaps.** Easy 200–700, Medium 600–1400 and Hard 1200+ years apart (`src/lib/services/TargetSelectionService.ts:200`); hint cost is the only new difficulty lever. Governs R19.
+- **Difficulty is set by par and the options at the narrowest step, not by years apart.** Bands and evidence are in `docs/research/2026-11-06-difficulty-balancing.md` (built in #52); hint cost also scales with difficulty. Governs R5, R19.
 
 ---
 
@@ -188,7 +188,6 @@ flowchart TB
 - Real connection style, which needs Wikidata relationship statements (teacher, student, spouse, rival and similar).
 - A give-up button that reveals the par chain; New Game remains the exit.
 - Lifespan bars across the whole timeline and a "gap left to bridge" readout (#55).
-- Defining difficulty by par instead of birth-year gap (#52).
 - Daily puzzle, share card, suggestion picks and versus (#58–#61); the style tiebreaker first matters in these.
 
 **Outside this product's identity**
@@ -289,7 +288,6 @@ par = length of chain
 ### Assumptions
 
 - The Level 4 list covers 500 BCE to 1950 without a gap. If the builder's coverage sweep finds one, people from the Level 5 people lists whose lives fall inside the gap are added until it closes.
-- Target-pool names outside the roster's coverage, likely Hammurabi and Ramesses II, never pass R5; the existing retry loop skips them until #52 rebuilds the pools.
 - Hints work from the earlier target's side only; placements built backwards from the later target do not steer the hint.
 - The unused `ScoreDisplay` component is deleted with `getScoreColor`, since R23 removes the colour bands it depends on.
 
