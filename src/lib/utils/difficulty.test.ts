@@ -31,7 +31,7 @@ describe('chainShape', () => {
   it('finds many options at every step between Dante and Leonardo', () => {
     const shape = chainShape(roster, named('Dante Alighieri'), named('Leonardo da Vinci'))!;
     expect(shape.par).toBe(3);
-    expect(Math.min(...shape.optionsPerStep)).toBeGreaterThanOrEqual(15);
+    expect(Math.min(...shape.optionsPerStep)).toBeGreaterThanOrEqual(19);
   });
 
   it('is null when the targets already overlap or nothing bridges them', () => {
