@@ -24,6 +24,7 @@ export * from './utils/GameLogic';
 export * from './utils/overlap';
 export * from './utils/style';
 export * from './utils/par';
+export * from './utils/difficulty';
 
 // Data
 export { loadRoster } from './data/roster';

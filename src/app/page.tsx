@@ -21,10 +21,17 @@ import {
   finalChain,
   countStrokes,
   hintPolicy,
+  DIFFICULTY_BANDS,
 } from '@/lib';
-import type { RosterPerson, RevealResult, SavedHint, StyleBadge } from '@/lib';
+import type { Difficulty, RosterPerson, RevealResult, SavedHint, StyleBadge } from '@/lib';
 
 console.log('🚀 Initializing Timeline Game...');
+
+const DIFFICULTY_OPTIONS: Array<{ difficulty: Difficulty; label: string; knowledge: string; className: string }> = [
+  { difficulty: 'easy', label: 'Easy', knowledge: 'Many famous people fit every step', className: 'border-green-400 bg-green-50 hover:bg-green-100 text-green-700' },
+  { difficulty: 'medium', label: 'Medium', knowledge: 'Some steps have only a few famous answers', className: 'border-yellow-400 bg-yellow-50 hover:bg-yellow-100 text-yellow-700' },
+  { difficulty: 'hard', label: 'Hard', knowledge: 'At least one step has only one or two famous answers', className: 'border-red-400 bg-red-50 hover:bg-red-100 text-red-700' },
+];
 
 export default function Home() {
   const [figures, setFigures] = useState<HistoricalFigure[]>([]);
@@ -94,14 +101,7 @@ export default function Home() {
       setError(null);
 
       const rosterPeople = await loadRoster();
-      const isPlayable = (a: HistoricalFigure, b: HistoricalFigure) => computePar(rosterPeople, a, b).playable;
-
-      let targets = await TargetSelectionService.selectRandomTargets(selectedDifficulty, isPlayable);
-
-      if (!targets) {
-        console.warn('⚠️ Random selection failed, using default targets...');
-        targets = await TargetSelectionService.selectDefaultTargets(isPlayable);
-      }
+      const targets = await TargetSelectionService.selectTargets(rosterPeople, selectedDifficulty);
 
       if (!targets) {
         throw new Error('Failed to load historical figures');
@@ -279,33 +279,26 @@ export default function Home() {
         <div className="timeline-card p-8 max-w-md">
           <h2 className="text-2xl font-bold text-primary mb-4">Select Difficulty</h2>
           <p className="text-foreground-muted mb-6">
-            Choose how far apart the targets will be:
+            Connect two famous people in as few strokes as you can. Harder rounds need longer chains and people fewer players know.
           </p>
 
           <div className="space-y-3">
-            <button
-              onClick={() => loadGame('easy')}
-              className="w-full p-4 rounded-lg border-2 border-green-400 bg-green-50 hover:bg-green-100 transition-colors text-left"
-            >
-              <div className="font-bold text-green-700">Easy</div>
-              <div className="text-sm text-green-600">200-700 years apart</div>
-            </button>
-
-            <button
-              onClick={() => loadGame('medium')}
-              className="w-full p-4 rounded-lg border-2 border-yellow-400 bg-yellow-50 hover:bg-yellow-100 transition-colors text-left"
-            >
-              <div className="font-bold text-yellow-700">Medium</div>
-              <div className="text-sm text-yellow-600">600-1400 years apart</div>
-            </button>
-
-            <button
-              onClick={() => loadGame('hard')}
-              className="w-full p-4 rounded-lg border-2 border-red-400 bg-red-50 hover:bg-red-100 transition-colors text-left"
-            >
-              <div className="font-bold text-red-700">Hard</div>
-              <div className="text-sm text-red-600">1200+ years apart</div>
-            </button>
+            {DIFFICULTY_OPTIONS.map(option => {
+              const band = DIFFICULTY_BANDS[option.difficulty];
+              return (
+                <button
+                  key={option.difficulty}
+                  onClick={() => loadGame(option.difficulty)}
+                  className={`w-full p-4 rounded-lg border-2 transition-colors text-left ${option.className}`}
+                >
+                  <div className="font-bold">{option.label}</div>
+                  <div className="text-sm">
+                    Par {band.minPar}–{band.maxPar} • about {band.yearsApart} years apart
+                  </div>
+                  <div className="text-xs opacity-80">{option.knowledge}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

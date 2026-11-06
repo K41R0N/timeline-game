@@ -1,66 +1,61 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import rosterFile from '../data/roster.json';
+import { RosterFile, fromRosterRow } from '../data/roster';
 import { TargetSelectionService } from './TargetSelectionService';
 import { WikipediaService, type PersonLookupResult } from './WikipediaService';
-import type { HistoricalFigure } from '../types/HistoricalFigure';
+import { DIFFICULTY_BANDS, chainShape, famousPeople, fitsBand } from '../utils/difficulty';
 
-const person = (name: string, birthYear: number, deathYear: number): HistoricalFigure => ({
-  id: name, name, birthYear, deathYear, shortDescription: '', imageUrl: '', contemporaries: [],
-});
+const roster = (rosterFile as unknown as RosterFile).people.map(fromRosterRow);
+const byName = new Map(roster.map(p => [p.name, p]));
+const famousNames = new Set(famousPeople(roster).map(p => p.name));
+
+/** A lookup that answers with the roster's own years, as a live lookup would. */
+const rosterLookup = async (title: string): Promise<PersonLookupResult> => {
+  const p = byName.get(title)!;
+  return { ok: true, figure: { ...p, shortDescription: '', imageUrl: '', contemporaries: [] } };
+};
+
+/** Deterministic random numbers for repeatable picks. */
+function seeded(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('TargetSelectionService.selectRandomTargets', () => {
-  it('stops after one attempt when Wikimedia is unreachable instead of retrying ten pairs', async () => {
-    const lookup = vi
-      .spyOn(WikipediaService, 'lookupPerson')
-      .mockResolvedValue({ ok: false, reason: 'network', title: 'x' });
+describe('TargetSelectionService.selectTargets', () => {
+  it('looks up only the two chosen famous people and returns them earlier first, inside the band', async () => {
+    const lookup = vi.spyOn(WikipediaService, 'lookupPerson').mockImplementation(rosterLookup);
 
-    await expect(TargetSelectionService.selectRandomTargets('hard')).resolves.toBeNull();
+    const targets = await TargetSelectionService.selectTargets(roster, 'medium', seeded(11));
+    expect(targets).not.toBeNull();
+    const [a, b] = targets!;
+    expect(lookup).toHaveBeenCalledTimes(2);
+    expect(famousNames.has(a.name) && famousNames.has(b.name)).toBe(true);
+    expect(a.birthYear).toBeLessThanOrEqual(b.birthYear);
+    expect(fitsBand(chainShape(roster, a, b)!, DIFFICULTY_BANDS.medium)).toBe(true);
+  });
+
+  it('stops after one attempt when Wikimedia is unreachable', async () => {
+    const lookup = vi.spyOn(WikipediaService, 'lookupPerson').mockResolvedValue({ ok: false, reason: 'network', title: 'x' });
+
+    await expect(TargetSelectionService.selectTargets(roster, 'hard')).resolves.toBeNull();
     expect(lookup).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps trying other pairs when a candidate is merely unusable', async () => {
-    const lookup = vi.spyOn(WikipediaService, 'lookupPerson').mockImplementation(async (title: string): Promise<PersonLookupResult> => {
-      // First pair: one candidate has no reliable dates. Every later lookup succeeds.
-      if (lookup.mock.calls.length === 1) return { ok: false, reason: 'no_dates', title };
-      return { ok: true, figure: lookup.mock.calls.length % 2 === 0 ? person(title, -356, -323) : person(title, 1879, 1955) };
-    });
+  it('tries another pair when a chosen person does not resolve', async () => {
+    const lookup = vi.spyOn(WikipediaService, 'lookupPerson').mockImplementation(async (title: string) =>
+      lookup.mock.calls.length === 1 ? { ok: false, reason: 'not_found', title } : rosterLookup(title)
+    );
 
-    const targets = await TargetSelectionService.selectRandomTargets('hard');
-    expect(targets).not.toBeNull();
-    expect(lookup.mock.calls.length).toBeGreaterThan(2);
-  });
-
-  it('retries a pair the playability check rejects', async () => {
-    let call = 0;
-    const lookup = vi.spyOn(WikipediaService, 'lookupPerson').mockImplementation(async (title: string): Promise<PersonLookupResult> => {
-      call += 1;
-      return { ok: true, figure: call % 2 === 1 ? person(title, -356, -323) : person(title, 1879, 1955) };
-    });
-    const isPlayable = vi.fn().mockReturnValueOnce(false).mockReturnValue(true);
-
-    const targets = await TargetSelectionService.selectRandomTargets('hard', isPlayable);
-    expect(targets).not.toBeNull();
-    expect(isPlayable).toHaveBeenCalledTimes(2);
+    await expect(TargetSelectionService.selectTargets(roster, 'easy')).resolves.not.toBeNull();
     expect(lookup).toHaveBeenCalledTimes(4);
-  });
-
-  it('gives up after the attempt limit when no pair is playable', async () => {
-    let call = 0;
-    vi.spyOn(WikipediaService, 'lookupPerson').mockImplementation(async (title: string): Promise<PersonLookupResult> => {
-      call += 1;
-      return { ok: true, figure: call % 2 === 1 ? person(title, -356, -323) : person(title, 1879, 1955) };
-    });
-    await expect(TargetSelectionService.selectRandomTargets('hard', () => false)).resolves.toBeNull();
-  });
-});
-
-describe('TargetSelectionService.selectDefaultTargets', () => {
-  it('refuses the default pair when it is not playable', async () => {
-    vi.spyOn(WikipediaService, 'getPersonDetails').mockImplementation(async (title: string) => person(title, -356, -323));
-    await expect(TargetSelectionService.selectDefaultTargets(() => false)).resolves.toBeNull();
-    await expect(TargetSelectionService.selectDefaultTargets(() => true)).resolves.not.toBeNull();
   });
 });
