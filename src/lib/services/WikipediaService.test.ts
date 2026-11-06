@@ -104,3 +104,22 @@ describe('WikipediaService.lookupPerson (recorded fixtures)', () => {
     expect(result).toMatchObject({ ok: false, reason: 'network' });
   });
 });
+
+describe('WikipediaService.searchPerson', () => {
+  it('never shows years in autocomplete descriptions', async () => {
+    const stub: WikimediaClient = {
+      clearCache() {},
+      async getJson<T>(): Promise<T> {
+        return {
+          query: {
+            pages: [
+              { pageid: 1, title: 'Julius Caesar', description: 'Roman general and dictator (100–44 BC)', categories: [{ title: 'Category:100 BC births' }] },
+            ],
+          },
+        } as T;
+      },
+    };
+    const [result] = await WikipediaService.searchPerson('caesar', stub);
+    expect(result.snippet).toBe('Roman general and dictator');
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { WikidataClaim, isHuman, parseWikidataYear, resolveLifespan, summarize, yearFromClaims, yearsFromCategories } from './personData';
+import { WikidataClaim, datelessDescription, isHuman, parseWikidataYear, resolveLifespan, summarize, yearFromClaims, yearsFromCategories } from './personData';
 
 const time = (t: string, precision: number, extra: Partial<WikidataClaim> = {}): WikidataClaim => ({
   rank: 'normal',
@@ -87,5 +87,24 @@ describe('summarize', () => {
   it('keeps the first sentences and cleans pronunciation leftovers', () => {
     const text = 'Ptolemy I Soter (; Greek: Πτολεμαῖος Σωτήρ; c. 367 BC – 282 BC) was a general. He founded a dynasty. It ruled Egypt. It ended with Cleopatra.';
     expect(summarize(text)).toBe('Ptolemy I Soter (Greek: Πτολεμαῖος Σωτήρ; c. 367 BC – 282 BC) was a general. He founded a dynasty. It ruled Egypt.');
+  });
+});
+
+describe('datelessDescription', () => {
+  it.each([
+    ['Pharaoh of Egypt from 51 to 30 BC', 'Pharaoh of Egypt'],
+    ['Roman general and dictator (100–44 BC)', 'Roman general and dictator'],
+    ['German inventor and craftsman (c. 1393–1406 – 1468)', 'German inventor and craftsman'],
+    ['President of the United States from 2009 to 2017', 'President of the United States'],
+    ['American politician (born 1961)', 'American politician'],
+    ['5th-century BC Greek philosopher', 'Greek philosopher'],
+    ['Khan of the Mongol Empire since 1206', 'Khan of the Mongol Empire'],
+    ['English rock band', 'English rock band'],
+  ])('turns "%s" into "%s"', (description, expected) => {
+    expect(datelessDescription(description)).toBe(expected);
+  });
+
+  it('drops a description when a number survives the cleanup', () => {
+    expect(datelessDescription('Member of the 1st Parliament')).toBe('');
   });
 });

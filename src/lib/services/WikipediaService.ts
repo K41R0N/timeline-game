@@ -1,6 +1,6 @@
 import { HistoricalFigure } from '../types/HistoricalFigure';
 import { WIKIDATA_API, WIKIPEDIA_API, WikimediaClient, WikimediaRequestError, buildApiUrl, wikimedia } from './wikimediaClient';
-import { WikidataClaim, isHuman, resolveLifespan, summarize } from './personData';
+import { WikidataClaim, datelessDescription, isHuman, resolveLifespan, summarize } from './personData';
 
 export interface WikipediaSearchResult {
   pageid: number;
@@ -151,7 +151,7 @@ export class WikipediaService {
         .map(page => ({
           pageid: page.pageid ?? 0,
           title: page.title,
-          snippet: page.description ?? '',
+          snippet: datelessDescription(page.description ?? ''),
           thumbnail: page.thumbnail?.source,
         }));
     } catch (error) {

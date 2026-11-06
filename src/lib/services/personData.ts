@@ -198,3 +198,23 @@ export function summarize(extract: string, maxSentences = 3, maxLength = 600): s
   const sentences = clean.split(/(?<=[.!?])\s+(?=[A-Z"“])/).slice(0, maxSentences).join(' ');
   return sentences.length > maxLength ? `${sentences.slice(0, maxLength - 1).trimEnd()}…` : sentences;
 }
+
+const ERA = String.raw`(?:\s*(?:BC|BCE|AD|CE)\b)?`;
+const YEAR = String.raw`(?:c\.\s*)?\d+` + ERA;
+const YEAR_PATTERNS = [
+  /\s*\([^)]*\d[^)]*\)/g,
+  new RegExp(String.raw`\s*\bfrom\s+${YEAR}\s+(?:to|until)\s+${YEAR}`, 'gi'),
+  new RegExp(String.raw`\s*\b(?:born|died|since|until|in)\s+${YEAR}`, 'gi'),
+  new RegExp(String.raw`\b\d+(?:st|nd|rd|th)[- ]century` + ERA + String.raw`\s*`, 'gi'),
+];
+
+/**
+ * A short description with every year removed, so autocomplete never reveals when someone lived.
+ * Returns an empty string when a number survives, rather than risk leaking a date.
+ */
+export function datelessDescription(description: string): string {
+  let text = description;
+  for (const pattern of YEAR_PATTERNS) text = text.replace(pattern, '');
+  text = text.replace(/\s+/g, ' ').replace(/^[\s,;:–-]+|[\s,;:–-]+$/g, '').trim();
+  return /\d/.test(text) ? '' : text;
+}
