@@ -17,6 +17,21 @@ export interface ItemStatements {
   human: WikidataClaim[];
   births: WikidataClaim[];
   deaths: WikidataClaim[];
+  /** Properties with a Julian date that SPARQL's Gregorian conversion may have moved into another year. */
+  julianNearNewYear: Set<'P569' | 'P570'>;
+}
+
+const JULIAN_CALENDAR = 'Q1985786';
+const PRECISION_MONTH = 10;
+/** Julian and Gregorian dates differ by at most 13 days, so only dates this close to 1 January can change year. */
+const CALENDAR_SHIFT_DAYS = 15;
+
+function nearNewYear(time: string): boolean {
+  const match = /-(\d{2})-(\d{2})T/.exec(time);
+  if (!match) return false;
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  return (month === 1 && day <= CALENDAR_SHIFT_DAYS) || (month === 12 && day > 31 - CALENDAR_SHIFT_DAYS);
 }
 
 const RANKS: Record<string, WikidataClaim['rank']> = {
@@ -41,10 +56,10 @@ export function toHistoricalTime(time: string): string {
 export function rosterStatementsQuery(qids: string[]): string {
   const dateBlock = (kind: string, property: string) =>
     `{ ?item p:${property} ?st. ?st wikibase:rank ?rank. BIND("${kind}" AS ?kind) ` +
-    `OPTIONAL { ?st psv:${property} ?v. ?v wikibase:timeValue ?time; wikibase:timePrecision ?prec. } ` +
+    `OPTIONAL { ?st psv:${property} ?v. ?v wikibase:timeValue ?time; wikibase:timePrecision ?prec; wikibase:timeCalendarModel ?cal. } ` +
     `OPTIONAL { ?st pq:P1480 ?q. } }`;
   return (
-    `SELECT ?item ?sl ?kind ?st ?rank ?time ?prec ?q WHERE { VALUES ?item { ${qids.map(q => `wd:${q}`).join(' ')} } ` +
+    `SELECT ?item ?sl ?kind ?st ?rank ?time ?prec ?cal ?q WHERE { VALUES ?item { ${qids.map(q => `wd:${q}`).join(' ')} } ` +
     `?item wikibase:sitelinks ?sl. ` +
     `{ ?item p:P31 ?st. ?st ps:P31 wd:Q5; wikibase:rank ?rank. BIND("human" AS ?kind) } UNION ` +
     `${dateBlock('birth', 'P569')} UNION ${dateBlock('death', 'P570')} }`
@@ -60,7 +75,7 @@ export function statementsFromSparql(bindings: SparqlBinding[]): Map<string, Ite
     const qid = lastSegment(binding.item.value);
     const kind = binding.kind.value as 'human' | 'birth' | 'death';
     const statementId = binding.st.value;
-    if (!items.has(qid)) items.set(qid, { sitelinks: 0, human: [], births: [], deaths: [] });
+    if (!items.has(qid)) items.set(qid, { sitelinks: 0, human: [], births: [], deaths: [], julianNearNewYear: new Set() });
     if (binding.sl) items.get(qid)!.sitelinks = Number(binding.sl.value);
 
     let claim = claimsById.get(statementId);
@@ -80,6 +95,10 @@ export function statementsFromSparql(bindings: SparqlBinding[]): Map<string, Ite
             : { rank, mainsnak: { snaktype: 'somevalue' } };
       claimsById.set(statementId, claim);
       const statements = items.get(qid)!;
+      const julian = binding.cal && lastSegment(binding.cal.value) === JULIAN_CALENDAR;
+      if (kind !== 'human' && julian && Number(binding.prec?.value) >= PRECISION_MONTH && nearNewYear(binding.time!.value)) {
+        statements.julianNearNewYear.add(kind === 'birth' ? 'P569' : 'P570');
+      }
       (kind === 'human' ? statements.human : kind === 'birth' ? statements.births : statements.deaths).push(claim);
     }
 
@@ -93,21 +112,25 @@ export function statementsFromSparql(bindings: SparqlBinding[]): Map<string, Ite
 }
 
 /**
- * Properties whose best-rank values disagree on the year. SPARQL rows carry no statement
- * order, while a lookup takes the first statement of the best rank, so these must be
- * re-read from the JSON API to match what a lookup returns.
+ * Properties the JSON API must settle so the roster's year matches what a lookup returns:
+ * best-rank values that disagree on the year (SPARQL rows carry no statement order, and a
+ * lookup takes the first), and Julian dates SPARQL converted to Gregorian near a new year.
  */
-export function ambiguousProperties(statements: ItemStatements): Array<'P569' | 'P570'> {
-  const ambiguous: Array<'P569' | 'P570'> = [];
+export function propertiesToReread(statements: ItemStatements): Array<'P569' | 'P570'> {
+  const reread: Array<'P569' | 'P570'> = [];
   for (const [property, claims] of [['P569', statements.births], ['P570', statements.deaths]] as const) {
+    if (statements.julianNearNewYear.has(property)) {
+      reread.push(property);
+      continue;
+    }
     const valued = rankedClaims(claims).filter(c => c.mainsnak.snaktype === 'value');
     if (valued.length < 2) continue;
     const topIsPreferred = valued[0].rank === 'preferred';
     const top = valued.filter(c => (c.rank === 'preferred') === topIsPreferred);
     const years = new Set(top.map(c => yearFromClaims([c])?.year));
-    if (years.size > 1) ambiguous.push(property);
+    if (years.size > 1) reread.push(property);
   }
-  return ambiguous;
+  return reread;
 }
 
 /** A roster entry for a dead human with both years, using the same rules as a lookup; null otherwise. */
@@ -137,13 +160,13 @@ export function findCoverageGaps(
 ): Array<{ from: number; to: number }> {
   const sorted = [...people].sort((a, b) => a.birthYear - b.birthYear);
   const gaps: Array<{ from: number; to: number }> = [];
-  let reach = -Infinity;
+  let reach = from;
 
   for (const p of sorted) {
     if (p.birthYear > to) break;
-    if (reach !== -Infinity && p.birthYear > reach && reach >= from) gaps.push({ from: reach, to: p.birthYear });
+    if (p.birthYear > reach) gaps.push({ from: reach, to: p.birthYear });
     reach = Math.max(reach, p.deathYear);
   }
-  if (reach < to) gaps.push({ from: Math.max(reach, from), to });
+  if (reach < to) gaps.push({ from: reach, to });
   return gaps;
 }

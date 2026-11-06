@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import sample from './__fixtures__/roster-sparql-sample.json';
 import {
   type SparqlBinding,
-  ambiguousProperties,
   findCoverageGaps,
+  propertiesToReread,
   rosterPersonFrom,
   statementsFromSparql,
   toHistoricalTime,
@@ -72,23 +72,39 @@ describe('rosterPersonFrom (recorded SPARQL rows)', () => {
   });
 });
 
-describe('ambiguousProperties', () => {
+describe('propertiesToReread', () => {
   it('flags best-rank births that disagree on the year', () => {
     const map = statementsFromSparql([
       row('Q3', 'birth', 'a', '1155-01-01T00:00:00Z'),
       row('Q3', 'birth', 'b', '1162-01-01T00:00:00Z'),
       row('Q3', 'death', 'c', '1227-01-01T00:00:00Z'),
     ]);
-    expect(ambiguousProperties(map.get('Q3')!)).toEqual(['P569']);
+    expect(propertiesToReread(map.get('Q3')!)).toEqual(['P569']);
   });
 
   it('does not flag statements that agree on the year', () => {
     const map = statementsFromSparql([row('Q4', 'birth', 'a', '1809-01-01T00:00:00Z'), row('Q4', 'birth', 'b', '1809-02-12T00:00:00Z')]);
-    expect(ambiguousProperties(map.get('Q4')!)).toEqual([]);
+    expect(propertiesToReread(map.get('Q4')!)).toEqual([]);
+  });
+
+  const julian = (item: string, kind: string, time: string): SparqlBinding => ({
+    ...row(item, kind, `${item}-${kind}`, time),
+    prec: { value: '11' },
+    cal: { value: `${WD}Q1985786` },
+  });
+
+  it('rereads a Julian day-precision date that conversion may have moved across a new year (Newton, 25 December 1642)', () => {
+    const map = statementsFromSparql([julian('Q935', 'birth', '1643-01-04T00:00:00Z'), julian('Q935', 'death', '1727-03-31T00:00:00Z')]);
+    expect(propertiesToReread(map.get('Q935')!)).toEqual(['P569']);
+  });
+
+  it('trusts a Julian date far from the new year (Genghis Khan, 31 May 1162)', () => {
+    const map = statementsFromSparql([julian('Q720', 'birth', '1162-06-07T00:00:00Z')]);
+    expect(propertiesToReread(map.get('Q720')!)).toEqual([]);
   });
 
   it('lets a preferred statement settle disagreeing normal ones, as Caesar’s birth does', () => {
-    expect(ambiguousProperties(statements.get('Q1048')!)).toEqual([]);
+    expect(propertiesToReread(statements.get('Q1048')!)).toEqual([]);
   });
 });
 
@@ -101,6 +117,14 @@ describe('findCoverageGaps', () => {
 
   it('reports nothing when consecutive lives overlap', () => {
     expect(findCoverageGaps([life(500, 600), life(600, 700)], 500, 700)).toEqual([]);
+  });
+
+  it('reports a stretch before the first life', () => {
+    expect(findCoverageGaps([life(550, 600)], 500, 600)).toEqual([{ from: 500, to: 550 }]);
+  });
+
+  it('reports a stretch that starts before the range', () => {
+    expect(findCoverageGaps([life(400, 450), life(520, 600)], 500, 600)).toEqual([{ from: 500, to: 520 }]);
   });
 
   it('reports a range that runs past the last life', () => {

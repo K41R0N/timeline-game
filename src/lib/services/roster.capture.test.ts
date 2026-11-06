@@ -13,8 +13,8 @@ import { RosterFile, RosterPerson, toRosterRow } from '../data/roster';
 import {
   ItemStatements,
   SparqlBinding,
-  ambiguousProperties,
   findCoverageGaps,
+  propertiesToReread,
   rosterPersonFrom,
   rosterStatementsQuery,
   statementsFromSparql,
@@ -100,7 +100,7 @@ describe.skipIf(!process.env.CAPTURE_ROSTER)('build the roster', () => {
 
     let reread = 0;
     for (const [qid, item] of statements) {
-      for (const property of ambiguousProperties(item)) {
+      for (const property of propertiesToReread(item)) {
         const data = await client.getJson<{ claims?: Record<string, WikidataClaim[]> }>(claimsUrl(qid, property));
         const claims = data.claims?.[property] ?? [];
         if (property === 'P569') item.births = claims;
@@ -108,7 +108,7 @@ describe.skipIf(!process.env.CAPTURE_ROSTER)('build the roster', () => {
         reread += 1;
       }
     }
-    console.log(`📊 Re-read ${reread} ambiguous properties from the JSON API`);
+    console.log(`📊 Re-read ${reread} ambiguous or Julian new-year properties from the JSON API`);
 
     const currentYear = new Date().getUTCFullYear();
     const people: RosterPerson[] = [];
