@@ -106,22 +106,11 @@ export function ambiguousProperties(statements: ItemStatements): Array<'P569' | 
   return ambiguous;
 }
 
-/** The longest verified human life. */
-const MAX_LIFESPAN_YEARS = 122;
-/** Century-precision dates are stored as midpoints, which can stretch a life far past its real length. */
-const MAX_APPROXIMATE_LIFESPAN_YEARS = 110;
-
-/**
- * A roster entry for a dead human with both years, using the same rules as a lookup; null otherwise.
- * Lifespans no one could have lived are left out, since par must only use reliable dates.
- */
+/** A roster entry for a dead human with both years, using the same rules as a lookup; null otherwise. */
 export function rosterPersonFrom(qid: string, name: string, statements: ItemStatements, currentYear: number): RosterPerson | null {
   if (!statements.human.some(c => c.rank !== 'deprecated')) return null;
   const lifespan = resolveLifespan(statements.births, statements.deaths, [], currentYear);
   if (!lifespan || lifespan.isLiving) return null;
-  const years = lifespan.deathYear - lifespan.birthYear;
-  const approximate = lifespan.birthApproximate || lifespan.deathApproximate;
-  if (years > MAX_LIFESPAN_YEARS || (approximate && years > MAX_APPROXIMATE_LIFESPAN_YEARS)) return null;
   return {
     id: qid,
     name,

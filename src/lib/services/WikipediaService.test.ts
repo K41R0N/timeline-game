@@ -99,6 +99,25 @@ describe('WikipediaService.lookupPerson (recorded fixtures)', () => {
     expect(result).toMatchObject({ ok: false, reason: 'no_dates' });
   });
 
+  it('rejects an impossible lifespan from century-precision dates as no_dates', async () => {
+    const menander: WikimediaClient = {
+      clearCache() {},
+      async getJson<T>(url: string): Promise<T> {
+        if (url.includes('wbgetclaims')) {
+          const property = new URL(url).searchParams.get('property') ?? '';
+          const values: Record<string, unknown> = {
+            P31: { id: 'Q5' },
+            P569: { time: '-0400-00-00T00:00:00Z', precision: 7 },
+            P570: { time: '-0130-00-00T00:00:00Z', precision: 9 },
+          };
+          return { claims: { [property]: [{ rank: 'normal', mainsnak: { snaktype: 'value', datavalue: { value: values[property] } } }] } } as T;
+        }
+        return { query: { pages: [{ title: 'Menander I', pageprops: { wikibase_item: 'Q347878' } }] } } as T;
+      },
+    };
+    expect(await WikipediaService.lookupPerson('Menander I', menander, 2026)).toMatchObject({ ok: false, reason: 'no_dates' });
+  });
+
   it('reports a network failure without throwing', async () => {
     const result = await lookup('A title with no recorded fixture');
     expect(result).toMatchObject({ ok: false, reason: 'network' });

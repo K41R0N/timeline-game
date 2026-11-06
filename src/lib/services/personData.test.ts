@@ -81,6 +81,18 @@ describe('resolveLifespan', () => {
   it('rejects a death before birth', () => {
     expect(resolveLifespan([time('+1500-00-00T00:00:00Z', 9)], [time('+1400-00-00T00:00:00Z', 9)], [], 2026)).toBeNull();
   });
+
+  it('rejects a life longer than anyone has lived', () => {
+    expect(resolveLifespan([time('+1700-01-01T00:00:00Z', 11)], [time('+1830-01-01T00:00:00Z', 11)], [], 2026)).toBeNull();
+  });
+
+  it('rejects a life over 110 years built on century-midpoint dates (Menander I)', () => {
+    expect(resolveLifespan([time('-0400-00-00T00:00:00Z', 7)], [time('-0130-00-00T00:00:00Z', 9)], [], 2026)).toBeNull();
+  });
+
+  it('keeps the longest verified life (Jeanne Calment, 122 years)', () => {
+    expect(resolveLifespan([time('+1875-02-21T00:00:00Z', 11)], [time('+1997-08-04T00:00:00Z', 11)], [], 2026)).toMatchObject({ birthYear: 1875, deathYear: 1997 });
+  });
 });
 
 describe('summarize', () => {

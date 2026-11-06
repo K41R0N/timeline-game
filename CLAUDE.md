@@ -100,7 +100,7 @@ CAPTURE_ROSTER=1 npx vitest run src/lib/services/roster.capture.test.ts --silent
 - **Wikimedia rate-limits hard.** Shared or scripted IPs get HTTP 429 with a plain-text body. The client retries with backoff; scripts also need a `User-Agent`. Tests must stay offline.
 - **CirrusSearch reads `-123` as "exclude 123".** Never put negative (BCE) years in a `srsearch` or `gsrsearch` string.
 - **SPARQL BCE years are one off.** Wikidata Query Service returns RDF times in astronomical numbering (Caesar's birth is `-0099`); the JSON API and the game use historical numbering (-100). `rosterBuild.toHistoricalTime` converts. Unbounded SPARQL over all humans (for example a sitelinks threshold) times out; query by `VALUES` batches.
-- **Century-precision dates make impossible lives.** Wikidata stores them as century midpoints (Menander I came out 350–130 BC). The roster drops lives over 110 years with an approximate date and over 122 years in any case; lookups do not yet.
+- **Century-precision dates make impossible lives.** Wikidata stores them as century midpoints (Menander I came out 350–130 BC). `resolveLifespan` rejects lives over 110 years with an approximate date and over 122 years in any case, so lookups and the roster agree.
 - **Full Wikidata entities are ~300 KB.** Fetch single properties with `wbgetclaims`, not `wbgetentities&props=claims`.
 - **Changing a request URL invalidates fixtures.** Tests replay by exact URL; re-record with the capture command above.
 - **The `Timeline` snap effect depends on `zoom`**, so zooming re-centres the view. `ProfileImage` is declared inside render and remounts every render (#63).

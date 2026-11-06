@@ -38,6 +38,10 @@ const CIRCA_QID = 'Q5727902';
 const SOURCING_CIRCUMSTANCES = 'P1480';
 /** People with no recorded death and a birth within this many years are treated as living. */
 const MAX_LIVING_AGE = 120;
+/** The longest verified human life. */
+const MAX_LIFESPAN_YEARS = 122;
+/** Century-precision dates are stored as midpoints, which can stretch a life far past its real length. */
+const MAX_APPROXIMATE_LIFESPAN_YEARS = 110;
 
 const PRECISION_YEAR = 9;
 const PRECISION_DECADE = 8;
@@ -156,7 +160,8 @@ export function yearsFromCategories(categoryTitles: string[]): CategoryYears {
 
 /**
  * Combine Wikidata dates with the category fallback. Returns null when no honest lifespan
- * can be formed: the old "death - 30" / "birth + 60" guesses are intentionally gone.
+ * can be formed: the old "death - 30" / "birth + 60" guesses are intentionally gone, and a
+ * life no one could have lived counts as no reliable dates.
  */
 export function resolveLifespan(
   birthClaims: WikidataClaim[] | undefined,
@@ -179,6 +184,8 @@ export function resolveLifespan(
   }
 
   if (!death || death.year < birth.year) return null;
+  const years = death.year - birth.year;
+  if (years > MAX_LIFESPAN_YEARS || ((birth.approximate || death.approximate) && years > MAX_APPROXIMATE_LIFESPAN_YEARS)) return null;
   return {
     birthYear: birth.year,
     deathYear: death.year,
