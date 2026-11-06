@@ -85,7 +85,7 @@ export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onP
               <div className={`text-4xl font-bold ${underPar ? 'text-amber-600' : result.tone === 'par' ? 'text-green-600' : 'text-foreground-muted'}`}>
                 {result.tone === 'par' ? 'Par' : signedDifference(result.difference)}
               </div>
-              <div className="text-xs uppercase text-foreground-muted">Result</div>
+              <div className="text-xs uppercase text-foreground-muted">{golfName(result.difference) ?? 'Result'}</div>
             </div>
           )}
           {hintsUsed !== null && (

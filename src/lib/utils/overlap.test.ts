@@ -32,6 +32,16 @@ describe('describeShared', () => {
     expect(describeShared(michelangelo, galileo)).toBe('less than a year (1564 CE)');
     expect(describeShared(mozart, lincoln)).toBeNull();
   });
+
+  it('keeps the "c." on an endpoint set by an approximate date', () => {
+    const archimedes = person('Archimedes', -287, -212, { birthApproximate: true });
+    const hiero = person('Hiero II', -308, -215, { deathApproximate: true });
+    expect(describeShared(archimedes, hiero)).toBe('72 years (c. 287 BCE – c. 215 BCE)');
+    expect(describeShared(person('Exact', -300, -287), archimedes)).toBe('less than a year (c. 287 BCE)');
+    expect(describeShared(austen, person('Approximate death elsewhere', 1800, 1850, { deathApproximate: true }))).toBe(
+      '17 years (1800 CE – 1817 CE)'
+    );
+  });
 });
 
 describe('revealPlacement', () => {

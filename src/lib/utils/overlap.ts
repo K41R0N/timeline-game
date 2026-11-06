@@ -1,6 +1,6 @@
 import { HistoricalFigure } from '../types/HistoricalFigure';
 import { livesConnectedTo } from './ChainAnalyzer';
-import { calculateYearGap, formatSharedYears, formatYear, formatYearRange } from './GameLogic';
+import { calculateYearGap, formatSharedYears, formatYear } from './GameLogic';
 
 type Life = Pick<HistoricalFigure, 'birthYear' | 'deathYear' | 'birthApproximate' | 'deathApproximate' | 'isLiving'>;
 
@@ -15,13 +15,20 @@ export function sharedYears(a: Life, b: Life): number | null {
   return shared >= 0 ? shared : null;
 }
 
-/** How long and when two lives overlapped, as the reveal and end screen say it, or null when they never met. */
+/**
+ * How long and when two lives overlapped, as the reveal and end screen say it, or null when they never met.
+ * An endpoint set by an approximate birth or death keeps its "c.".
+ */
 export function describeShared(a: Life, b: Life): string | null {
   const years = sharedYears(a, b);
   if (years === null) return null;
   const from = Math.max(a.birthYear, b.birthYear);
   const to = Math.min(a.deathYear, b.deathYear);
-  return `${formatSharedYears(years)} (${years === 0 ? formatYear(from) : formatYearRange(from, to)})`;
+  const fromApproximate = [a, b].some(life => life.birthYear === from && life.birthApproximate);
+  const toApproximate = [a, b].some(life => life.deathYear === to && life.deathApproximate);
+  const mark = (approximate: boolean, year: number) => `${approximate ? 'c. ' : ''}${formatYear(year)}`;
+  const when = years === 0 ? mark(fromApproximate || toApproximate, from) : `${mark(fromApproximate, from)} – ${mark(toApproximate, to)}`;
+  return `${formatSharedYears(years)} (${when})`;
 }
 
 function hasExactYears(life: Life): boolean {

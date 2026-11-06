@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { HistoricalFigure } from '../../types/HistoricalFigure';
 import { formatLifespan } from '../../utils/GameLogic';
 import { LONG_BRIDGE_MIN_YEARS, describeShared, type RevealResult } from '../../utils/overlap';
@@ -14,7 +15,8 @@ const MAX_LISTED_OVERLAPS = 3;
 
 /** The moment a placement lands: when they lived, and who they overlapped or how far they missed. */
 export function PlacementReveal({ figure, reveal, onDismiss }: PlacementRevealProps) {
-  const listed = reveal.overlaps.slice(0, MAX_LISTED_OVERLAPS);
+  const [showAll, setShowAll] = useState(false);
+  const listed = showAll ? reveal.overlaps : reveal.overlaps.slice(0, MAX_LISTED_OVERLAPS);
   const hidden = reveal.overlaps.length - listed.length;
   const anyBadge = reveal.longBridge || reveal.overlaps.some(o => o.clutch);
 
@@ -52,7 +54,13 @@ export function PlacementReveal({ figure, reveal, onDismiss }: PlacementRevealPr
                 )}
               </li>
             ))}
-            {hidden > 0 && <li className="text-sm text-foreground-subtle">and {hidden} more</li>}
+            {hidden > 0 && (
+              <li>
+                <button onClick={() => setShowAll(true)} className="text-sm text-foreground-subtle underline hover:text-foreground">
+                  and {hidden} more
+                </button>
+              </li>
+            )}
           </ul>
         )}
 
