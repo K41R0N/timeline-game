@@ -75,3 +75,49 @@ export function getScoreColor(score: number): string {
   if (score <= 10) return 'text-orange-600';
   return 'text-red-600';
 }
+
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
+export interface HintPolicy {
+  /** Whether hints taken appear on the end screen. */
+  recorded: boolean;
+  /** Whether each hint adds a stroke. */
+  costsStroke: boolean;
+  /** Short cost label for the hint control. */
+  label: string;
+}
+
+const HINT_POLICIES: Record<Difficulty, HintPolicy> = {
+  easy: { recorded: false, costsStroke: false, label: 'free' },
+  medium: { recorded: true, costsStroke: false, label: 'free, counted' },
+  hard: { recorded: true, costsStroke: true, label: '+1 stroke' },
+};
+
+/** Help costs more as the player claims more skill. */
+export function hintPolicy(difficulty: Difficulty): HintPolicy {
+  return HINT_POLICIES[difficulty];
+}
+
+/** Every person placed on the board is a stroke (the two targets are not); hints add one each on Hard. */
+export function countStrokes(figures: HistoricalFigure[], hintsUsed: number, difficulty: Difficulty): number {
+  const placed = Math.max(0, figures.length - 2);
+  return placed + (hintPolicy(difficulty).costsStroke ? hintsUsed : 0);
+}
+
+export interface RoundResult {
+  /** Strokes minus par: negative is under par. */
+  difference: number;
+  label: string;
+  tone: 'under' | 'par' | 'over';
+}
+
+const GOLF_NAMES: Record<number, string> = { [-2]: 'eagle', [-1]: 'birdie', 1: 'bogey' };
+
+/** Strokes relative to par, in golf terms. */
+export function describeResult(strokes: number, par: number): RoundResult {
+  const difference = strokes - par;
+  if (difference === 0) return { difference, label: 'Par', tone: 'par' };
+  const signed = difference < 0 ? `−${-difference}` : `+${difference}`;
+  const name = GOLF_NAMES[difference];
+  return { difference, label: name ? `${signed}, ${name}` : signed, tone: difference < 0 ? 'under' : 'over' };
+}
