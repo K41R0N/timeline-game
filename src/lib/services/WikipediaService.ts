@@ -159,25 +159,4 @@ export class WikipediaService {
       return [];
     }
   }
-
-  /**
-   * Hint titles for the detail panel. Known to return noise (year articles); tracked in #51.
-   * Kept on the shared client so it is throttled and cached.
-   */
-  static async findContemporaries(figure: HistoricalFigure, client: WikimediaClient = wikimedia): Promise<string[]> {
-    const url = buildApiUrl(WIKIPEDIA_API, {
-      action: 'query',
-      list: 'search',
-      srsearch: `${figure.birthYear} ${figure.deathYear} births deaths -disambiguation`,
-      srlimit: '20',
-    });
-
-    try {
-      const data = await client.getJson<{ query?: { search?: Array<{ title: string }> } }>(url);
-      return (data.query?.search ?? []).map(result => result.title).filter(title => title !== figure.name);
-    } catch (error) {
-      console.error(`[WikipediaService] ❌ Error finding contemporaries for ${figure.name}:`, error);
-      return [];
-    }
-  }
 }

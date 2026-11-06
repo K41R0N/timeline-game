@@ -13,7 +13,10 @@ export interface ChainAnalysis {
 /**
  * Check if two historical figures are contemporaries (overlapping lifetimes)
  */
-export function areContemporaries(fig1: HistoricalFigure, fig2: HistoricalFigure): boolean {
+export function areContemporaries(
+  fig1: Pick<HistoricalFigure, 'birthYear' | 'deathYear'>,
+  fig2: Pick<HistoricalFigure, 'birthYear' | 'deathYear'>
+): boolean {
   return fig1.birthYear <= fig2.deathYear && fig2.birthYear <= fig1.deathYear;
 }
 

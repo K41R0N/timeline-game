@@ -41,7 +41,7 @@ export interface RevealedOverlap {
   clutch: boolean;
 }
 
-export interface PlacementReveal {
+export interface RevealResult {
   overlaps: RevealedOverlap[];
   miss: { nearest: HistoricalFigure; gapYears: number } | null;
   /** Provisional: the badge is only earned if this person ends up on the final chain. */
@@ -70,7 +70,7 @@ export function revealPlacement(
   board: HistoricalFigure[],
   targetA: HistoricalFigure,
   targetB: HistoricalFigure
-): PlacementReveal {
+): RevealResult {
   const others = board.filter(other => other.id !== figure.id);
   const connected = connectedToTargets(others, [targetA, targetB]);
 
@@ -85,7 +85,7 @@ export function revealPlacement(
     }))
     .sort((a, b) => Number(b.extendsChain) - Number(a.extendsChain));
 
-  let miss: PlacementReveal['miss'] = null;
+  let miss: RevealResult['miss'] = null;
   if (overlaps.length === 0 && others.length > 0) {
     const nearest = others.reduce((best, other) => (gapYears(figure, other) < gapYears(figure, best) ? other : best));
     miss = { nearest, gapYears: gapYears(figure, nearest) };

@@ -9,11 +9,20 @@ import {
   SearchBar,
   WinModal,
   SplashScreen,
-  analyzeChain,
   TargetSelectionService,
   useAutoSave,
-  useGameStatePersistence
+  useGameStatePersistence,
+  PlacementReveal,
+  HintButton,
+  loadRoster,
+  computePar,
+  nextHint,
+  revealPlacement,
+  finalChain,
+  countStrokes,
+  hintPolicy,
 } from '@/lib';
+import type { RosterPerson, RevealResult, SavedHint, StyleBadge } from '@/lib';
 
 console.log('🚀 Initializing Timeline Game...');
 
@@ -37,15 +46,23 @@ export default function Home() {
   const [showSplash, setShowSplash] = useState(true);
 
   // Game state
-  const [score, setScore] = useState(0);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [hint, setHint] = useState<SavedHint | null>(null);
+  const [reveal, setReveal] = useState<{ figure: HistoricalFigure; reveal: RevealResult } | null>(null);
+  const [roster, setRoster] = useState<RosterPerson[] | null>(null);
+  const [parChain, setParChain] = useState<RosterPerson[] | null>(null);
   const [hasWon, setHasWon] = useState(false);
   const [winningChain, setWinningChain] = useState<HistoricalFigure[]>([]);
+  const [winningBadges, setWinningBadges] = useState<StyleBadge[]>([]);
   const [targetA, setTargetA] = useState<HistoricalFigure | null>(null);
   const [targetB, setTargetB] = useState<HistoricalFigure | null>(null);
 
   // State persistence hooks
   const { loadSavedState, clearState } = useGameStatePersistence();
-  useAutoSave(figures, targetA, targetB, difficulty, score);
+  useAutoSave(figures, targetA, targetB, difficulty, hintsUsed, hint);
+  const strokes = countStrokes(figures, hintsUsed, difficulty);
+  const par = parChain?.length ?? null;
+  const policy = hintPolicy(difficulty);
 
   // Load saved state on mount - runs ONCE only
   useEffect(() => {
@@ -56,7 +73,8 @@ export default function Home() {
       setTargetA(savedState.targetA);
       setTargetB(savedState.targetB);
       setDifficulty(savedState.difficulty);
-      setScore(savedState.score);
+      setHintsUsed(savedState.hintsUsed);
+      setHint(savedState.hint);
       setShowSplash(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,11 +93,14 @@ export default function Home() {
       setIsLoading(true);
       setError(null);
 
-      let targets = await TargetSelectionService.selectRandomTargets(selectedDifficulty);
+      const rosterPeople = await loadRoster();
+      const isPlayable = (a: HistoricalFigure, b: HistoricalFigure) => computePar(rosterPeople, a, b).playable;
+
+      let targets = await TargetSelectionService.selectRandomTargets(selectedDifficulty, isPlayable);
 
       if (!targets) {
         console.warn('⚠️ Random selection failed, using default targets...');
-        targets = await TargetSelectionService.selectDefaultTargets();
+        targets = await TargetSelectionService.selectDefaultTargets(isPlayable);
       }
 
       if (!targets) {
@@ -117,28 +138,41 @@ export default function Home() {
     errorTimerRef.current = setTimeout(() => setError(null), 3000);
   };
 
-  // Calculate score
+  // Par comes from the roster, for new and restored rounds alike.
   useEffect(() => {
-    if (figures.length >= 2) {
-      const newScore = Math.max(0, figures.length - 2);
-      setScore(newScore);
-      console.log(`📊 Score updated: ${newScore}`);
-    }
-  }, [figures]);
+    if (!targetA || !targetB) return;
+    let cancelled = false;
+    loadRoster()
+      .then(people => {
+        if (cancelled) return;
+        const result = computePar(people, targetA, targetB);
+        setRoster(people);
+        setParChain(result.playable ? result.chain : null);
+        console.log(`📊 Par ${result.playable ? result.par : 'unavailable'} for ${targetA.name} → ${targetB.name}`);
+      })
+      .catch(err => {
+        console.error('❌ Error loading the roster:', err);
+        if (!cancelled) setError('Failed to load the game data. Please refresh the page.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [targetA, targetB]);
 
   // Check for win condition
   useEffect(() => {
     if (figures.length < 2 || !targetA || !targetB || hasWon) return;
 
-    const analysis = analyzeChain(targetA, targetB, figures);
+    const final = finalChain(targetA, targetB, figures);
 
-    if (analysis.isComplete) {
+    if (final) {
       console.log('🎉 WIN CONDITION MET!', {
-        chainLength: analysis.chainLength,
-        path: analysis.shortestPath.map(f => f.name).join(' → ')
+        chainLength: final.chain.length - 2,
+        path: final.chain.map(f => f.name).join(' → ')
       });
       setHasWon(true);
-      setWinningChain(analysis.shortestPath);
+      setWinningChain(final.chain);
+      setWinningBadges(final.badges);
     }
   }, [figures, targetA, targetB, hasWon]);
 
@@ -160,7 +194,11 @@ export default function Home() {
     clearState(); // Clear saved progress
     setHasWon(false);
     setWinningChain([]);
-    setScore(0);
+    setWinningBadges([]);
+    setHintsUsed(0);
+    setHint(null);
+    setReveal(null);
+    setParChain(null);
     setFigures([]);
     setTargetA(null);
     setTargetB(null);
@@ -204,6 +242,11 @@ export default function Home() {
         return;
       }
 
+      if (targetA && targetB) {
+        setReveal({ figure, reveal: revealPlacement(figure, figuresRef.current, targetA, targetB) });
+      }
+      setHint(current => (current?.id === figure.id ? null : current));
+
       // Functional update so concurrent renders never drop an addition (#62).
       setFigures(prev =>
         prev.some(f => f.id === figure.id) ? prev : [...prev, figure].sort((a, b) => a.birthYear - b.birthYear)
@@ -216,6 +259,14 @@ export default function Home() {
         setIsAnimating(false);
       }
     }
+  };
+
+  const handleHint = () => {
+    if (!roster || !targetA || !targetB || hint) return;
+    const next = nextHint(roster, targetA, targetB, figuresRef.current);
+    if (!next) return;
+    setHint({ id: next.id, name: next.name });
+    setHintsUsed(count => count + 1);
   };
 
   // Show splash screen first
@@ -305,13 +356,22 @@ export default function Home() {
       <div className="fixed top-4 right-4 z-[22] pointer-events-auto group">
         <div className="timeline-card p-3 shadow-glow hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-3">
-            {/* Score */}
+            {/* Strokes against par */}
             <div className="text-center">
-              <div className={`text-2xl font-bold leading-none ${score === 0 ? 'text-green-600' : score <= 3 ? 'text-yellow-600' : 'text-red-600'}`}>
-                {score}
+              <div className={`text-2xl font-bold leading-none ${par !== null && strokes > par ? 'text-amber-600' : 'text-green-600'}`}>
+                {strokes}
               </div>
               <div className="text-[9px] text-foreground-muted uppercase mt-0.5">
-                Score
+                Strokes
+              </div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-2xl font-bold leading-none text-primary">
+                {par ?? '…'}
+              </div>
+              <div className="text-[9px] text-foreground-muted uppercase mt-0.5">
+                Par
               </div>
             </div>
 
@@ -342,13 +402,33 @@ export default function Home() {
                   <span className="text-yellow-600">{targetB.name}</span>
                 </div>
                 <div className="text-[10px] text-foreground-subtle mt-1">
-                  Find the shortest path • Lower score is better
+                  {par !== null
+                    ? `Connect them in as few people as you can • Par is ${par} • Every person placed is a stroke`
+                    : 'Connect them in as few people as you can • Every person placed is a stroke'}
                 </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Hint control - under the score badge */}
+      {targetA && targetB && !hasWon && (
+        <div className="fixed top-24 right-4 z-[21] pointer-events-auto">
+          <HintButton
+            costLabel={policy.label}
+            hintName={hint && !figures.some(f => f.id === hint.id) ? hint.name : null}
+            disabled={!roster || isAdding}
+            onRequest={handleHint}
+            onPlace={handleAddFigure}
+          />
+        </div>
+      )}
+
+      {/* Placement reveal */}
+      {reveal && !hasWon && (
+        <PlacementReveal figure={reveal.figure} reveal={reveal.reveal} onDismiss={() => setReveal(null)} />
+      )}
 
       {/* Error Toast */}
       {error && (
@@ -386,8 +466,12 @@ export default function Home() {
       {/* Win Modal */}
       {hasWon && (
         <WinModal
-          score={score}
-          winningChain={winningChain}
+          strokes={strokes}
+          par={par}
+          chain={winningChain}
+          badges={winningBadges}
+          parChain={parChain && targetA && targetB ? [targetA, ...parChain, targetB] : null}
+          hintsUsed={policy.recorded ? hintsUsed : null}
           onPlayAgain={handlePlayAgain}
         />
       )}
