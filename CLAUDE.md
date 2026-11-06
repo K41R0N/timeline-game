@@ -5,6 +5,7 @@ Start with these documents:
 - `STRATEGY.md`: what the game should become (streamer-first, score the overlap). Check proposed work against it.
 - `ROADMAP.md` / GitHub issue #37: the prioritised work, as GitHub issues under four epics (#38–#41).
 - `docs/audits/2026-11-02-current-state-audit.md`: the as-built baseline, verified defects, and the design levers still open.
+- `docs/research/2026-11-06-difficulty-balancing.md`: how difficulty is set (par and options per step, not years), with the bands and the analysis script.
 
 ## Project overview
 

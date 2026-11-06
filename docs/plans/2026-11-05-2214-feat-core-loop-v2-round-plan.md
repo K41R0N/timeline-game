@@ -61,7 +61,7 @@ This plan covers the round. The breakdown below is the current understanding, no
   - #60 suggestion picks: depends on hidden dates (R7); picks must be dateless too.
   - #61 versus: depends on the style tiebreaker (R17).
 - #43 PostHog: enables the "completed sessions" metric; a completed round is one that reaches R20's end condition.
-- #52 target selection: still to decide whether difficulty should be defined by par instead of birth-year gap.
+- #52 target selection: decided in `docs/research/2026-11-06-difficulty-balancing.md`; difficulty moves from birth-year gap to par and options per step.
 
 ---
 
