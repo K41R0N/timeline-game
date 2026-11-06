@@ -35,14 +35,15 @@ src/
     │   ├── rosterBuild.ts            # Pure roster building from SPARQL rows (BCE year shift, ambiguity, coverage gaps)
     │   ├── roster.capture.test.ts    # Network builder for data/roster.json (skipped unless CAPTURE_ROSTER=1)
     │   ├── __fixtures__/             # Recorded Wikimedia and SPARQL responses for offline tests
-    │   └── TargetSelectionService.ts # 58 hard-coded names in 4 era pools; difficulty by birth-year gap; playable pairs only
+    │   └── TargetSelectionService.ts # selectTargets: band-fitting pair from the roster, then 2 lookups for display
     ├── data/
-    │   ├── roster.json       # ~1,750 people from Wikipedia's Level 4 vital people list, Wikidata years (committed)
+    │   ├── roster.json       # ~1,750 people from Wikipedia's Level 4 vital people list: Wikidata years and language-edition counts (committed)
     │   └── roster.ts         # Roster row type and lazy loader (own client chunk)
     ├── utils/
     │   ├── ChainAnalyzer.ts  # areContemporaries + BFS shortest path between targets (Timeline colouring)
     │   ├── par.ts            # computePar (greedy furthest-reach over the roster) and nextHint
-    │   ├── overlap.ts        # sharedYears, gapYears, revealPlacement, clutch / long-life thresholds
+    │   ├── difficulty.ts     # chainShape (par + options per step), DIFFICULTY_BANDS, pickTargets from the 400 best-known people
+    │   ├── overlap.ts        # sharedYears, revealPlacement, clutch / long-life thresholds
     │   ├── style.ts          # finalChain: shortest chain with the most style, plus its badges
     │   └── GameLogic.ts      # formatYear, formatLifespan, countStrokes, hintPolicy, describeResult
     ├── hooks/useGameState.ts # localStorage persistence (hint count and current hint), 2 s debounced autosave
@@ -74,7 +75,7 @@ CAPTURE_ROSTER=1 npx vitest run src/lib/services/roster.capture.test.ts --silent
 
 ## Data flow
 
-1. `page.tsx` loads the roster (`loadRoster`), then calls `TargetSelectionService.selectRandomTargets(difficulty, isPlayable)`. Each attempt makes 2 `lookupPerson` calls (each is 4 HTTP requests: 1 Wikipedia query + 3 Wikidata `wbgetclaims`, before retries and cache hits), and a pair counts only when `computePar` can connect it. Up to 10 attempts, then the Alexander and Caesar fallback, which must also be playable.
+1. `page.tsx` loads the roster (`loadRoster`), then calls `TargetSelectionService.selectTargets(roster, difficulty)`. `pickTargets` chooses both targets offline from the 400 best-known roster people and keeps a pair only when its par and narrowest step fit the band (`docs/research/2026-11-06-difficulty-balancing.md`); each band has a fallback pair. Only then are the two targets looked up (2 `lookupPerson` calls, each 4 HTTP requests: 1 Wikipedia query + 3 Wikidata `wbgetclaims`), for descriptions and images.
 2. Par and the par chain come from `computePar(roster, targetA, targetB)`; par and hints never call Wikimedia.
 3. The player submits a name. `handleAddFigure` locks input, calls `WikipediaService.lookupPerson(name)`, shows the typed rejection reason or appends with a functional update, and opens the reveal (`revealPlacement`, against the board before the placement).
 4. Strokes are `countStrokes(figures, hintsUsed, difficulty)`: every placed person, plus hints on Hard. A hint is `nextHint(roster, ...)`; the hinted name is saved with the round.
