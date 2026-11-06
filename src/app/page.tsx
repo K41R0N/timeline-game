@@ -415,8 +415,14 @@ export default function Home() {
         </div>
       )}
 
-      {reveal && !hasWon && (
-        <PlacementReveal figure={reveal.figure} reveal={reveal.reveal} onDismiss={() => setReveal(null)} />
+      {reveal && (
+        <PlacementReveal
+          key={reveal.figure.id}
+          figure={reveal.figure}
+          reveal={reveal.reveal}
+          won={hasWon}
+          onDismiss={() => setReveal(null)}
+        />
       )}
 
       {/* Error Toast */}
@@ -452,8 +458,8 @@ export default function Home() {
         isAdding={isAdding}
       />
 
-      {/* Win Modal */}
-      {hasWon && (
+      {/* Win Modal: opens once the winning placement's reveal is dismissed */}
+      {hasWon && !reveal && (
         <WinModal
           strokes={strokes}
           par={par}

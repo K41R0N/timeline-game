@@ -8,13 +8,15 @@ import { LONG_BRIDGE_MIN_YEARS, describeShared, type RevealResult } from '../../
 interface PlacementRevealProps {
   figure: HistoricalFigure;
   reveal: RevealResult;
+  /** This placement completed the chain; dismissing the card opens the end screen. */
+  won?: boolean;
   onDismiss: () => void;
 }
 
 const MAX_LISTED_OVERLAPS = 3;
 
 /** The moment a placement lands: when they lived, and who they overlapped or how far they missed. */
-export function PlacementReveal({ figure, reveal, onDismiss }: PlacementRevealProps) {
+export function PlacementReveal({ figure, reveal, won = false, onDismiss }: PlacementRevealProps) {
   const [showAll, setShowAll] = useState(false);
   const listed = showAll ? reveal.overlaps : reveal.overlaps.slice(0, MAX_LISTED_OVERLAPS);
   const hidden = reveal.overlaps.length - listed.length;
@@ -25,7 +27,7 @@ export function PlacementReveal({ figure, reveal, onDismiss }: PlacementRevealPr
       <div
         role="status"
         aria-live="polite"
-        className={`timeline-card w-full max-w-md p-4 border-2 pointer-events-auto animate-fadeIn ${reveal.miss ? 'border-red-400' : 'border-green-400'}`}
+        className={`timeline-card w-full max-w-md max-h-[calc(100dvh-8rem)] lg:max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 border-2 pointer-events-auto animate-fadeIn ${reveal.miss ? 'border-red-400' : 'border-green-400'}`}
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -76,6 +78,15 @@ export function PlacementReveal({ figure, reveal, onDismiss }: PlacementRevealPr
           <div className="mt-2 text-xs text-foreground-subtle">
             Badges count if they stay on your final chain (clutch: 5 shared years or fewer; long bridge: {LONG_BRIDGE_MIN_YEARS}+ years).
           </div>
+        )}
+
+        {won && (
+          <button
+            onClick={onDismiss}
+            className="mt-3 w-full px-4 py-2 bg-primary hover:bg-primary-bright text-white font-semibold rounded-lg transition-all"
+          >
+            Chain complete: see your result
+          </button>
         )}
       </div>
     </div>
