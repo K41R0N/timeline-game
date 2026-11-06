@@ -99,8 +99,46 @@ describe('WikipediaService.lookupPerson (recorded fixtures)', () => {
     expect(result).toMatchObject({ ok: false, reason: 'no_dates' });
   });
 
+  it('rejects an impossible lifespan from century-precision dates as no_dates', async () => {
+    const menander: WikimediaClient = {
+      clearCache() {},
+      async getJson<T>(url: string): Promise<T> {
+        if (url.includes('wbgetclaims')) {
+          const property = new URL(url).searchParams.get('property') ?? '';
+          const values: Record<string, unknown> = {
+            P31: { id: 'Q5' },
+            P569: { time: '-0400-00-00T00:00:00Z', precision: 7 },
+            P570: { time: '-0130-00-00T00:00:00Z', precision: 9 },
+          };
+          return { claims: { [property]: [{ rank: 'normal', mainsnak: { snaktype: 'value', datavalue: { value: values[property] } } }] } } as T;
+        }
+        return { query: { pages: [{ title: 'Menander I', pageprops: { wikibase_item: 'Q347878' } }] } } as T;
+      },
+    };
+    expect(await WikipediaService.lookupPerson('Menander I', menander, 2026)).toMatchObject({ ok: false, reason: 'no_dates' });
+  });
+
   it('reports a network failure without throwing', async () => {
     const result = await lookup('A title with no recorded fixture');
     expect(result).toMatchObject({ ok: false, reason: 'network' });
+  });
+});
+
+describe('WikipediaService.searchPerson', () => {
+  it('never shows years in autocomplete descriptions', async () => {
+    const stub: WikimediaClient = {
+      clearCache() {},
+      async getJson<T>(): Promise<T> {
+        return {
+          query: {
+            pages: [
+              { pageid: 1, title: 'Julius Caesar', description: 'Roman general and dictator (100–44 BC)', categories: [{ title: 'Category:100 BC births' }] },
+            ],
+          },
+        } as T;
+      },
+    };
+    const [result] = await WikipediaService.searchPerson('caesar', stub);
+    expect(result.snippet).toBe('Roman general and dictator');
   });
 });

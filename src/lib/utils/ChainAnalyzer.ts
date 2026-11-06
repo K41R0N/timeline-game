@@ -13,8 +13,27 @@ export interface ChainAnalysis {
 /**
  * Check if two historical figures are contemporaries (overlapping lifetimes)
  */
-export function areContemporaries(fig1: HistoricalFigure, fig2: HistoricalFigure): boolean {
+export function areContemporaries(
+  fig1: Pick<HistoricalFigure, 'birthYear' | 'deathYear'>,
+  fig2: Pick<HistoricalFigure, 'birthYear' | 'deathYear'>
+): boolean {
   return fig1.birthYear <= fig2.deathYear && fig2.birthYear <= fig1.deathYear;
+}
+
+/** Every life on the board linked to one of `starts` through a run of overlapping lives, starts included, by id. */
+export function livesConnectedTo<T extends Pick<HistoricalFigure, 'id' | 'birthYear' | 'deathYear'>>(board: T[], starts: T[]): Map<string, T> {
+  const reached = new Map(starts.map(start => [start.id, start] as const));
+  const queue = [...starts];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const other of board) {
+      if (!reached.has(other.id) && areContemporaries(current, other)) {
+        reached.set(other.id, other);
+        queue.push(other);
+      }
+    }
+  }
+  return reached;
 }
 
 /**
