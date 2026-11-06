@@ -1,6 +1,8 @@
 import { HistoricalFigure } from '../types/HistoricalFigure';
 import { WikipediaService } from './WikipediaService';
 
+export type PlayabilityCheck = (targetA: HistoricalFigure, targetB: HistoricalFigure) => boolean;
+
 /**
  * Service for selecting random target figures for the game
  * Provides curated pools of historical figures across different eras and difficulties
@@ -80,9 +82,11 @@ export class TargetSelectionService {
   /**
    * Select two random target figures with appropriate difficulty
    * @param difficulty - 'easy': 200-600 years apart, 'medium': 600-1200 years, 'hard': 1200+ years
+   * @param isPlayable - rejects pairs a round cannot be built on, such as ones par cannot connect
    */
   static async selectRandomTargets(
-    difficulty: 'easy' | 'medium' | 'hard' = 'medium'
+    difficulty: 'easy' | 'medium' | 'hard' = 'medium',
+    isPlayable: PlayabilityCheck = () => true
   ): Promise<[HistoricalFigure, HistoricalFigure] | null> {
     console.log(`🎲 Selecting random targets with difficulty: ${difficulty}`);
 
@@ -138,6 +142,11 @@ export class TargetSelectionService {
           } else {
             targetA = figB;
             targetB = figA;
+          }
+
+          if (!isPlayable(targetA, targetB)) {
+            console.log(`⚠️ ${targetA.name} and ${targetB.name} cannot make a round, retrying...`);
+            continue;
           }
 
           console.log(`✅ Selected targets:`, {
@@ -221,7 +230,7 @@ export class TargetSelectionService {
    * Quick target selection with fallback to Alexander and Caesar
    * Use this for reliable game start with known-good figures
    */
-  static async selectDefaultTargets(): Promise<[HistoricalFigure, HistoricalFigure] | null> {
+  static async selectDefaultTargets(isPlayable: PlayabilityCheck = () => true): Promise<[HistoricalFigure, HistoricalFigure] | null> {
     console.log('🎯 Loading default targets (Alexander + Caesar)...');
     try {
       const [alexander, caesar] = await Promise.all([
@@ -229,7 +238,7 @@ export class TargetSelectionService {
         WikipediaService.getPersonDetails('Julius Caesar')
       ]);
 
-      if (alexander && caesar) {
+      if (alexander && caesar && isPlayable(alexander, caesar)) {
         console.log('✅ Default targets loaded successfully');
         return [alexander, caesar];
       }

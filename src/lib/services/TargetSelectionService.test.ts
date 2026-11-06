@@ -32,4 +32,35 @@ describe('TargetSelectionService.selectRandomTargets', () => {
     expect(targets).not.toBeNull();
     expect(lookup.mock.calls.length).toBeGreaterThan(2);
   });
+
+  it('retries a pair the playability check rejects', async () => {
+    let call = 0;
+    const lookup = vi.spyOn(WikipediaService, 'lookupPerson').mockImplementation(async (title: string): Promise<PersonLookupResult> => {
+      call += 1;
+      return { ok: true, figure: call % 2 === 1 ? person(title, -356, -323) : person(title, 1879, 1955) };
+    });
+    const isPlayable = vi.fn().mockReturnValueOnce(false).mockReturnValue(true);
+
+    const targets = await TargetSelectionService.selectRandomTargets('hard', isPlayable);
+    expect(targets).not.toBeNull();
+    expect(isPlayable).toHaveBeenCalledTimes(2);
+    expect(lookup).toHaveBeenCalledTimes(4);
+  });
+
+  it('gives up after the attempt limit when no pair is playable', async () => {
+    let call = 0;
+    vi.spyOn(WikipediaService, 'lookupPerson').mockImplementation(async (title: string): Promise<PersonLookupResult> => {
+      call += 1;
+      return { ok: true, figure: call % 2 === 1 ? person(title, -356, -323) : person(title, 1879, 1955) };
+    });
+    await expect(TargetSelectionService.selectRandomTargets('hard', () => false)).resolves.toBeNull();
+  });
+});
+
+describe('TargetSelectionService.selectDefaultTargets', () => {
+  it('refuses the default pair when it is not playable', async () => {
+    vi.spyOn(WikipediaService, 'getPersonDetails').mockImplementation(async (title: string) => person(title, -356, -323));
+    await expect(TargetSelectionService.selectDefaultTargets(() => false)).resolves.toBeNull();
+    await expect(TargetSelectionService.selectDefaultTargets(() => true)).resolves.not.toBeNull();
+  });
 });
