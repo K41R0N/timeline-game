@@ -77,7 +77,7 @@ export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onP
             <div className="text-xs uppercase text-foreground-muted">Strokes</div>
           </div>
           <div>
-            <div className="text-4xl font-bold text-primary">{par ?? '…'}</div>
+            <div className="text-4xl font-bold text-primary">{par ?? '–'}</div>
             <div className="text-xs uppercase text-foreground-muted">Par</div>
           </div>
           {result && (

@@ -58,4 +58,30 @@ describe('TargetSelectionService.selectTargets', () => {
     await expect(TargetSelectionService.selectTargets(roster, 'easy')).resolves.not.toBeNull();
     expect(lookup).toHaveBeenCalledTimes(4);
   });
+
+  it('tries another pair when live dates move the first pair out of its band', async () => {
+    // The first lookup ends the earlier target's life 400 years later, which shortens the chain below Hard.
+    const lookup = vi.spyOn(WikipediaService, 'lookupPerson').mockImplementation(async (title: string) => {
+      const call = lookup.mock.calls.length;
+      const result = await rosterLookup(title);
+      if (call === 1 && result.ok) result.figure.deathYear += 400;
+      return result;
+    });
+
+    const targets = await TargetSelectionService.selectTargets(roster, 'hard', seeded(5));
+    expect(lookup.mock.calls.length).toBeGreaterThan(2);
+    expect(fitsBand(chainShape(roster, targets![0], targets![1])!, DIFFICULTY_BANDS.hard)).toBe(true);
+  });
+
+  it('keeps a playable pair outside the band when no in-band pair resolves', async () => {
+    const lookup = vi.spyOn(WikipediaService, 'lookupPerson').mockImplementation(async (title: string) => {
+      const call = lookup.mock.calls.length;
+      const result = await rosterLookup(title);
+      if (call % 2 === 1 && result.ok) result.figure.deathYear += 400;
+      return result;
+    });
+
+    await expect(TargetSelectionService.selectTargets(roster, 'hard', seeded(5))).resolves.not.toBeNull();
+    expect(lookup).toHaveBeenCalledTimes(6);
+  });
 });

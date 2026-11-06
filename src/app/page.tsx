@@ -58,6 +58,8 @@ export default function Home() {
   const [reveal, setReveal] = useState<{ figure: HistoricalFigure; reveal: RevealResult } | null>(null);
   const [roster, setRoster] = useState<RosterPerson[] | null>(null);
   const [parChain, setParChain] = useState<RosterPerson[] | null>(null);
+  /** The roster cannot link these targets (a round saved before roster-based targets), so the round has no par. */
+  const [parUnavailable, setParUnavailable] = useState(false);
   const [hasWon, setHasWon] = useState(false);
   const [winningChain, setWinningChain] = useState<HistoricalFigure[]>([]);
   const [winningBadges, setWinningBadges] = useState<StyleBadge[]>([]);
@@ -147,6 +149,7 @@ export default function Home() {
         const result = computePar(people, targetA, targetB);
         setRoster(people);
         setParChain(result.playable ? result.chain : null);
+        setParUnavailable(!result.playable);
         console.log(`📊 Par ${result.playable ? result.par : 'unavailable'} for ${targetA.name} → ${targetB.name}`);
       })
       .catch(err => {
@@ -263,7 +266,10 @@ export default function Home() {
   const handleHint = () => {
     if (!roster || !targetA || !targetB || hint) return;
     const next = nextHint(roster, targetA, targetB, figuresRef.current);
-    if (!next) return;
+    if (!next) {
+      showError('No hint here: no well-known person reaches further from your chain');
+      return;
+    }
     setHint({ id: next.id, name: next.name });
     setHintsUsed(count => count + 1);
   };
@@ -359,7 +365,7 @@ export default function Home() {
 
             <div className="text-center">
               <div className="text-2xl font-bold leading-none text-primary">
-                {par ?? '…'}
+                {par ?? (parUnavailable ? '–' : '…')}
               </div>
               <div className="text-[9px] text-foreground-muted uppercase mt-0.5">
                 Par
