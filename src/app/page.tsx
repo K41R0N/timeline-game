@@ -208,7 +208,7 @@ export default function Home() {
 
   const handleAddFigure = async (name: string) => {
     const query = name.trim();
-    if (!query || isAddingRef.current) return;
+    if (!query || isAddingRef.current || hasWon) return;
 
     const nameMatch = figuresRef.current.find(f => f.name.toLowerCase() === query.toLowerCase());
     if (nameMatch) {
@@ -450,13 +450,15 @@ export default function Home() {
         />
       </main>
 
-      {/* Floating Search Bar */}
-      <SearchBar
-        figures={figures}
-        onSelect={setSelectedFigure}
-        onAddFigure={handleAddFigure}
-        isAdding={isAdding}
-      />
+      {/* Floating Search Bar: gone once the chain is complete, so the result cannot change */}
+      {!hasWon && (
+        <SearchBar
+          figures={figures}
+          onSelect={setSelectedFigure}
+          onAddFigure={handleAddFigure}
+          isAdding={isAdding}
+        />
+      )}
 
       {/* Win Modal: opens once the winning placement's reveal is dismissed */}
       {hasWon && !reveal && (
