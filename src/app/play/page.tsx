@@ -9,6 +9,7 @@ import {
   DIFFICULTY_BANDS,
   analytics,
   roundStartedProps,
+  FREE_PLAY,
 } from '@/lib';
 import type { Difficulty, HistoricalFigure, RoundSave } from '@/lib';
 
@@ -71,7 +72,7 @@ export default function FreePlay() {
         targetB: { name: targetB.name, years: `${targetB.birthYear}-${targetB.deathYear}` },
       });
       setRound(previous => ({ id: (previous?.id ?? 0) + 1, targetA, targetB, difficulty, initial: null }));
-      analytics.track('game_started', roundStartedProps(rosterPeople, difficulty, targetA, targetB));
+      analytics.track('game_started', roundStartedProps(rosterPeople, difficulty, targetA, targetB, FREE_PLAY));
     } catch (err) {
       console.error('❌ Error loading initial figures:', err);
       setError('Failed to load initial figures. Please refresh the page.');
@@ -159,6 +160,7 @@ export default function FreePlay() {
       onExit={newGame}
       exitAbandons
       endActionLabel="Play Again"
+      analyticsContext={FREE_PLAY}
     />
   );
 }

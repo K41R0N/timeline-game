@@ -4,8 +4,23 @@ import { chainShape } from './difficulty';
 import type { Difficulty } from './GameLogic';
 import type { StyleBadge } from './style';
 
+/** Which kind of round an event comes from: free play, or a daily puzzle played scored or as practice. */
+export interface RoundContext {
+  mode: 'free' | 'daily';
+  /** The daily puzzle's number; null in free play. */
+  puzzle: number | null;
+  /** Whether a daily round is the scored attempt; null in free play. */
+  scored: boolean | null;
+}
+
+export const FREE_PLAY: RoundContext = { mode: 'free', puzzle: null, scored: null };
+
+export function roundContextProps({ mode, puzzle, scored }: RoundContext) {
+  return { mode, puzzle, scored };
+}
+
 /** Properties for `game_started`: what kind of round this is, for tuning the difficulty bands. */
-export function roundStartedProps(roster: RosterPerson[], difficulty: Difficulty, targetA: HistoricalFigure, targetB: HistoricalFigure) {
+export function roundStartedProps(roster: RosterPerson[], difficulty: Difficulty, targetA: HistoricalFigure, targetB: HistoricalFigure, context: RoundContext) {
   const [earlier, later] = [targetA, targetB].sort((a, b) => a.birthYear - b.birthYear);
   const shape = chainShape(roster, earlier, later);
   const gapMidpoint = (earlier.deathYear + later.birthYear) / 2;
@@ -17,6 +32,7 @@ export function roundStartedProps(roster: RosterPerson[], difficulty: Difficulty
     gap_century: Math.floor(gapMidpoint / 100) * 100,
     target_a: earlier.name,
     target_b: later.name,
+    ...roundContextProps(context),
   };
 }
 
@@ -28,10 +44,11 @@ export interface RoundSummary {
   badgeKinds: Array<StyleBadge['kind']>;
   startedAt: number;
   now: number;
+  context: RoundContext;
 }
 
 /** Properties for `game_completed` and `game_abandoned`. */
-export function roundCompletedProps({ difficulty, strokes, par, hintsUsed, badgeKinds, startedAt, now }: RoundSummary) {
+export function roundCompletedProps({ difficulty, strokes, par, hintsUsed, badgeKinds, startedAt, now, context }: RoundSummary) {
   return {
     difficulty,
     strokes,
@@ -41,5 +58,6 @@ export function roundCompletedProps({ difficulty, strokes, par, hintsUsed, badge
     clutch_badges: badgeKinds.filter(kind => kind === 'clutch').length,
     long_bridge_badges: badgeKinds.filter(kind => kind === 'longBridge').length,
     duration_seconds: Math.floor((now - startedAt) / 1000),
+    ...roundContextProps(context),
   };
 }

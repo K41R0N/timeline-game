@@ -14,7 +14,7 @@ import { computePar, nextHint } from '../utils/par';
 import { revealPlacement, type RevealResult } from '../utils/overlap';
 import { finalChain, type StyleBadge } from '../utils/style';
 import { countStrokes, hintPolicy, type Difficulty } from '../utils/GameLogic';
-import { roundCompletedProps } from '../utils/roundEvents';
+import { roundCompletedProps, roundContextProps, type RoundContext } from '../utils/roundEvents';
 import type { DailyResult, RoundSave, SavedHintName } from '../utils/dailyProgress';
 
 /** A person on a par chain: identity and years, from the roster or a daily puzzle's snapshot. */
@@ -47,6 +47,8 @@ export interface GameRoundProps {
   /** The end screen's heading and extra content, such as the countdown to the next puzzle. */
   endHeading?: string;
   endExtra?: ReactNode;
+  /** Free play or a daily puzzle, attached to every round event. */
+  analyticsContext: RoundContext;
 }
 
 /** One round: the board, strokes and par, search, hints, the placement reveal and the end screen. */
@@ -67,6 +69,7 @@ export function GameRound({
   roundLabel,
   endHeading,
   endExtra,
+  analyticsContext,
 }: GameRoundProps) {
   const [figures, setFigures] = useState<HistoricalFigure[]>(initial?.figures ?? [targetA, targetB]);
   const [hintsUsed, setHintsUsed] = useState(initial?.hintsUsed ?? 0);
@@ -183,10 +186,11 @@ export function GameRound({
           badgeKinds,
           startedAt: roundStartedAtRef.current,
           now: currentTime(),
+          context: analyticsContext,
         })
       );
     }
-  }, [figures, targetA, targetB, hasWon, difficulty, hintsUsed, hint, parChain]);
+  }, [figures, targetA, targetB, hasWon, difficulty, hintsUsed, hint, parChain, analyticsContext]);
 
   const handleExit = () => {
     if (exitConfirm && !hasWon && !confirm(exitConfirm)) return;
@@ -201,6 +205,7 @@ export function GameRound({
           badgeKinds: [],
           startedAt: roundStartedAtRef.current,
           now: currentTime(),
+          context: analyticsContext,
         })
       );
     }
@@ -216,7 +221,7 @@ export function GameRound({
     const nameMatch = figuresRef.current.find(f => f.name.toLowerCase() === query.toLowerCase());
     if (nameMatch) {
       showError(`${nameMatch.name} is already in the timeline`);
-      analytics.track('figure_added', { accepted: false, reason: 'duplicate' });
+      analytics.track('figure_added', { accepted: false, reason: 'duplicate', ...roundContextProps(analyticsContext) });
       setSelectedFigure(nameMatch);
       return;
     }
@@ -236,14 +241,14 @@ export function GameRound({
       if (!result.ok) {
         console.warn(`⚠️ Rejected "${query}": ${result.reason}`);
         showError(lookupFailureMessage(result.reason, result.title));
-        analytics.track('figure_added', { accepted: false, reason: result.reason });
+        analytics.track('figure_added', { accepted: false, reason: result.reason, ...roundContextProps(analyticsContext) });
         return;
       }
 
       const figure = result.figure;
       if (figuresRef.current.some(f => f.id === figure.id)) {
         showError(`${figure.name} is already in the timeline`);
-        analytics.track('figure_added', { accepted: false, reason: 'duplicate' });
+        analytics.track('figure_added', { accepted: false, reason: 'duplicate', ...roundContextProps(analyticsContext) });
         return;
       }
 
@@ -256,6 +261,7 @@ export function GameRound({
         extends_chain: placement.overlaps.some(overlap => overlap.extendsChain),
         miss_years: placement.miss?.gapYears ?? null,
         from_hint: hint?.id === figure.id,
+        ...roundContextProps(analyticsContext),
       });
       setHint(current => (current?.id === figure.id ? null : current));
 
@@ -282,7 +288,7 @@ export function GameRound({
     }
     setHint({ id: next.id, name: next.name });
     setHintsUsed(count => count + 1);
-    analytics.track('hint_taken', { difficulty, costs_stroke: policy.costsStroke });
+    analytics.track('hint_taken', { difficulty, costs_stroke: policy.costsStroke, ...roundContextProps(analyticsContext) });
   };
 
   return (

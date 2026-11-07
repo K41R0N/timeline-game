@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { GameRound } from './GameRound';
@@ -12,7 +12,9 @@ import { WikipediaService } from '../services/WikipediaService';
 import { useDailyProgress, updateDailyProgress } from '../hooks/useDailyProgress';
 import { finalChain } from '../utils/style';
 import { hintPolicy } from '../utils/GameLogic';
-import { currentTime } from '../services/analytics';
+import { analytics, currentTime } from '../services/analytics';
+import { loadRoster } from '../data/roster';
+import { roundStartedProps, type RoundContext } from '../utils/roundEvents';
 import { weekdayName } from '../utils/daily';
 import {
   finishScored,
@@ -93,6 +95,21 @@ function LoadedDailyRound({ puzzle, todayNumber, nextSwitchAt, progress }: Daily
   }, [puzzle]);
 
   const kind = view.kind === 'result' ? null : view.kind;
+  const context = useMemo<RoundContext>(() => ({ mode: 'daily', puzzle: n, scored: kind === 'scored' }), [n, kind]);
+
+  // A new attempt (scored or practice) starts a round; resuming one does not.
+  useEffect(() => {
+    if (!targets || view.kind === 'result' || view.save !== null) return;
+    let cancelled = false;
+    loadRoster()
+      .then(roster => {
+        if (!cancelled) analytics.track('game_started', roundStartedProps(roster, puzzle.band, targets[0], targets[1], context));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [targets, view, puzzle.band, context]);
   const save = useCallback(
     (round: RoundSave) => {
       if (kind) updateDailyProgress(p => saveRound(p, n, kind, round, currentTime()));
@@ -184,6 +201,7 @@ function LoadedDailyRound({ puzzle, todayNumber, nextSwitchAt, progress }: Daily
       }
       endHeading={practice ? `${title} · Practice` : title}
       endExtra={countdown}
+      analyticsContext={context}
     />
   );
 }
