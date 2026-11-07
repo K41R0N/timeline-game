@@ -1,6 +1,7 @@
 import 'server-only';
 import scheduleFile from '../data/daily-schedule.json';
 import {
+  parsePuzzleParam,
   parseSchedule,
   publishedPuzzle,
   publishedPuzzles,
@@ -38,3 +39,5 @@ export function dailyPuzzle(n: number, now: number): DailyPuzzle | null {
 export function dailyArchive(now: number): DailyPuzzle[] {
   return publishedPuzzles(schedule, utcDateKey(now));
 }
+
+export { parsePuzzleParam };

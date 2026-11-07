@@ -5,6 +5,7 @@ import {
   compactProgress,
   finishScored,
   normalizeDailyProgress,
+  openPractice,
   openPuzzle,
   puzzleStatus,
   saveRound,
@@ -41,6 +42,7 @@ describe('openPuzzle', () => {
   it('offers practice on a past puzzle with a finished result, and practice leaves that result alone', () => {
     const scored = finishScored(saveRound(EMPTY_PROGRESS, 12, 'scored', round('A', 'B'), NOW - DAY), 12, round('A', 'C', 'B'), result, NOW - DAY);
     expect(openPuzzle(scored, 12, 13)).toMatchObject({ kind: 'result', canPractice: true });
+    expect(openPractice(scored, 12)).toEqual({ kind: 'practice', save: null });
 
     const practiced = saveRound(scored, 12, 'practice', round('A', 'X'), NOW);
     expect(practiced.attempts[12]).toEqual(scored.attempts[12]);

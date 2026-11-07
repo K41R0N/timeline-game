@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Timeline from './Timeline';
 import { SearchBar } from './ui/SearchBar';
 import { WinModal } from './ui/WinModal';
@@ -42,6 +42,11 @@ export interface GameRoundProps {
   exitAbandons: boolean;
   /** The end screen's button. */
   endActionLabel: string;
+  /** Shown under the exit control, such as the daily puzzle's number. */
+  roundLabel?: ReactNode;
+  /** The end screen's heading and extra content, such as the countdown to the next puzzle. */
+  endHeading?: string;
+  endExtra?: ReactNode;
 }
 
 /** One round: the board, strokes and par, search, hints, the placement reveal and the end screen. */
@@ -59,6 +64,9 @@ export function GameRound({
   onExit,
   exitAbandons,
   endActionLabel,
+  roundLabel,
+  endHeading,
+  endExtra,
 }: GameRoundProps) {
   const [figures, setFigures] = useState<HistoricalFigure[]>(initial?.figures ?? [targetA, targetB]);
   const [hintsUsed, setHintsUsed] = useState(initial?.hintsUsed ?? 0);
@@ -289,6 +297,12 @@ export function GameRound({
         </button>
       </div>
 
+      {roundLabel && (
+        <div className="fixed top-[4.25rem] left-4 z-[22] pointer-events-auto">
+          <div className="timeline-card px-3 py-1.5 text-xs font-semibold text-foreground-muted">{roundLabel}</div>
+        </div>
+      )}
+
       {/* Compact Floating Score Badge - Top Right */}
       <div className="fixed top-4 right-4 z-[22] pointer-events-auto group">
         <div className="timeline-card p-3 shadow-glow hover:shadow-xl transition-shadow">
@@ -394,6 +408,8 @@ export function GameRound({
           hintsUsed={policy.recorded ? hintsUsed : null}
           onPlayAgain={handleExit}
           playAgainLabel={endActionLabel}
+          heading={endHeading}
+          extra={endExtra}
         />
       )}
     </>

@@ -72,6 +72,11 @@ export function openPuzzle(progress: DailyProgress, n: number, todayNumber: numb
   if (attempt?.result) return { kind: 'result', attempt, canPractice: n < todayNumber };
   if (attempt) return { kind: 'scored', save: roundOf(attempt) };
   if (n === todayNumber) return { kind: 'scored', save: null };
+  return openPractice(progress, n);
+}
+
+/** Replaying puzzle n as practice, resuming the practice slot when it holds that puzzle. */
+export function openPractice(progress: DailyProgress, n: number): PuzzleOpening {
   return { kind: 'practice', save: progress.practice?.number === n ? roundOf(progress.practice) : null };
 }
 

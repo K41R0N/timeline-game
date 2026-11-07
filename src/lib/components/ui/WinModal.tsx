@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { HistoricalFigure } from '../../types/HistoricalFigure';
 import { describeResult, formatLifespan, golfName, signedDifference } from '../../utils/GameLogic';
 import { describeShared } from '../../utils/overlap';
@@ -10,7 +11,7 @@ type ChainPerson = Pick<HistoricalFigure, 'id' | 'name' | 'birthYear' | 'deathYe
 interface WinModalProps {
   strokes: number;
   par: number | null;
-  /** The player's final chain, target to target. */
+  /** The player's final chain, target to target; empty when only the result was kept. */
   chain: HistoricalFigure[];
   badges: StyleBadge[];
   /** The game's par chain, target to target, or null when par is unknown. */
@@ -20,6 +21,10 @@ interface WinModalProps {
   onPlayAgain: () => void;
   /** The button's label: starting another round, or going home after a daily puzzle. */
   playAgainLabel?: string;
+  /** A line above the result, such as the daily puzzle's number. */
+  heading?: string;
+  /** Shown above the button, such as the countdown to the next daily puzzle. */
+  extra?: ReactNode;
 }
 
 function ChainList({ title, people, badges }: { title: string; people: ChainPerson[]; badges: StyleBadge[] }) {
@@ -57,7 +62,7 @@ function ChainList({ title, people, badges }: { title: string; people: ChainPers
   );
 }
 
-export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onPlayAgain, playAgainLabel = 'Play Again' }: WinModalProps) {
+export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onPlayAgain, playAgainLabel = 'Play Again', heading, extra }: WinModalProps) {
   const result = par !== null ? describeResult(strokes, par) : null;
   const underPar = result?.tone === 'under';
   const sameAsPar = parChain !== null && parChain.map(p => p.id).join('|') === chain.map(p => p.id).join('|');
@@ -68,6 +73,7 @@ export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onP
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn">
       <div className={`timeline-card p-6 sm:p-8 max-w-3xl w-[calc(100vw-2rem)] max-h-[85vh] overflow-y-auto ${underPar ? 'border-4 border-amber-400' : ''}`}>
         <div className="text-center mb-6">
+          {heading && <div className="text-sm font-semibold uppercase tracking-wide text-foreground-muted mb-2">{heading}</div>}
           {underPar && <div className="text-5xl mb-2 animate-bounce">🏆</div>}
           <h2 className={`font-bold mb-1 capitalize ${underPar ? 'text-5xl text-amber-600' : 'text-4xl text-primary'}`}>{headline}</h2>
           {underPar && <p className="text-foreground-muted">You beat the game&apos;s best chain.</p>}
@@ -98,7 +104,9 @@ export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onP
           )}
         </div>
 
-        {sameAsPar || parChain === null ? (
+        {chain.length === 0 ? (
+          parChain && <ChainList title={`Par chain (${parChain.length - 2})`} people={parChain} badges={[]} />
+        ) : sameAsPar || parChain === null ? (
           <ChainList title={sameAsPar ? 'Your chain matched par' : 'Your chain'} people={chain} badges={badges} />
         ) : (
           <div className="grid gap-6 sm:grid-cols-2">
@@ -106,6 +114,8 @@ export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onP
             <ChainList title={`Par chain (${parChain.length - 2})`} people={parChain} badges={[]} />
           </div>
         )}
+
+        {extra && <div className="mt-6">{extra}</div>}
 
         <div className="flex justify-center mt-6">
           <button

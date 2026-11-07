@@ -2,6 +2,7 @@
 export { default as Timeline } from './components/Timeline';
 export { GameRound } from './components/GameRound';
 export type { GameRoundProps, ParPerson } from './components/GameRound';
+export { DailyRound } from './components/DailyRound';
 
 // UI components
 export { SearchBar } from './components/ui/SearchBar';
@@ -11,6 +12,7 @@ export { WinModal } from './components/ui/WinModal';
 export { SplashScreen } from './components/ui/SplashScreen';
 export { PlacementReveal } from './components/ui/PlacementReveal';
 export { HintButton } from './components/ui/HintButton';
+export { Countdown } from './components/ui/Countdown';
 
 // Types
 export * from './types/HistoricalFigure';
