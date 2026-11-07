@@ -1,4 +1,5 @@
 import type { HistoricalFigure } from '../types/HistoricalFigure';
+import { DAY_MS } from './daily';
 
 /**
  * What this browser has done with each daily puzzle: one scored attempt per puzzle, plus one
@@ -56,8 +57,6 @@ export const EMPTY_PROGRESS: DailyProgress = { attempts: {}, practice: null };
 
 /** Finished attempts older than this keep only their result, so storage stays small. */
 export const COMPACT_AFTER_DAYS = 7;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 function roundOf(save: RoundSave): RoundSave {
   return { figures: save.figures, hintsUsed: save.hintsUsed, hint: save.hint };

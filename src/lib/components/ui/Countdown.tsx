@@ -3,7 +3,6 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 
-// One shared ticking clock: whole seconds, so React re-renders once a second at most.
 const tickListeners = new Set<() => void>();
 let ticker: ReturnType<typeof setInterval> | null = null;
 

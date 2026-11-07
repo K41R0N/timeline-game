@@ -4,7 +4,7 @@
  * rebuilds never change a published puzzle. Run through src/lib/services/daily.capture.test.ts.
  */
 import type { RosterPerson } from '../data/roster';
-import { PERSON_GAP_DAYS, toPuzzleRow, type ScheduleEntryRow, type ScheduleFile } from '../data/dailySchedule';
+import { PERSON_GAP_DAYS, pairKey, toPuzzleRow, type ScheduleEntryRow, type ScheduleFile } from '../data/dailySchedule';
 import { addDays, bandForDate, puzzleNumber, type DateKey } from '../utils/daily';
 import { chainShape, pickTargets } from '../utils/difficulty';
 import { computePar } from '../utils/par';
@@ -27,8 +27,6 @@ function seedFor(date: DateKey): number {
   for (const char of date) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
   return hash >>> 0;
 }
-
-const pairKey = (a: string, b: string) => [a, b].sort().join('|');
 
 function puzzleFor(roster: RosterPerson[], date: DateKey, firstDate: DateKey, previous: ScheduleEntryRow[], usedPairs: Set<string>): ScheduleEntryRow {
   const band = bandForDate(date);

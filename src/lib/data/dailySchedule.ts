@@ -109,7 +109,8 @@ export function publishedPuzzles(schedule: DailySchedule, today: DateKey): Daily
   return schedule.puzzles.slice(0, latest).reverse();
 }
 
-const pairKey = (a: string, b: string) => [a, b].sort().join('|');
+/** The same key for a pair in either order. */
+export const pairKey = (a: string, b: string) => [a, b].sort().join('|');
 
 /**
  * Everything wrong with a schedule file, checked against the puzzles' own snapshots (never the

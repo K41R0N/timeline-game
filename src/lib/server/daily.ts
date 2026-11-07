@@ -11,10 +11,6 @@ import {
 } from '../data/dailySchedule';
 import { nextSwitch, utcDateKey } from '../utils/daily';
 
-/**
- * The daily schedule, read on the server only. Pages pass the browser nothing beyond today:
- * future puzzles stay out of the client bundle. Do not re-export this from src/lib/index.ts.
- */
 const schedule = parseSchedule(scheduleFile as unknown as ScheduleFile);
 
 export interface DailyToday {

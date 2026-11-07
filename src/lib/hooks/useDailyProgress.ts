@@ -34,7 +34,6 @@ function getSnapshot(): DailyProgress {
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
-  // Another tab saved: read storage again.
   const onStorage = (event: StorageEvent) => {
     if (event.key !== STORAGE_KEY) return;
     cache = null;
