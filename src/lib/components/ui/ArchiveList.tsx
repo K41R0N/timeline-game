@@ -4,7 +4,6 @@ import Link from 'next/link';
 import type { Difficulty } from '../../utils/GameLogic';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
 import { puzzleStatus, type PuzzleStatus } from '../../utils/dailyProgress';
-import { BandBadge } from './BandBadge';
 
 export interface ArchiveRow {
   number: number;
@@ -15,18 +14,24 @@ export interface ArchiveRow {
   targetB: string;
 }
 
+const BAND_ON_STOCK: Record<Difficulty, string> = {
+  easy: 'text-[#15803d]',
+  medium: 'text-[#a16207]',
+  hard: 'text-[#b91c1c]',
+};
+
 function statusText(status: PuzzleStatus): string {
   switch (status.status) {
     case 'result':
-      return status.result.par === null ? `${status.result.strokes} strokes` : `${status.result.strokes} strokes · par ${status.result.par}`;
+      return status.result.par === null ? `${status.result.strokes}` : `${status.result.strokes} / par ${status.result.par}`;
     case 'resume':
-      return 'In progress';
+      return 'Playing';
     case 'practice':
       return 'Practised';
     case 'play':
       return 'Today';
     default:
-      return 'Not played';
+      return '';
   }
 }
 
@@ -35,30 +40,27 @@ export function ArchiveList({ rows, todayNumber }: { rows: ArchiveRow[]; todayNu
   const progress = useDailyProgress();
 
   return (
-    <ol className="space-y-2">
+    <ol className="space-y-2.5">
       {rows.map(row => {
         const status = progress && todayNumber !== null ? puzzleStatus(progress, row.number, todayNumber) : null;
+        const text = status ? statusText(status) : '';
         return (
           <li key={row.number}>
-            <Link href={`/daily/${row.number}`} className="timeline-card block p-3 hover:shadow-glow transition-shadow">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-semibold text-foreground">
-                    #{row.number} · {row.weekday} <span className="text-foreground-subtle font-normal">{row.date}</span>
-                  </div>
-                  <div className="text-sm text-foreground-muted truncate">
-                    {row.targetA} → {row.targetB}
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <BandBadge band={row.band} />
-                  {status && (
-                    <span className={`text-xs ${status.status === 'result' ? 'font-semibold text-green-700' : 'text-foreground-subtle'}`}>
-                      {statusText(status)}
-                    </span>
-                  )}
-                </div>
-              </div>
+            <Link
+              href={`/daily/${row.number}`}
+              className="flex items-center gap-4 rounded-xl bg-[var(--card-stock)] px-4 py-3 text-[var(--card-ink)] shadow-[0_3px_0_rgba(0,0,0,0.3)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--foil-light)]"
+            >
+              <span className="type-display w-12 shrink-0 text-center leading-none">
+                <span className="block text-2xl font-black">#{row.number}</span>
+                <span className="block text-xs font-bold uppercase text-[var(--card-muted)]">{row.weekday.slice(0, 3)}</span>
+              </span>
+              <span className="type-display min-w-0 flex-1 text-[17px] font-extrabold uppercase leading-[0.95]">
+                {row.targetA} <span className="font-semibold text-[var(--card-muted)]">to</span> {row.targetB}
+              </span>
+              <span className="type-display shrink-0 text-right text-sm font-bold uppercase leading-tight">
+                <span className={`block ${BAND_ON_STOCK[row.band]}`}>{row.band}</span>
+                {text && <span className={`block ${status?.status === 'result' ? 'text-[var(--card-ink)]' : 'text-[var(--card-muted)]'}`}>{text}</span>}
+              </span>
             </Link>
           </li>
         );

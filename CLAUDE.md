@@ -25,8 +25,8 @@ This is a single Next.js app. It is not a monorepo; older docs that mention `gam
 ```
 src/
 ├── app/
-│   ├── page.tsx          # Home (server, per request): today's daily puzzle first, free play and archive links
-│   ├── play/page.tsx     # Free play: difficulty picker, saved-round restore, New Game around GameRound
+│   ├── page.tsx          # The menu (server, per request): today's daily puzzle, free play by difficulty, archive, how to play
+│   ├── play/page.tsx     # Free play: starts the band in ?d=, restores a saved round, or shows the difficulty cards
 │   ├── daily/page.tsx    # Redirects to today's puzzle number
 │   ├── daily/[n]/page.tsx # One daily puzzle (server gate: only puzzles whose UTC date has arrived)
 │   ├── archive/page.tsx  # Published daily puzzles, newest first
@@ -37,7 +37,7 @@ src/
     │   ├── GameRound.tsx # One round: header (Home, score, goal), board, dock (hint, search, reveal), win check, end screen
     │   ├── DailyRound.tsx # A daily puzzle: scored attempt, resumed attempt, result, or practice
     │   ├── Board.tsx     # The table: one card per person at its birth year, life-length spine, gap bay, landing flip, winning thread
-    │   └── ui/           # SearchBar, SearchInput, DetailPanel, PlacementReveal, HintButton, WinModal (end screen vs par), DailyHome, ArchiveList, Countdown, BandBadge
+    │   └── ui/           # DailyHome (the menu), DifficultyChoice, HowToPlay, ScorePlates, Portrait, SearchBar, SearchInput, DetailPanel, PlacementReveal, HintButton (wild card), WinModal (end screen vs par), ArchiveList, Countdown, BandBadge
     ├── server/daily.ts   # The only reader of daily-schedule.json; imports 'server-only'
     ├── services/
     │   ├── wikimediaClient.ts        # The only app module that fetches Wikimedia: throttle, retry, cache

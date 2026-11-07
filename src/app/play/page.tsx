@@ -4,11 +4,11 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
+  DifficultyChoice,
   GameRound,
   TargetSelectionService,
   useGameStatePersistence,
   loadRoster,
-  DIFFICULTY_BANDS,
   analytics,
   roundStartedProps,
   FREE_PLAY,
@@ -17,11 +17,6 @@ import type { Difficulty, HistoricalFigure, RoundSave } from '@/lib';
 
 console.log('🚀 Initializing Timeline Game...');
 
-const DIFFICULTY_OPTIONS: Array<{ difficulty: Difficulty; label: string; knowledge: string; className: string }> = [
-  { difficulty: 'easy', label: 'Easy', knowledge: 'Many famous people fit every step', className: 'border-green-400 bg-green-50 hover:bg-green-100 text-green-700' },
-  { difficulty: 'medium', label: 'Medium', knowledge: 'Some steps have only a few famous answers', className: 'border-yellow-400 bg-yellow-50 hover:bg-yellow-100 text-yellow-700' },
-  { difficulty: 'hard', label: 'Hard', knowledge: 'At least one step has only one or two famous answers', className: 'border-red-400 bg-red-50 hover:bg-red-100 text-red-700' },
-];
 
 interface FreeRound {
   /** Remounts the round for each new game. */
@@ -41,22 +36,6 @@ export default function FreePlay() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Resume a saved free-play round once, on mount.
-  useEffect(() => {
-    const saved = loadSavedState();
-    if (saved && saved.figures.length > 0 && saved.targetA && saved.targetB) {
-      console.log('🔄 Restoring saved game...');
-      setRound({
-        id: 0,
-        targetA: saved.targetA,
-        targetB: saved.targetB,
-        difficulty: saved.difficulty,
-        initial: { figures: saved.figures, hintsUsed: saved.hintsUsed, hint: saved.hint },
-      });
-    }
-    setRestoring(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const loadGame = async (difficulty: Difficulty) => {
     try {
@@ -83,6 +62,30 @@ export default function FreePlay() {
       setIsLoading(false);
     }
   };
+
+  // On mount: start the difficulty the menu asked for (/play?d=hard), or resume the saved round.
+  useEffect(() => {
+    const asked = new URLSearchParams(window.location.search).get('d');
+    if (asked === 'easy' || asked === 'medium' || asked === 'hard') {
+      router.replace('/play');
+      setRestoring(false);
+      loadGame(asked);
+      return;
+    }
+    const saved = loadSavedState();
+    if (saved && saved.figures.length > 0 && saved.targetA && saved.targetB) {
+      console.log('🔄 Restoring saved game...');
+      setRound({
+        id: 0,
+        targetA: saved.targetA,
+        targetB: saved.targetB,
+        difficulty: saved.difficulty,
+        initial: { figures: saved.figures, hintsUsed: saved.hintsUsed, hint: saved.hint },
+      });
+    }
+    setRestoring(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const save = useCallback(
     (progress: RoundSave) => {
@@ -111,46 +114,31 @@ export default function FreePlay() {
 
   if (error) {
     return (
-      <div className="w-full h-screen flex items-center justify-center bg-background">
-        <div className="text-red-500 text-xl">{error}</div>
+      <div className="flex h-dvh w-full flex-col items-center justify-center gap-4 bg-[var(--table-deep)] px-6 text-center text-[var(--table-ink)]">
+        <p className="text-lg">{error}</p>
+        <Link href="/" className="type-display text-lg font-bold uppercase tracking-[0.08em] text-[var(--chalk-text)] underline">
+          Home
+        </Link>
       </div>
     );
   }
 
   if (!round) {
     return (
-      <div className="w-full h-screen flex items-center justify-center bg-background">
-        <div className="timeline-card p-8 max-w-md">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-primary">Select Difficulty</h2>
-            <Link href="/" className="text-sm font-semibold text-primary underline">
-              Home
-            </Link>
-          </div>
-          <p className="text-foreground-muted mb-6">
-            Connect two famous people in as few strokes as you can. Harder rounds need longer chains and people fewer players know.
-          </p>
-
-          <div className="space-y-3">
-            {DIFFICULTY_OPTIONS.map(option => {
-              const band = DIFFICULTY_BANDS[option.difficulty];
-              return (
-                <button
-                  key={option.difficulty}
-                  onClick={() => loadGame(option.difficulty)}
-                  className={`w-full p-4 rounded-lg border-2 transition-colors text-left ${option.className}`}
-                >
-                  <div className="font-bold">{option.label}</div>
-                  <div className="text-sm">
-                    Par {band.minPar}–{band.maxPar} • about {band.yearsApart} years apart
-                  </div>
-                  <div className="text-xs opacity-80">{option.knowledge}</div>
-                </button>
-              );
-            })}
-          </div>
+      <main className="flex min-h-dvh w-full items-center justify-center bg-[radial-gradient(120%_70%_at_50%_0%,var(--table-light)_0%,var(--table)_50%,var(--table-deep)_100%)] px-4 py-10 text-[var(--table-ink)]">
+        <div className="flex w-full max-w-md flex-col gap-6">
+          <h1 className="type-display text-center text-5xl font-black uppercase leading-none text-[var(--table-ink)] [text-shadow:none]">
+            Free <span className="text-[var(--foil)]">play</span>
+          </h1>
+          <DifficultyChoice onPick={loadGame} />
+          <Link
+            href="/"
+            className="type-display mx-auto inline-flex h-11 items-center px-3 text-base font-bold uppercase tracking-[0.08em] text-[var(--table-muted)] hover:text-[var(--chalk-text)]"
+          >
+            Home
+          </Link>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -165,7 +153,6 @@ export default function FreePlay() {
       onHome={() => router.push('/')}
       onRestart={newGame}
       restartConfirm="Start a new game? Your current progress will be lost."
-      roundLabel="Free play"
       endActionLabel="Play Again"
       analyticsContext={FREE_PLAY}
     />

@@ -16,10 +16,10 @@ export default async function DailyPuzzlePage({ params }: { params: Promise<{ n:
     const future = n !== null && (today.number === null || n > today.number);
     const date = future ? dailyDate(n) : null;
     return (
-      <div className="w-full h-screen flex items-center justify-center bg-background px-4">
-        <div className="timeline-card p-8 max-w-md text-center space-y-4">
-          <h1 className="text-2xl font-bold text-primary">{future ? `Puzzle #${n} isn't out yet` : 'No such daily puzzle'}</h1>
-          <p className="text-foreground-muted">
+      <div className="flex min-h-dvh w-full items-center justify-center bg-[var(--table-deep)] px-4 text-[var(--table-ink)]">
+        <div className="w-full max-w-md space-y-4 rounded-2xl bg-[var(--card-stock)] p-7 text-center text-[var(--card-ink)]">
+          <h1 className="type-display text-3xl font-black uppercase leading-none text-[var(--card-ink)] [text-shadow:none]">{future ? `#${n} isn't out yet` : 'No such puzzle'}</h1>
+          <p className="text-[var(--card-muted)]">
             {date ? (
               <>
                 Out on {weekdayName(date)} {date}
@@ -32,11 +32,11 @@ export default async function DailyPuzzlePage({ params }: { params: Promise<{ n:
           </p>
           <div className="flex justify-center gap-3">
             {today.puzzle && (
-              <Link href={`/daily/${today.puzzle.number}`} className="px-4 py-2 bg-primary hover:bg-primary-bright text-white font-semibold rounded-lg">
-                Play today&apos;s #{today.puzzle.number}
+              <Link href={`/daily/${today.puzzle.number}`} className="type-display inline-flex h-12 items-center rounded-xl bg-[var(--foil)] px-5 text-lg font-black uppercase text-[var(--foil-ink)] shadow-[0_3px_0_var(--foil-deep)]">
+                Play #{today.puzzle.number}
               </Link>
             )}
-            <Link href="/" className="px-4 py-2 rounded-lg border-2 border-primary text-primary font-semibold">
+            <Link href="/" className="type-display inline-flex h-12 items-center rounded-xl border-2 border-[var(--card-ink)] px-5 text-lg font-black uppercase text-[var(--card-ink)]">
               Home
             </Link>
           </div>

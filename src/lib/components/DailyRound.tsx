@@ -130,10 +130,10 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
   const isToday = n === todayNumber;
   const goHome = () => router.push('/');
   const countdown = (
-    <div className="text-center text-sm text-foreground-muted">
+    <div className="text-center text-sm text-[var(--table-muted)]">
       <Countdown until={nextSwitchAt} />
       <span className="mx-2">·</span>
-      <Link href="/archive" className="underline hover:text-foreground">
+      <Link href="/archive" className="underline hover:text-[var(--chalk-text)]">
         Past puzzles
       </Link>
     </div>
@@ -146,6 +146,7 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
     const final = attempt.figures.length > 0 ? finalChain(a, b, attempt.figures) : null;
     const result = attempt.result!;
     return (
+      <div className="min-h-dvh bg-[var(--table-deep)]">
       <WinModal
         heading={title}
         strokes={result.strokes}
@@ -162,9 +163,9 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
               <div className="flex justify-center">
                 <button
                   onClick={() => setView(openPractice(progress, n))}
-                  className="px-4 py-2 rounded-lg border-2 border-primary text-primary font-semibold hover:bg-primary-glow"
+                  className="type-display h-12 rounded-xl border-2 border-[var(--foil)] px-5 text-lg font-black uppercase tracking-[0.05em] text-[var(--chalk-text)] hover:bg-[rgba(232,185,49,0.12)]"
                 >
-                  Play #{n} again as practice
+                  Replay as practice
                 </button>
               </div>
             )}
@@ -172,6 +173,7 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
           </div>
         }
       />
+      </div>
     );
   }
 

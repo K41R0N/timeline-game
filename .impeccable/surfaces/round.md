@@ -32,7 +32,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 ## Open decisions
 
 - Rarity foils by fame (not built).
-- Result screen, home and share card in the Deck world (next).
+- Share card in the Deck world (next).
 
 ## Finish review
 
@@ -43,3 +43,7 @@ Verdict: the build meets the contract on the round screen, checked in an emulate
 - First viewport: as written on the phone; on desktop the header, score and hand sit in the left column and the table fits the whole span.
 - Not reached yet: the end screen, home, archive and share card. Untested: a physical phone (Safari, the on-screen keyboard over the hand).
 - Rasters: the only images are Wikipedia page images loaded at runtime; the build ships none of its own.
+
+## Distill pass
+
+The round says less: the rule line shows only before the first card, the band sits in the header label, the placement line names one fact and clears itself, and the wild card shows only its cost. The menu, end screen and archive now share the world.

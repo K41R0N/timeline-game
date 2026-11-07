@@ -1,6 +1,6 @@
 # Design: the Deck
 
-History Links plays as a hand of cards laid down a table. This file records the built world (round screen, `src/lib/components/GameRound.tsx` and `Board.tsx`). Product facts live in `PRODUCT.md`; the round screen's direction contract is in `.impeccable/surfaces/round.md`.
+History Links plays as a hand of cards laid down a table. This file records the built world: the menu (`ui/DailyHome.tsx`), the round (`GameRound.tsx`, `Board.tsx`), the end screen (`ui/WinModal.tsx`) and the archive. Product facts live in `PRODUCT.md`; the round screen's direction contract is in `.impeccable/surfaces/round.md`.
 
 ## World
 
@@ -25,14 +25,27 @@ All tokens are CSS variables in `src/app/globals.css`. Tailwind opacity modifier
 - The year rail is the left 44 px of the table; dotted lines cross the table at each tick.
 - Phone: header (Home, round label, score plates, goal, rule), the table, then the hand. Desktop (1024 px and up): header, score and hand in a 400 px left column; the table fills the rest and fits the whole span on screen.
 
+## Saying less
+
+Every screen says one thing at a time; the table carries the detail.
+
+- The round's rule line shows only until the first card is played.
+- A placed card's line in the hand names one fact (the most useful overlap, or how far it missed) and clears itself after 4.5 s. The card itself carries the name and years.
+- Cards carry a portrait, a name and years, nothing else. Descriptions live in the detail sheet.
+- The end screen leads with one word (Par, Birdie!, Bogey) and the score plates; par's chain waits behind a toggle.
+- Explanations of badges and rules live in How to play, not on the playing surfaces.
+
 ## Components
 
 - **Score plates:** strokes on card stock beside par on foil. Strokes turn amber over par and red for an under-par finish (the golf convention). Small in the phone header, large in the desktop column.
 - **Card:** button, rounded 10 px, a 4 px drop shadow under it. Targets get a gold ring and foil spine. Loose cards (not linked to a target) fade to 75% and lose saturation; off-chain cards after a win fade further; the winning chain lifts.
 - **Gap bay:** dashed chalk outline across all columns from the earlier chain's reach to the later chain's reach, with a "N years to bridge" pill that sits above the cards.
 - **Hand:** the wild card (hint) as a gold-outlined pill that turns solid gold with "Play <name>" once drawn; the name field on card stock; Play on gold with a hard 3 px foil-deep base.
-- **Reveal:** a card-stock toast in the hand, ringed gold (linked) or red (missed); the overlap sentence leads.
+- **Reveal:** one card-stock line in the hand, ringed gold (an overlap) or red (a miss), that clears itself; on the winning card it holds a gold See your result button.
 - **Detail sheet:** card stock; bottom sheet on phones, right drawer from 640 px.
+- **Menu:** the title, today's daily on a gold-edged card (number, weekday, band, the two targets, one gold Play/Continue/See result button, the countdown), then free play: Continue when a round is saved, and Easy, Medium and Hard as cards showing a fan of one, two or three card backs and the par range. Choosing one starts a game at once (`/play?d=<band>`). Past puzzles and How to play sit quietly below.
+- **End screen:** the result word in display type, the large score plates, your chain as a row of small cards with the shared years between each pair, Long bridge and Clutch as gold marks, par's chain behind a toggle when it differs, and one gold action.
+- **Archive:** one card-stock row per puzzle: number and weekday, the two targets, band and your result.
 
 ## Motion
 
@@ -42,4 +55,4 @@ All tokens are CSS variables in `src/app/globals.css`. Tailwind opacity modifier
 
 ## Not yet in this world
 
-The end screen (`WinModal`), home, archive and share card still use the earlier ivory look.
+The share card (not built yet).
