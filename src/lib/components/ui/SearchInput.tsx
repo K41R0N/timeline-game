@@ -25,7 +25,7 @@ export function SearchInput({
   onSearch,
   onSelect,
   onSubmit,
-  placeholder = "Search historical figures...",
+  placeholder = "Type a person's name",
   suggestions = [],
   isLoading = false,
   isSubmitting = false,
@@ -128,7 +128,7 @@ export function SearchInput({
             bg-background rounded-lg
             border border-[var(--card-border)]
             shadow-[var(--card-shadow)]
-            max-h-[300px] overflow-y-auto
+            max-h-[min(300px,45dvh)] overflow-y-auto
           "
         >
           {error ? (
@@ -142,17 +142,14 @@ export function SearchInput({
                   onClick={() => handleSubmit()}
                   className="
                     w-full px-4 py-2 text-left
-                    bg-primary/10 hover:bg-primary/20
+                    bg-primary-glow hover:bg-primary-bright-20
                     transition-colors duration-[var(--transition-fast)]
                     border-b border-[var(--card-border)]
                   "
                 >
-                  <div className="flex items-center">
-                    <span className="text-primary">＋</span>
-                    <span className="ml-2 font-medium text-foreground">
-                      Search for "{value}" in Wikipedia
-                    </span>
-                  </div>
+                  <span className="font-medium text-foreground">
+                    Place &ldquo;{value.trim()}&rdquo;
+                  </span>
                 </button>
               )}
 
@@ -166,19 +163,19 @@ export function SearchInput({
                     hover:bg-background-hover
                     transition-colors duration-[var(--transition-fast)]
                     border-b border-[var(--card-border)] last:border-0
-                    ${suggestion.title.toLowerCase() === value.toLowerCase() ? 'bg-primary/5' : ''}
+                    ${suggestion.title.toLowerCase() === value.toLowerCase() ? 'bg-primary-glow' : ''}
                   `}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                     <span className="font-medium text-foreground">
                       {suggestion.title}
                       {suggestion.isExisting && (
-                        <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                          In Timeline
+                        <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-primary-glow text-foreground-muted">
+                          On the board
                         </span>
                       )}
                     </span>
-                    <span className="text-sm text-foreground-muted">
+                    <span className="text-sm text-foreground-muted sm:text-right">
                       {suggestion.description}
                     </span>
                   </div>
@@ -199,8 +196,13 @@ export function SearchInput({
             onKeyDown={handleKeyDown}
             onFocus={() => setIsOpen(true)}
             placeholder={placeholder}
+            aria-label="Person to place"
+            enterKeyHint="go"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
             className={`
-              w-full px-4 py-2 rounded-lg
+              h-11 w-full px-4 rounded-lg text-base
               bg-background-alt
               border border-[var(--card-border)]
               text-foreground placeholder-foreground-subtle
@@ -220,15 +222,15 @@ export function SearchInput({
           onClick={handleSubmit}
           disabled={!value.trim() || isLoading || isSubmitting}
           className={`
-            px-4 py-2 rounded-lg
-            font-medium
+            h-11 px-5 rounded-lg
+            font-semibold
             transition-all duration-200
             ${value.trim() && !isLoading && !isSubmitting
               ? 'bg-primary text-white hover:bg-primary-bright'
-              : 'bg-primary/20 text-foreground-muted cursor-not-allowed'}
+              : 'bg-background-hover text-foreground-subtle cursor-not-allowed'}
           `}
         >
-          {isSubmitting ? 'Adding…' : 'Add'}
+          {isSubmitting ? 'Placing…' : 'Place'}
         </button>
       </div>
     </div>

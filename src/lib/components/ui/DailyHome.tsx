@@ -35,7 +35,7 @@ export function DailyHome({ today, nextSwitchAt }: DailyHomeProps) {
   const result = status?.status === 'result' && status.result.par !== null ? describeResult(status.result.strokes, status.result.par) : null;
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center px-4 py-10 animate-fadeIn">
+    <div className="min-h-screen w-full bg-gradient-to-br from-background via-background to-primary-glow flex items-center justify-center px-4 py-10 animate-fadeIn">
       <div className="w-full max-w-md text-center">
         <h1 className="text-5xl sm:text-7xl font-bold text-primary mb-3 tracking-tight">History Links</h1>
         <p className="text-lg sm:text-2xl text-foreground-muted mb-8">Connect historical figures through time</p>

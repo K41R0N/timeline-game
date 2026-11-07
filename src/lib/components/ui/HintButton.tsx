@@ -10,27 +10,32 @@ interface HintButtonProps {
   onPlace: (name: string) => void;
 }
 
-/** Asks the roster for the next person; the name can be placed with one click. */
+/** Asks the roster for the next person; the name can then be placed with one tap. */
 export function HintButton({ costLabel, hintName, disabled, onRequest, onPlace }: HintButtonProps) {
-  return (
-    <div className="flex flex-col items-end gap-2">
-      <button
-        onClick={onRequest}
-        disabled={disabled || hintName !== null}
-        className="timeline-card px-3 py-1.5 text-sm font-medium text-primary disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Hint <span className="text-foreground-subtle">({costLabel})</span>
-      </button>
-      {hintName && (
+  if (hintName) {
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-foreground-muted">Hint:</span>
         <button
+          type="button"
           onClick={() => onPlace(hintName)}
           disabled={disabled}
-          className="timeline-card px-3 py-1.5 text-sm text-foreground hover:border-primary-bright disabled:opacity-50"
-          title="Place this person (costs a stroke)"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-primary bg-primary-glow px-3 font-semibold text-foreground transition-colors hover:bg-primary hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
         >
-          Try: <span className="font-semibold">{hintName}</span>
+          Place {hintName}
         </button>
-      )}
-    </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onRequest}
+      disabled={disabled}
+      className="inline-flex min-h-9 items-center gap-1 rounded-full px-1 text-sm font-semibold text-primary transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Get a hint <span className="font-normal text-foreground-muted">({costLabel})</span>
+    </button>
   );
 }

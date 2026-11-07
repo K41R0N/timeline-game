@@ -23,72 +23,77 @@ export function PlacementReveal({ figure, reveal, won = false, onDismiss }: Plac
   const anyBadge = reveal.longBridge || reveal.overlaps.some(o => o.clutch);
 
   return (
-    <div className="fixed top-28 lg:top-4 inset-x-0 z-[60] flex justify-center px-4 pointer-events-none">
-      <div
-        role="status"
-        aria-live="polite"
-        className={`timeline-card w-full max-w-md max-h-[calc(100dvh-8rem)] lg:max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 border-2 pointer-events-auto animate-fadeIn ${reveal.miss ? 'border-red-400' : 'border-green-400'}`}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-lg font-bold text-foreground leading-tight">{figure.name}</div>
-            <div className="text-base font-semibold text-[var(--interactive)]">{formatLifespan(figure)}</div>
-            {figure.shortDescription && <div className="text-sm text-foreground-muted">{figure.shortDescription}</div>}
-          </div>
-          <button onClick={onDismiss} aria-label="Dismiss" className="text-foreground-subtle hover:text-foreground text-xl leading-none px-1">
-            ×
-          </button>
+    <div
+      role="status"
+      aria-live="polite"
+      className={`max-h-[40dvh] overflow-y-auto rounded-xl border-2 bg-background p-4 shadow-[0_-6px_24px_rgba(44,62,80,0.12)] animate-fadeIn ${reveal.miss ? 'border-red-400' : 'border-green-500'}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-lg font-bold text-foreground leading-tight">{figure.name}</div>
+          <div className="text-base font-semibold tabular-nums text-foreground-muted">{formatLifespan(figure)}</div>
+          {figure.shortDescription && <div className="text-sm text-foreground-muted">{figure.shortDescription}</div>}
         </div>
-
-        {reveal.miss ? (
-          <div className="mt-3 text-base font-semibold text-red-700">
-            Missed {reveal.miss.nearest.name} by {reveal.miss.gapYears} {reveal.miss.gapYears === 1 ? 'year' : 'years'}
-          </div>
-        ) : (
-          <ul className="mt-3 space-y-1">
-            {listed.map(overlap => (
-              <li key={overlap.other.id} className="flex flex-wrap items-center gap-2 text-base">
-                <span className={overlap.extendsChain ? 'font-semibold text-green-700' : 'text-foreground-muted'}>
-                  Shared {describeShared(figure, overlap.other)} with {overlap.other.name}
-                </span>
-                {overlap.clutch && (
-                  <span className="text-xs font-bold uppercase tracking-wide rounded px-2 py-0.5 bg-amber-100 text-amber-800">Clutch overlap</span>
-                )}
-              </li>
-            ))}
-            {hidden > 0 && (
-              <li>
-                <button onClick={() => setShowAll(true)} className="text-sm text-foreground-subtle underline hover:text-foreground">
-                  and {hidden} more
-                </button>
-              </li>
-            )}
-          </ul>
-        )}
-
-        {reveal.longBridge && (
-          <div className="mt-2">
-            <span className="text-xs font-bold uppercase tracking-wide rounded px-2 py-0.5 bg-amber-100 text-amber-800">
-              Long bridge: lived {figure.deathYear - figure.birthYear} years
-            </span>
-          </div>
-        )}
-
-        {anyBadge && (
-          <div className="mt-2 text-xs text-foreground-subtle">
-            Badges count if they stay on your final chain (clutch: 5 shared years or fewer; long bridge: {LONG_BRIDGE_MIN_YEARS}+ years).
-          </div>
-        )}
-
-        {won && (
-          <button
-            onClick={onDismiss}
-            className="mt-3 w-full px-4 py-2 bg-primary hover:bg-primary-bright text-white font-semibold rounded-lg transition-all"
-          >
-            Chain complete: see your result
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="-mr-2 -mt-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-foreground-muted hover:bg-background-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <svg aria-hidden className="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+            <path d="M5 5l10 10M15 5 5 15" />
+          </svg>
+        </button>
       </div>
+
+      {reveal.miss ? (
+        <div className="mt-3 text-base font-semibold text-red-700">
+          Missed {reveal.miss.nearest.name} by {reveal.miss.gapYears} {reveal.miss.gapYears === 1 ? 'year' : 'years'}
+        </div>
+      ) : (
+        <ul className="mt-3 space-y-1">
+          {listed.map(overlap => (
+            <li key={overlap.other.id} className="flex flex-wrap items-center gap-2 text-base">
+              <span className={overlap.extendsChain ? 'font-semibold text-green-700' : 'text-foreground-muted'}>
+                Shared {describeShared(figure, overlap.other)} with {overlap.other.name}
+              </span>
+              {overlap.clutch && (
+                <span className="text-xs font-bold uppercase tracking-wide rounded px-2 py-0.5 bg-amber-100 text-amber-800">Clutch overlap</span>
+              )}
+            </li>
+          ))}
+          {hidden > 0 && (
+            <li>
+              <button onClick={() => setShowAll(true)} className="text-sm text-foreground-subtle underline hover:text-foreground">
+                and {hidden} more
+              </button>
+            </li>
+          )}
+        </ul>
+      )}
+
+      {reveal.longBridge && (
+        <div className="mt-2">
+          <span className="text-xs font-bold uppercase tracking-wide rounded px-2 py-0.5 bg-amber-100 text-amber-800">
+            Long bridge: lived {figure.deathYear - figure.birthYear} years
+          </span>
+        </div>
+      )}
+
+      {anyBadge && (
+        <div className="mt-2 text-xs text-foreground-subtle">
+          Badges count if they stay on your final chain (clutch: 5 shared years or fewer; long bridge: {LONG_BRIDGE_MIN_YEARS}+ years).
+        </div>
+      )}
+
+      {won && (
+        <button
+          onClick={onDismiss}
+          className="mt-3 w-full px-4 py-2 bg-primary hover:bg-primary-bright text-white font-semibold rounded-lg transition-all"
+        >
+          Chain complete: see your result
+        </button>
+      )}
     </div>
   );
 }

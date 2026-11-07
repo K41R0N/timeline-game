@@ -33,9 +33,9 @@ src/
 │   └── globals.css       # Design tokens (CSS variables) + component classes
 └── lib/                  # Imported as '@/lib' (barrel: src/lib/index.ts)
     ├── components/
-    │   ├── GameRound.tsx # One round: board, strokes vs par, search, hints, reveal, win check, end screen
+    │   ├── GameRound.tsx # One round: header (Home, score, goal), board, dock (hint, search, reveal), win check, end screen
     │   ├── DailyRound.tsx # A daily puzzle: scored attempt, resumed attempt, result, or practice
-    │   ├── Timeline.tsx  # Pan/zoom canvas, bubbles, hover cards, status colours
+    │   ├── Board.tsx     # Lifespan bars on one fit-to-width year axis, the open gap shaded; no pan or zoom
     │   └── ui/           # SearchBar, SearchInput, DetailPanel, PlacementReveal, HintButton, WinModal (end screen vs par), DailyHome, ArchiveList, Countdown, BandBadge
     ├── server/daily.ts   # The only reader of daily-schedule.json; imports 'server-only'
     ├── services/
@@ -55,7 +55,8 @@ src/
     │   ├── daily-schedule.json # A year of daily puzzles, each a snapshot: targets, par chain, narrowest-step count (server only)
     │   └── dailySchedule.ts  # Pure schedule rules: published puzzles, URL parsing, the health check (never imports the JSON)
     ├── utils/
-    │   ├── ChainAnalyzer.ts  # areContemporaries + BFS shortest path between targets (Timeline colouring)
+    │   ├── ChainAnalyzer.ts  # areContemporaries, livesConnectedTo, BFS shortest path between targets
+    │   ├── board.ts      # Board layout: lane positions and statuses, the gap neither chain reaches, axis ticks
     │   ├── par.ts            # computePar (greedy furthest-reach over the roster) and nextHint
     │   ├── difficulty.ts     # chainShape (par + options per step), DIFFICULTY_BANDS, pickTargets from the 400 best-known people
     │   ├── overlap.ts        # sharedYears, revealPlacement, clutch / long-life thresholds
@@ -104,7 +105,7 @@ CAPTURE_DAILY=1 npx vitest run src/lib/services/daily.capture.test.ts --silent=f
 3. The player submits a name. `handleAddFigure` locks input, calls `WikipediaService.lookupPerson(name)`, shows the typed rejection reason or appends with a functional update, and opens the reveal (`revealPlacement`, against the board before the placement).
 4. Strokes are `countStrokes(figures, hintsUsed, difficulty)`: every placed person, plus hints on Hard. A hint is `nextHint(roster, ...)`; the hinted name is saved with the round.
 5. An effect runs `finalChain`; a complete chain sets `hasWon`, and `WinModal` shows `describeResult(strokes, par)`, both chains and the badges.
-6. `Timeline` runs `analyzeChain` to colour bubbles.
+6. `Board` lays the lanes out with `boardLayout`: one bar per life, coloured by whether it links to a target, and the gap between the two chains shaded with its length in years.
 
 Steps 2–6 happen inside `GameRound`, which both modes render.
 
@@ -140,7 +141,7 @@ Steps 2–6 happen inside `GameRound`, which both modes render.
 - **Full Wikidata entities are ~300 KB.** Fetch single properties with `wbgetclaims`, not `wbgetentities&props=claims`.
 - **Changing a request URL invalidates fixtures.** Tests replay by exact URL; re-record with the capture command above.
 - **The daily schedule runs out.** `dailySchedule.test.ts` fails CI once fewer than 30 puzzles remain after today; run the `CAPTURE_DAILY` command and commit the file.
-- **The `Timeline` snap effect depends on `zoom`**, so zooming re-centres the view. `ProfileImage` is declared inside render and remounts every render (#63).
+- **Tailwind opacity modifiers do nothing on the CSS-variable colours** (`bg-primary/20` renders no background), because the tokens are `var(...)` rather than RGB channels. Use the alpha tokens (`bg-primary-glow`, `bg-primary-bright-20`) or an arbitrary value.
 
 ## Working rules for AI assistants
 

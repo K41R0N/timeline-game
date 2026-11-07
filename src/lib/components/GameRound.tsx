@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import Timeline from './Timeline';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Board } from './Board';
 import { SearchBar } from './ui/SearchBar';
 import { WinModal } from './ui/WinModal';
 import { PlacementReveal } from './ui/PlacementReveal';
 import { HintButton } from './ui/HintButton';
+import { DetailPanel } from './ui/DetailPanel';
+import { BandBadge } from './ui/BandBadge';
 import { HistoricalFigure } from '../types/HistoricalFigure';
 import { WikipediaService, lookupFailureMessage } from '../services/WikipediaService';
 import { analytics, currentTime } from '../services/analytics';
@@ -32,17 +34,14 @@ export interface GameRoundProps {
   onSave: (round: RoundSave) => void;
   /** Called once the chain is complete, with the final board and its result. */
   onWin?: (round: RoundSave, result: DailyResult) => void;
-  /** The top-left control: leaving the round. */
-  exitLabel: string;
-  exitIcon: string;
-  /** Asked before leaving, or null to leave without asking. */
-  exitConfirm: string | null;
-  onExit: () => void;
-  /** Whether leaving an unfinished round ends it (free play) rather than pausing it. */
-  exitAbandons: boolean;
-  /** The end screen's button. */
+  /** Back to the home page. The round is saved on every change, so leaving only pauses it. */
+  onHome: () => void;
+  /** Free play: give up this round for new targets. Unfinished rounds ask `restartConfirm` first and count as abandoned. */
+  onRestart?: () => void;
+  restartConfirm?: string;
+  /** The end screen's button: starts over when the round can restart, otherwise goes home. */
   endActionLabel: string;
-  /** Shown under the exit control, such as the daily puzzle's number. */
+  /** Beside the Home control, such as the daily puzzle's number or "Free play". */
   roundLabel?: ReactNode;
   /** The end screen's heading and extra content, such as the countdown to the next puzzle. */
   endHeading?: string;
@@ -60,11 +59,9 @@ export function GameRound({
   fixedParChain = null,
   onSave,
   onWin,
-  exitLabel,
-  exitIcon,
-  exitConfirm,
-  onExit,
-  exitAbandons,
+  onHome,
+  onRestart,
+  restartConfirm,
   endActionLabel,
   roundLabel,
   endHeading,
@@ -75,8 +72,9 @@ export function GameRound({
   const [hintsUsed, setHintsUsed] = useState(initial?.hintsUsed ?? 0);
   const [hint, setHint] = useState<SavedHintName | null>(initial?.hint ?? null);
   const [error, setError] = useState<string | null>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  /** The person placed most recently in this session, whose lane lands with a highlight. */
+  const [lastPlacedId, setLastPlacedId] = useState<string | null>(null);
   const [selectedFigure, setSelectedFigure] = useState<HistoricalFigure | null>(null);
   const [reveal, setReveal] = useState<{ figure: HistoricalFigure; reveal: RevealResult } | null>(null);
   const [roster, setRoster] = useState<RosterPerson[] | null>(null);
@@ -104,6 +102,7 @@ export function GameRound({
   // Par chains run from the earlier-born target; a round saved before targets were ordered can list them the other way.
   const [earlierTarget, laterTarget] = targetA.birthYear <= targetB.birthYear ? [targetA, targetB] : [targetB, targetA];
   const policy = hintPolicy(difficulty);
+  const finalChainIds = useMemo(() => (hasWon ? new Set(winningChain.map(f => f.id)) : null), [hasWon, winningChain]);
 
   useEffect(() => {
     onSaveRef.current = onSave;
@@ -194,9 +193,16 @@ export function GameRound({
     }
   }, [figures, targetA, targetB, hasWon, difficulty, hintsUsed, hint, parChain, analyticsContext]);
 
-  const handleExit = () => {
-    if (exitConfirm && !hasWon && !confirm(exitConfirm)) return;
-    if (exitAbandons && !hasWon) {
+  const handleHome = () => {
+    // Abandon any lookup still in flight: its result belongs to the round being left.
+    generationRef.current += 1;
+    onHome();
+  };
+
+  const handleRestart = () => {
+    if (!onRestart) return;
+    if (restartConfirm && !hasWon && !confirm(restartConfirm)) return;
+    if (!hasWon) {
       analytics.track(
         'game_abandoned',
         roundCompletedProps({
@@ -211,9 +217,8 @@ export function GameRound({
         })
       );
     }
-    // Abandon any lookup still in flight: its result belongs to the round being left.
     generationRef.current += 1;
-    onExit();
+    onRestart();
   };
 
   const handleAddFigure = async (name: string) => {
@@ -232,7 +237,6 @@ export function GameRound({
     const generation = generationRef.current;
     isAddingRef.current = true;
     setIsAdding(true);
-    setIsAnimating(true);
 
     try {
       const result = await WikipediaService.lookupPerson(query);
@@ -266,6 +270,7 @@ export function GameRound({
         ...analyticsContext,
       });
       setHint(current => (current?.id === figure.id ? null : current));
+      setLastPlacedId(figure.id);
 
       // Functional update so concurrent renders never drop an addition (#62).
       setFigures(prev =>
@@ -276,7 +281,6 @@ export function GameRound({
       if (generation === generationRef.current) {
         isAddingRef.current = false;
         setIsAdding(false);
-        setIsAnimating(false);
       }
     }
   };
@@ -293,117 +297,106 @@ export function GameRound({
     analytics.track('hint_taken', { difficulty, costs_stroke: policy.costsStroke, ...analyticsContext });
   };
 
+  const overPar = par !== null && strokes > par;
+
   return (
-    <>
-      {/* Exit control - Top Left */}
-      <div className="fixed top-4 left-4 z-[22] pointer-events-auto">
-        <button onClick={handleExit} className="timeline-card px-4 py-2 shadow-glow hover:shadow-xl transition-all hover:scale-105">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">{exitIcon}</span>
-            <span className="text-sm font-medium text-primary">{exitLabel}</span>
-          </div>
-        </button>
-      </div>
-
-      {roundLabel && (
-        <div className="fixed top-[4.25rem] left-4 z-[22] pointer-events-auto">
-          <div className="timeline-card px-3 py-1.5 text-xs font-semibold text-foreground-muted">{roundLabel}</div>
-        </div>
-      )}
-
-      {/* Compact Floating Score Badge - Top Right */}
-      <div className="fixed top-4 right-4 z-[22] pointer-events-auto group">
-        <div className="timeline-card p-3 shadow-glow hover:shadow-xl transition-shadow">
-          <div className="flex items-center gap-3">
-            <div className="text-center">
-              <div className={`text-2xl font-bold leading-none ${par !== null && strokes > par ? 'text-amber-600' : 'text-green-600'}`}>
-                {strokes}
-              </div>
-              <div className="text-[9px] text-foreground-muted uppercase mt-0.5">Strokes</div>
+    <div className="flex h-dvh flex-col bg-background">
+      <header className="shrink-0 border-b border-[var(--card-border)] px-4 pb-3 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-8">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleHome}
+            aria-label="Home"
+            className="-ml-2 inline-flex h-11 shrink-0 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-primary transition-colors hover:bg-background-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <svg aria-hidden className="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12.5 4.5 7 10l5.5 5.5" />
+            </svg>
+            <span className="hidden sm:inline">Home</span>
+          </button>
+          {roundLabel && <div className="min-w-0 truncate text-sm font-medium text-foreground-muted">{roundLabel}</div>}
+          {onRestart && (
+            <button
+              type="button"
+              onClick={handleRestart}
+              className="inline-flex h-9 shrink-0 items-center rounded-lg border border-[var(--card-border)] px-3 text-sm font-semibold text-foreground-muted transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              New game
+            </button>
+          )}
+          <dl className="ml-auto flex shrink-0 items-center gap-4 text-center">
+            <div className="flex flex-col-reverse">
+              <dt className="mt-1 text-[11px] font-medium uppercase tracking-wide text-foreground-muted">Strokes</dt>
+              <dd className={`text-xl font-bold leading-none tabular-nums ${overPar ? 'text-amber-700' : 'text-foreground'}`}>{strokes}</dd>
             </div>
-
-            <div className="text-center">
-              <div className="text-2xl font-bold leading-none text-primary">{par ?? (parUnavailable ? '–' : '…')}</div>
-              <div className="text-[9px] text-foreground-muted uppercase mt-0.5">Par</div>
+            <div className="flex flex-col-reverse">
+              <dt className="mt-1 text-[11px] font-medium uppercase tracking-wide text-foreground-muted">Par</dt>
+              <dd className="text-xl font-bold leading-none tabular-nums text-primary">{par ?? (parUnavailable ? '–' : '…')}</dd>
             </div>
-
-            {/* Divider */}
-            <div className="w-[1px] h-8 bg-primary-bright-20" />
-
-            {/* Difficulty Badge */}
-            <div className="text-center">
-              <div className="text-xs font-bold text-primary">
-                {difficulty === 'easy' ? '⭐' : difficulty === 'medium' ? '⭐⭐' : '⭐⭐⭐'}
-              </div>
-              <div className="text-[9px] text-foreground-muted uppercase">{difficulty}</div>
-            </div>
-          </div>
-
-          {/* Goal Tooltip on Hover */}
-          <div className="absolute top-full right-0 mt-2 w-[300px] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity">
-            <div className="timeline-card p-3 shadow-lg">
-              <div className="text-[10px] text-foreground-muted uppercase mb-1">Goal</div>
-              <div className="text-sm font-semibold text-primary">
-                <span className="text-yellow-600">{targetA.name}</span>
-                <span className="mx-1 text-foreground-muted">→</span>
-                <span className="text-yellow-600">{targetB.name}</span>
-              </div>
-              <div className="text-[10px] text-foreground-subtle mt-1">
-                {par !== null
-                  ? `Connect them in as few people as you can • Par is ${par} • Every person placed is a stroke`
-                  : 'Connect them in as few people as you can • Every person placed is a stroke'}
-              </div>
-            </div>
-          </div>
+          </dl>
         </div>
-      </div>
 
-      {!hasWon && (
-        <div className="fixed top-24 right-4 z-[21] pointer-events-auto">
-          <HintButton
-            costLabel={policy.label}
-            hintName={hint && !figures.some(f => f.id === hint.id) ? hint.name : null}
-            disabled={!roster || isAdding}
-            onRequest={handleHint}
-            onPlace={handleAddFigure}
-          />
-        </div>
-      )}
+        <h1 className="mt-1 text-lg font-bold leading-snug text-foreground [text-shadow:none] sm:text-xl">
+          {earlierTarget.name}
+          <span aria-hidden className="mx-1.5 text-foreground-muted">→</span>
+          <span className="sr-only"> to </span>
+          {laterTarget.name}
+        </h1>
+        <p className="mt-1 text-sm leading-relaxed text-foreground-muted">
+          <span className="mr-2 align-[1px]">
+            <BandBadge band={difficulty} />
+          </span>
+          Link them through people alive at the same time. Each person you place is a stroke.
+        </p>
+      </header>
 
-      {reveal && (
-        <PlacementReveal
-          key={reveal.figure.id}
-          figure={reveal.figure}
-          reveal={reveal.reveal}
-          won={hasWon}
-          onDismiss={() => setReveal(null)}
-        />
-      )}
-
-      {/* Error Toast */}
-      {error && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[101] pointer-events-none">
-          <div className="timeline-card px-6 py-3 bg-red-50 border-2 border-red-400 animate-fadeIn">
-            <div className="text-sm text-red-700 font-medium">⚠️ {error}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Timeline Canvas Container */}
-      <main className="w-full h-screen bg-background">
-        <Timeline
+      <main className="min-h-0 flex-1">
+        <Board
           figures={figures}
-          isAnimating={isAnimating}
-          onAnimationComplete={() => setIsAnimating(false)}
           targetA={targetA}
           targetB={targetB}
-          selectedFigure={selectedFigure}
-          onSelectFigure={setSelectedFigure}
+          finalChainIds={finalChainIds}
+          highlightId={lastPlacedId}
+          selectedId={selectedFigure?.id ?? null}
+          onSelect={setSelectedFigure}
         />
       </main>
 
-      {/* Floating Search Bar: gone once the chain is complete, so the result cannot change */}
-      {!hasWon && <SearchBar figures={figures} onSelect={setSelectedFigure} onAddFigure={handleAddFigure} isAdding={isAdding} />}
+      <div className="relative z-20 shrink-0 border-t border-[var(--card-border)] bg-background px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-8">
+        <div className="mx-auto max-w-2xl space-y-2">
+          {reveal && (
+            <PlacementReveal
+              key={reveal.figure.id}
+              figure={reveal.figure}
+              reveal={reveal.reveal}
+              won={hasWon}
+              onDismiss={() => setReveal(null)}
+            />
+          )}
+
+          {error && (
+            <div role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+              {error}
+            </div>
+          )}
+
+          {/* Gone once the chain is complete, so the result cannot change */}
+          {!hasWon && (
+            <>
+              <HintButton
+                costLabel={policy.label}
+                hintName={hint && !figures.some(f => f.id === hint.id) ? hint.name : null}
+                disabled={!roster || isAdding}
+                onRequest={handleHint}
+                onPlace={handleAddFigure}
+              />
+              <SearchBar figures={figures} onSelect={setSelectedFigure} onAddFigure={handleAddFigure} isAdding={isAdding} />
+            </>
+          )}
+        </div>
+      </div>
+
+      {selectedFigure && <DetailPanel figure={selectedFigure} onClose={() => setSelectedFigure(null)} />}
 
       {/* Win Modal: opens once the winning placement's reveal is dismissed */}
       {hasWon && !reveal && (
@@ -414,12 +407,12 @@ export function GameRound({
           badges={winningBadges}
           parChain={parChain ? [earlierTarget, ...parChain, laterTarget] : null}
           hintsUsed={policy.recorded ? hintsUsed : null}
-          onPlayAgain={handleExit}
+          onPlayAgain={onRestart ? handleRestart : handleHome}
           playAgainLabel={endActionLabel}
           heading={endHeading}
           extra={endExtra}
         />
       )}
-    </>
+    </div>
   );
 }

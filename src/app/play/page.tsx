@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   GameRound,
   TargetSelectionService,
@@ -33,6 +34,7 @@ interface FreeRound {
 
 /** Free play: pick a difficulty, get a random pair of targets, and play rounds back to back. */
 export default function FreePlay() {
+  const router = useRouter();
   const { loadSavedState, saveState, clearState } = useGameStatePersistence();
   const [round, setRound] = useState<FreeRound | null>(null);
   const [restoring, setRestoring] = useState(true);
@@ -160,11 +162,10 @@ export default function FreePlay() {
       difficulty={round.difficulty}
       initial={round.initial}
       onSave={save}
-      exitLabel="New Game"
-      exitIcon="🎮"
-      exitConfirm="Start a new game? Your current progress will be lost."
-      onExit={newGame}
-      exitAbandons
+      onHome={() => router.push('/')}
+      onRestart={newGame}
+      restartConfirm="Start a new game? Your current progress will be lost."
+      roundLabel="Free play"
       endActionLabel="Play Again"
       analyticsContext={FREE_PLAY}
     />

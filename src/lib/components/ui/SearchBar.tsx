@@ -100,23 +100,18 @@ export function SearchBar({ figures, onSelect, onAddFigure, isAdding = false }: 
   };
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] w-full max-w-2xl px-4">
-      <div className="timeline-card p-3 shadow-glow backdrop-blur-lg overflow-visible">
-        <SearchInput
-          onSearch={handleSearch}
-          onSelect={handleSelect}
-          onSubmit={onAddFigure}
-          suggestions={suggestions.map(s => ({
-            title: s.title,
-            description: s.snippet,
-            isExisting: s.isExisting
-          }))}
-          isLoading={isLoading}
-          isSubmitting={isAdding}
-          error={error}
-          className="search-input"
-        />
-      </div>
-    </div>
+    <SearchInput
+      onSearch={handleSearch}
+      onSelect={handleSelect}
+      onSubmit={onAddFigure}
+      suggestions={suggestions.map(s => ({
+        title: s.title,
+        description: s.snippet,
+        isExisting: s.isExisting
+      }))}
+      isLoading={isLoading}
+      isSubmitting={isAdding}
+      error={error}
+    />
   );
-} 
+}

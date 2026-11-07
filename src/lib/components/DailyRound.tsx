@@ -187,11 +187,7 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
       fixedParChain={puzzle.parChain}
       onSave={save}
       onWin={win}
-      exitLabel="Home"
-      exitIcon="🏠"
-      exitConfirm={null}
-      onExit={goHome}
-      exitAbandons={false}
+      onHome={goHome}
       endActionLabel="Back to home"
       roundLabel={
         <span>

@@ -1,5 +1,5 @@
 // Main components
-export { default as Timeline } from './components/Timeline';
+export { Board } from './components/Board';
 export { GameRound } from './components/GameRound';
 export type { GameRoundProps, ParPerson } from './components/GameRound';
 export { DailyRound } from './components/DailyRound';
@@ -30,6 +30,7 @@ export * from './utils/ChainAnalyzer';
 export * from './utils/GameLogic';
 export * from './utils/overlap';
 export * from './utils/style';
+export * from './utils/board';
 export * from './utils/par';
 export * from './utils/difficulty';
 export * from './utils/roundEvents';
