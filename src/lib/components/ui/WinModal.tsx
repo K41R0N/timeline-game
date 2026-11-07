@@ -18,6 +18,8 @@ interface WinModalProps {
   /** Hints taken, or null when this difficulty does not record them. */
   hintsUsed: number | null;
   onPlayAgain: () => void;
+  /** The button's label: starting another round, or going home after a daily puzzle. */
+  playAgainLabel?: string;
 }
 
 function ChainList({ title, people, badges }: { title: string; people: ChainPerson[]; badges: StyleBadge[] }) {
@@ -55,7 +57,7 @@ function ChainList({ title, people, badges }: { title: string; people: ChainPers
   );
 }
 
-export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onPlayAgain }: WinModalProps) {
+export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onPlayAgain, playAgainLabel = 'Play Again' }: WinModalProps) {
   const result = par !== null ? describeResult(strokes, par) : null;
   const underPar = result?.tone === 'under';
   const sameAsPar = parChain !== null && parChain.map(p => p.id).join('|') === chain.map(p => p.id).join('|');
@@ -110,7 +112,7 @@ export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onP
             onClick={onPlayAgain}
             className="px-6 py-3 bg-primary hover:bg-primary-bright text-white font-semibold rounded-lg transition-all hover:shadow-glow"
           >
-            Play Again
+            {playAgainLabel}
           </button>
         </div>
       </div>
