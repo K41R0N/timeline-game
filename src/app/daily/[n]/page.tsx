@@ -1,7 +1,7 @@
 import { connection } from 'next/server';
 import Link from 'next/link';
-import { DailyRound, Countdown, currentTime } from '@/lib';
-import { dailyPuzzle, dailyToday, parsePuzzleParam } from '@/lib/server/daily';
+import { DailyRound, Countdown, currentTime, weekdayName } from '@/lib';
+import { dailyDate, dailyPuzzle, dailyToday, parsePuzzleParam } from '@/lib/server/daily';
 
 /** One daily puzzle. Rendered per request, so a puzzle exists only once its UTC date arrives. */
 export default async function DailyPuzzlePage({ params }: { params: Promise<{ n: string }> }) {
@@ -12,14 +12,23 @@ export default async function DailyPuzzlePage({ params }: { params: Promise<{ n:
   const n = parsePuzzleParam(raw);
   const puzzle = n === null ? null : dailyPuzzle(n, now);
 
-  if (!puzzle || !today.puzzle) {
-    const future = n !== null && today.puzzle !== null && n > today.puzzle.number;
+  if (!puzzle) {
+    const future = n !== null && (today.number === null || n > today.number);
+    const date = future ? dailyDate(n) : null;
     return (
       <div className="w-full h-screen flex items-center justify-center bg-background px-4">
         <div className="timeline-card p-8 max-w-md text-center space-y-4">
           <h1 className="text-2xl font-bold text-primary">{future ? `Puzzle #${n} isn't out yet` : 'No such daily puzzle'}</h1>
           <p className="text-foreground-muted">
-            <Countdown until={today.nextSwitchAt} />
+            {date ? (
+              <>
+                Out on {weekdayName(date)} {date}
+                <br />
+                <Countdown until={Date.parse(`${date}T00:00:00Z`)} label="in" />
+              </>
+            ) : (
+              <Countdown until={today.nextSwitchAt} />
+            )}
           </p>
           <div className="flex justify-center gap-3">
             {today.puzzle && (
@@ -36,5 +45,5 @@ export default async function DailyPuzzlePage({ params }: { params: Promise<{ n:
     );
   }
 
-  return <DailyRound puzzle={puzzle} todayNumber={today.puzzle.number} nextSwitchAt={today.nextSwitchAt} />;
+  return <DailyRound key={puzzle.number} puzzle={puzzle} todayNumber={today.number ?? puzzle.number} nextSwitchAt={today.nextSwitchAt} />;
 }

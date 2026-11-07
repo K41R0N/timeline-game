@@ -30,7 +30,7 @@ export default async function Archive() {
         {rows.length === 0 ? (
           <p className="text-foreground-muted">No daily puzzles yet.</p>
         ) : (
-          <ArchiveList rows={rows} todayNumber={today.puzzle?.number ?? null} />
+          <ArchiveList rows={rows} todayNumber={today.number} />
         )}
       </div>
     </div>

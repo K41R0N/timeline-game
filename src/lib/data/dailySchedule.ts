@@ -49,7 +49,7 @@ export interface DailySchedule {
   puzzles: DailyPuzzle[];
 }
 
-/** A target or a par-chain person may not come back within this many days. */
+/** A target may not be a target again within this many days. */
 export const PERSON_GAP_DAYS = 14;
 /** The health check fails when fewer published-to-be puzzles than this remain. */
 export const MIN_DAYS_AHEAD = 30;

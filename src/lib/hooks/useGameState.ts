@@ -1,11 +1,12 @@
 import { HistoricalFigure } from '../types/HistoricalFigure';
+import type { Difficulty } from '../utils/GameLogic';
 
 /** A free-play round as saved in this browser. */
 export interface GameState {
   figures: HistoricalFigure[];
   targetA: HistoricalFigure | null;
   targetB: HistoricalFigure | null;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: Difficulty;
   hintsUsed: number;
   /** The hinted person not yet placed, so a reload shows the same name without charging again. */
   hint: SavedHint | null;

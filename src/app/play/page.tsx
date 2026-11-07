@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   GameRound,
   TargetSelectionService,
@@ -118,7 +119,12 @@ export default function FreePlay() {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-background">
         <div className="timeline-card p-8 max-w-md">
-          <h2 className="text-2xl font-bold text-primary mb-4">Select Difficulty</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-primary">Select Difficulty</h2>
+            <Link href="/" className="text-sm font-semibold text-primary underline">
+              Home
+            </Link>
+          </div>
           <p className="text-foreground-muted mb-6">
             Connect two famous people in as few strokes as you can. Harder rounds need longer chains and people fewer players know.
           </p>

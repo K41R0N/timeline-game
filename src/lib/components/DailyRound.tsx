@@ -77,8 +77,11 @@ function DailyLoading() {
 
 type View = { kind: 'result'; attempt: DailyAttempt; canPractice: boolean } | { kind: AttemptKind; save: RoundSave | null };
 
-function LoadedDailyRound({ puzzle, todayNumber, nextSwitchAt, progress }: DailyRoundProps & { progress: DailyProgress }) {
+function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progress }: DailyRoundProps & { progress: DailyProgress }) {
   const router = useRouter();
+  // A refresh (the countdown's, at midnight) sends an equal puzzle as a new object; keep the first so the
+  // targets are not looked up again and the round's start is not reported twice.
+  const [puzzle] = useState(incoming);
   const n = puzzle.number;
   // Decided once when the page opens; saving progress must not switch what is on screen.
   const [view, setView] = useState<View>(() => openPuzzle(progress, n, todayNumber));
@@ -136,11 +139,11 @@ function LoadedDailyRound({ puzzle, todayNumber, nextSwitchAt, progress }: Daily
     </div>
   );
 
-  if (!targets) return <DailyLoading />;
-
   if (view.kind === 'result') {
     const { attempt, canPractice } = view;
-    const final = attempt.figures.length > 0 ? finalChain(targets[0], targets[1], attempt.figures) : null;
+    // The stored result needs only names and years, so it does not wait for Wikimedia.
+    const [a, b] = targets ?? [figureFrom(puzzle.targetA), figureFrom(puzzle.targetB)];
+    const final = attempt.figures.length > 0 ? finalChain(a, b, attempt.figures) : null;
     const result = attempt.result!;
     return (
       <WinModal
@@ -149,7 +152,7 @@ function LoadedDailyRound({ puzzle, todayNumber, nextSwitchAt, progress }: Daily
         par={result.par}
         chain={final?.chain ?? []}
         badges={final?.badges ?? []}
-        parChain={[targets[0], ...puzzle.parChain, targets[1]]}
+        parChain={[a, ...puzzle.parChain, b]}
         hintsUsed={hintPolicy(puzzle.band).recorded ? result.hintsUsed : null}
         onPlayAgain={goHome}
         playAgainLabel="Back to home"
@@ -171,6 +174,8 @@ function LoadedDailyRound({ puzzle, todayNumber, nextSwitchAt, progress }: Daily
       />
     );
   }
+
+  if (!targets) return <DailyLoading />;
 
   const practice = view.kind === 'practice';
   return (

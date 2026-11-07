@@ -15,10 +15,6 @@ export interface RoundContext {
 
 export const FREE_PLAY: RoundContext = { mode: 'free', puzzle: null, scored: null };
 
-export function roundContextProps({ mode, puzzle, scored }: RoundContext) {
-  return { mode, puzzle, scored };
-}
-
 /** Properties for `game_started`: what kind of round this is, for tuning the difficulty bands. */
 export function roundStartedProps(roster: RosterPerson[], difficulty: Difficulty, targetA: HistoricalFigure, targetB: HistoricalFigure, context: RoundContext) {
   const [earlier, later] = [targetA, targetB].sort((a, b) => a.birthYear - b.birthYear);
@@ -32,7 +28,7 @@ export function roundStartedProps(roster: RosterPerson[], difficulty: Difficulty
     gap_century: Math.floor(gapMidpoint / 100) * 100,
     target_a: earlier.name,
     target_b: later.name,
-    ...roundContextProps(context),
+    ...context,
   };
 }
 
@@ -58,6 +54,6 @@ export function roundCompletedProps({ difficulty, strokes, par, hintsUsed, badge
     clutch_badges: badgeKinds.filter(kind => kind === 'clutch').length,
     long_bridge_badges: badgeKinds.filter(kind => kind === 'longBridge').length,
     duration_seconds: Math.floor((now - startedAt) / 1000),
-    ...roundContextProps(context),
+    ...context,
   };
 }

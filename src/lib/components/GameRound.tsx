@@ -14,7 +14,7 @@ import { computePar, nextHint } from '../utils/par';
 import { revealPlacement, type RevealResult } from '../utils/overlap';
 import { finalChain, type StyleBadge } from '../utils/style';
 import { countStrokes, hintPolicy, type Difficulty } from '../utils/GameLogic';
-import { roundCompletedProps, roundContextProps, type RoundContext } from '../utils/roundEvents';
+import { roundCompletedProps, type RoundContext } from '../utils/roundEvents';
 import type { DailyResult, RoundSave, SavedHintName } from '../utils/dailyProgress';
 
 /** A person on a par chain: identity and years, from the roster or a daily puzzle's snapshot. */
@@ -101,6 +101,8 @@ export function GameRound({
 
   const strokes = countStrokes(figures, hintsUsed, difficulty);
   const par = parChain?.length ?? null;
+  // Par chains run from the earlier-born target; a round saved before targets were ordered can list them the other way.
+  const [earlierTarget, laterTarget] = targetA.birthYear <= targetB.birthYear ? [targetA, targetB] : [targetB, targetA];
   const policy = hintPolicy(difficulty);
 
   useEffect(() => {
@@ -221,7 +223,7 @@ export function GameRound({
     const nameMatch = figuresRef.current.find(f => f.name.toLowerCase() === query.toLowerCase());
     if (nameMatch) {
       showError(`${nameMatch.name} is already in the timeline`);
-      analytics.track('figure_added', { accepted: false, reason: 'duplicate', ...roundContextProps(analyticsContext) });
+      analytics.track('figure_added', { accepted: false, reason: 'duplicate', ...analyticsContext });
       setSelectedFigure(nameMatch);
       return;
     }
@@ -241,14 +243,14 @@ export function GameRound({
       if (!result.ok) {
         console.warn(`⚠️ Rejected "${query}": ${result.reason}`);
         showError(lookupFailureMessage(result.reason, result.title));
-        analytics.track('figure_added', { accepted: false, reason: result.reason, ...roundContextProps(analyticsContext) });
+        analytics.track('figure_added', { accepted: false, reason: result.reason, ...analyticsContext });
         return;
       }
 
       const figure = result.figure;
       if (figuresRef.current.some(f => f.id === figure.id)) {
         showError(`${figure.name} is already in the timeline`);
-        analytics.track('figure_added', { accepted: false, reason: 'duplicate', ...roundContextProps(analyticsContext) });
+        analytics.track('figure_added', { accepted: false, reason: 'duplicate', ...analyticsContext });
         return;
       }
 
@@ -261,7 +263,7 @@ export function GameRound({
         extends_chain: placement.overlaps.some(overlap => overlap.extendsChain),
         miss_years: placement.miss?.gapYears ?? null,
         from_hint: hint?.id === figure.id,
-        ...roundContextProps(analyticsContext),
+        ...analyticsContext,
       });
       setHint(current => (current?.id === figure.id ? null : current));
 
@@ -288,7 +290,7 @@ export function GameRound({
     }
     setHint({ id: next.id, name: next.name });
     setHintsUsed(count => count + 1);
-    analytics.track('hint_taken', { difficulty, costs_stroke: policy.costsStroke, ...roundContextProps(analyticsContext) });
+    analytics.track('hint_taken', { difficulty, costs_stroke: policy.costsStroke, ...analyticsContext });
   };
 
   return (
@@ -410,7 +412,7 @@ export function GameRound({
           par={par}
           chain={winningChain}
           badges={winningBadges}
-          parChain={parChain ? [targetA, ...parChain, targetB] : null}
+          parChain={parChain ? [earlierTarget, ...parChain, laterTarget] : null}
           hintsUsed={policy.recorded ? hintsUsed : null}
           onPlayAgain={handleExit}
           playAgainLabel={endActionLabel}

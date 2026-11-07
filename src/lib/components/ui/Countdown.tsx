@@ -32,8 +32,9 @@ export function Countdown({ until, label = 'Next puzzle in' }: { until: number; 
   const now = useSyncExternalStore(subscribe, nowSeconds, () => null);
   const left = now === null ? null : Math.ceil(until / 1000) - now;
 
+  // At zero, ask the server for the new puzzle; if its clock is behind ours, ask again every 30 seconds.
   useEffect(() => {
-    if (left !== null && left <= 0) router.refresh();
+    if (left !== null && left <= 0 && left % 30 === 0) router.refresh();
   }, [left, router]);
 
   return (
