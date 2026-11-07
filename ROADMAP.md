@@ -34,7 +34,7 @@ GitHub issues are the source of truth. This file mirrors the tracking issue [#37
 - [#57](https://github.com/K41R0N/timeline-game/issues/57) Compute par and reveal the best possible chain
 - [#55](https://github.com/K41R0N/timeline-game/issues/55) Draw lifespans on the timeline and show the gap left to bridge
 - [#56](https://github.com/K41R0N/timeline-game/issues/56) Overlap reveal on every link
-- [#58](https://github.com/K41R0N/timeline-game/issues/58) Daily shared puzzle
+- [#58](https://github.com/K41R0N/timeline-game/issues/58) Daily shared puzzle (built; plan in [`docs/plans/2026-11-07-1521-feat-daily-shared-puzzle-plan.md`](./docs/plans/2026-11-07-1521-feat-daily-shared-puzzle-plan.md))
 - [#59](https://github.com/K41R0N/timeline-game/issues/59) Share card and challenge links
 - [#43](https://github.com/K41R0N/timeline-game/issues/43) Configure PostHog and instrument the three strategy metrics
 - [#47](https://github.com/K41R0N/timeline-game/issues/47) Confirm production deploy target and PR preview deploys

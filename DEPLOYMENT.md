@@ -34,6 +34,20 @@ No `vercel.json` is needed; Vercel's Next.js auto-detection handles the build.
 
 ---
 
+## Daily puzzle schedule
+
+The daily puzzles live in `src/lib/data/daily-schedule.json`, generated a year ahead from the committed roster. Puzzle #1 is 2026-11-07. The file is read only on the server, so it adds nothing to the client bundle.
+
+**Extending it.** CI's `dailySchedule.test.ts` fails once fewer than 30 puzzles remain after today. To extend:
+
+1. Run `CAPTURE_DAILY=1 npx vitest run src/lib/services/daily.capture.test.ts --silent=false`. It is offline, takes seconds, and appends days until the schedule reaches a year past today (`DAILY_DAYS` changes the horizon).
+2. Check the diff only adds lines at the end of `entries` (the previous last line just gains a comma); published puzzles must never change.
+3. Commit the file and deploy.
+
+**Starting over** (only before launch, when no puzzle has been played): delete the file and run the command with `DAILY_FROM=YYYY-MM-DD`, which becomes puzzle #1.
+
+---
+
 ## Analytics (PostHog)
 
 Analytics is off unless `NEXT_PUBLIC_POSTHOG_KEY` is set at build time. Without it the SDK is never loaded and no request is made, so local development and tests stay offline.
