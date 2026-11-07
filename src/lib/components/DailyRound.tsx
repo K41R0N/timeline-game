@@ -69,8 +69,8 @@ export function DailyRound(props: DailyRoundProps) {
 
 function DailyLoading() {
   return (
-    <div className="w-full h-screen flex items-center justify-center bg-background">
-      <div className="animate-pulse text-primary text-xl">Loading today&apos;s puzzle...</div>
+    <div className="flex h-dvh w-full items-center justify-center bg-[var(--table-deep)]">
+      <div className="type-display animate-pulse text-2xl font-extrabold uppercase tracking-[0.08em] text-[var(--chalk-text)]">Dealing today&apos;s puzzle</div>
     </div>
   );
 }
@@ -193,10 +193,10 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
         <span>
           #{n} · {practice ? 'Practice' : isToday ? 'Today' : weekdayName(puzzle.date)}
           {!practice && isToday && (
-            <>
+            <span className="hidden sm:inline">
               {' · '}
               <Countdown until={nextSwitchAt} label="next in" />
-            </>
+            </span>
           )}
         </span>
       }

@@ -25,7 +25,7 @@ export function SearchInput({
   onSearch,
   onSelect,
   onSubmit,
-  placeholder = "Type a person's name",
+  placeholder = "Name a person",
   suggestions = [],
   isLoading = false,
   isSubmitting = false,
@@ -125,14 +125,13 @@ export function SearchInput({
           className="
             absolute z-[80] w-full
             bottom-full mb-2
-            bg-background rounded-lg
-            border border-[var(--card-border)]
-            shadow-[var(--card-shadow)]
+            bg-[var(--card-stock)] text-[var(--card-ink)] rounded-xl
+            shadow-[0_-8px_30px_rgba(0,0,0,0.35)]
             max-h-[min(300px,45dvh)] overflow-y-auto
           "
         >
           {error ? (
-            <div className="px-4 py-3 text-red-500 text-sm">
+            <div className="px-4 py-3 text-red-700 text-sm">
               {error}
             </div>
           ) : (
@@ -142,13 +141,13 @@ export function SearchInput({
                   onClick={() => handleSubmit()}
                   className="
                     w-full px-4 py-2 text-left
-                    bg-primary-glow hover:bg-primary-bright-20
+                    bg-[rgba(232,185,49,0.18)] hover:bg-[rgba(232,185,49,0.32)]
                     transition-colors duration-[var(--transition-fast)]
-                    border-b border-[var(--card-border)]
+                    border-b border-[rgba(24,36,42,0.1)]
                   "
                 >
-                  <span className="font-medium text-foreground">
-                    Place &ldquo;{value.trim()}&rdquo;
+                  <span className="font-semibold text-[var(--card-ink)]">
+                    Play &ldquo;{value.trim()}&rdquo;
                   </span>
                 </button>
               )}
@@ -159,23 +158,22 @@ export function SearchInput({
                   onClick={() => handleSuggestionClick(suggestion.title)}
                   className={`
                     w-full px-4 py-2 text-left
-                    ${index === selectedIndex ? 'bg-background-hover' : ''}
-                    hover:bg-background-hover
+                    ${index === selectedIndex ? 'bg-[#efece3]' : ''}
+                    hover:bg-[#efece3]
                     transition-colors duration-[var(--transition-fast)]
-                    border-b border-[var(--card-border)] last:border-0
-                    ${suggestion.title.toLowerCase() === value.toLowerCase() ? 'bg-primary-glow' : ''}
+                    border-b border-[rgba(24,36,42,0.1)] last:border-0
                   `}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                    <span className="font-medium text-foreground">
+                    <span className="font-semibold text-[var(--card-ink)]">
                       {suggestion.title}
                       {suggestion.isExisting && (
-                        <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-primary-glow text-foreground-muted">
-                          On the board
+                        <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-[rgba(13,58,66,0.1)] text-[var(--card-muted)]">
+                          On the table
                         </span>
                       )}
                     </span>
-                    <span className="text-sm text-foreground-muted sm:text-right">
+                    <span className="text-sm text-[var(--card-muted)] sm:text-right">
                       {suggestion.description}
                     </span>
                   </div>
@@ -202,18 +200,17 @@ export function SearchInput({
             autoCorrect="off"
             spellCheck={false}
             className={`
-              h-11 w-full px-4 rounded-lg text-base
-              bg-background-alt
-              border border-[var(--card-border)]
-              text-foreground placeholder-foreground-subtle
-              focus:outline-none focus:ring-2 focus:ring-[var(--interactive)]
+              h-12 w-full px-4 rounded-xl text-base
+              bg-[var(--card-stock)]
+              text-[var(--card-ink)] placeholder-[var(--card-muted)]
+              focus:outline-none focus:ring-4 focus:ring-[rgba(232,185,49,0.55)]
               transition-all duration-[var(--transition-fast)]
               ${className}
             `}
           />
           {isLoading && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent" />
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-[var(--table)] border-t-transparent" />
             </div>
           )}
         </div>
@@ -222,15 +219,15 @@ export function SearchInput({
           onClick={handleSubmit}
           disabled={!value.trim() || isLoading || isSubmitting}
           className={`
-            h-11 px-5 rounded-lg
-            font-semibold
+            type-display h-12 min-w-[5.5rem] px-5 rounded-xl
+            text-xl font-black uppercase tracking-[0.06em]
             transition-all duration-200
             ${value.trim() && !isLoading && !isSubmitting
-              ? 'bg-primary text-white hover:bg-primary-bright'
-              : 'bg-background-hover text-foreground-subtle cursor-not-allowed'}
+              ? 'bg-[var(--foil)] text-[var(--foil-ink)] shadow-[0_3px_0_var(--foil-deep)] hover:-translate-y-px'
+              : 'bg-[var(--foil)] text-[var(--foil-ink)] opacity-40 cursor-not-allowed'}
           `}
         >
-          {isSubmitting ? 'Placing…' : 'Place'}
+          {isSubmitting ? 'Drawing…' : 'Play'}
         </button>
       </div>
     </div>

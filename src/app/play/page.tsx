@@ -103,8 +103,8 @@ export default function FreePlay() {
 
   if (isLoading) {
     return (
-      <div className="w-full h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-primary text-xl">Loading Timeline...</div>
+      <div className="flex h-dvh w-full items-center justify-center bg-[var(--table-deep)]">
+        <div className="type-display animate-pulse text-2xl font-extrabold uppercase tracking-[0.08em] text-[var(--chalk-text)]">Dealing the cards</div>
       </div>
     );
   }

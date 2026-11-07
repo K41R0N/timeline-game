@@ -50,6 +50,27 @@ export interface GameRoundProps {
   analyticsContext: RoundContext;
 }
 
+type ScoreTone = 'under' | 'over' | 'even';
+
+/** Strokes on white card stock beside par on gold foil; an under-par finish shows red, the golf convention. */
+function ScorePlates({ strokes, par, tone, large = false, className = '' }: { strokes: number; par: string | number; tone: ScoreTone; large?: boolean; className?: string }) {
+  const number = `type-display font-black leading-none ${large ? 'text-[44px]' : 'text-[26px]'}`;
+  const label = `font-bold uppercase tracking-[0.1em] ${large ? 'text-[11px]' : 'text-[9px]'}`;
+  const plate = `flex flex-col-reverse items-center ${large ? 'min-w-[5.5rem] px-4 py-2' : 'min-w-[3.25rem] px-2.5 py-1'}`;
+  return (
+    <dl className={`flex shrink-0 overflow-hidden rounded-lg text-center shadow-[0_3px_0_rgba(0,0,0,0.35)] ${className}`}>
+      <div className={`${plate} bg-[var(--card-stock)] text-[var(--card-ink)]`}>
+        <dt className={label}>Strokes</dt>
+        <dd className={`${number} ${tone === 'under' ? 'text-[var(--under-par)]' : tone === 'over' ? 'text-amber-700' : ''}`}>{strokes}</dd>
+      </div>
+      <div className={`${plate} bg-[var(--foil)] text-[var(--foil-ink)]`}>
+        <dt className={label}>Par</dt>
+        <dd className={number}>{par}</dd>
+      </div>
+    </dl>
+  );
+}
+
 /** One round: the board, strokes and par, search, hints, the placement reveal and the end screen. */
 export function GameRound({
   targetA,
@@ -297,60 +318,91 @@ export function GameRound({
     analytics.track('hint_taken', { difficulty, costs_stroke: policy.costsStroke, ...analyticsContext });
   };
 
-  const overPar = par !== null && strokes > par;
+  const parText = par ?? (parUnavailable ? '–' : '…');
+  const scoreTone: ScoreTone = hasWon && par !== null && strokes < par ? 'under' : par !== null && strokes > par ? 'over' : 'even';
 
   return (
-    <div className="flex h-dvh flex-col bg-background">
-      <header className="shrink-0 border-b border-[var(--card-border)] px-4 pb-3 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-8">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleHome}
-            aria-label="Home"
-            className="-ml-2 inline-flex h-11 shrink-0 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-primary transition-colors hover:bg-background-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <svg aria-hidden className="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12.5 4.5 7 10l5.5 5.5" />
-            </svg>
-            <span className="hidden sm:inline">Home</span>
-          </button>
-          {roundLabel && <div className="min-w-0 truncate text-sm font-medium text-foreground-muted">{roundLabel}</div>}
-          {onRestart && (
+    <div className="flex h-dvh flex-col bg-[var(--table-deep)] text-[var(--table-ink)] lg:flex-row">
+      {/* Phone: header, table, hand stacked. Desktop: header and hand in a left column beside the table. */}
+      <div className="contents lg:order-1 lg:flex lg:w-[400px] lg:shrink-0 lg:flex-col lg:border-r lg:border-[var(--table-line)]">
+        <header className="order-1 shrink-0 px-4 pb-3 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-6 lg:pt-6">
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handleRestart}
-              className="inline-flex h-9 shrink-0 items-center rounded-lg border border-[var(--card-border)] px-3 text-sm font-semibold text-foreground-muted transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              onClick={handleHome}
+              aria-label="Home"
+              className="-ml-2 inline-flex h-11 shrink-0 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-[var(--table-muted)] transition-colors hover:text-[var(--table-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foil)]"
             >
-              New game
+              <svg aria-hidden className="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12.5 4.5 7 10l5.5 5.5" />
+              </svg>
+              <span className="hidden lg:inline">Home</span>
             </button>
-          )}
-          <dl className="ml-auto flex shrink-0 items-center gap-4 text-center">
-            <div className="flex flex-col-reverse">
-              <dt className="mt-1 text-[11px] font-medium uppercase tracking-wide text-foreground-muted">Strokes</dt>
-              <dd className={`text-xl font-bold leading-none tabular-nums ${overPar ? 'text-amber-700' : 'text-foreground'}`}>{strokes}</dd>
-            </div>
-            <div className="flex flex-col-reverse">
-              <dt className="mt-1 text-[11px] font-medium uppercase tracking-wide text-foreground-muted">Par</dt>
-              <dd className="text-xl font-bold leading-none tabular-nums text-primary">{par ?? (parUnavailable ? '–' : '…')}</dd>
-            </div>
-          </dl>
+            {roundLabel && (
+              <div className="type-display min-w-0 truncate text-[15px] font-bold uppercase tracking-[0.06em] text-[var(--table-ink)]">{roundLabel}</div>
+            )}
+            {onRestart && (
+              <button
+                type="button"
+                onClick={handleRestart}
+                className="type-display inline-flex h-9 shrink-0 items-center rounded-full border border-[var(--table-line)] px-3 text-sm font-bold uppercase tracking-[0.06em] text-[var(--table-muted)] transition-colors hover:border-[var(--foil)] hover:text-[var(--chalk-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foil)]"
+              >
+                New game
+              </button>
+            )}
+            <ScorePlates strokes={strokes} par={parText} tone={scoreTone} className="ml-auto lg:hidden" />
+          </div>
+
+          <h1 className="type-display mt-2 text-[24px] font-extrabold uppercase leading-[1.02] tracking-[0.01em] text-[var(--table-ink)] [text-shadow:none] lg:mt-5 lg:text-[34px]">
+            <span className="text-[var(--foil)]">{earlierTarget.name}</span>
+            <span className="mx-1.5 font-bold text-[var(--table-muted)]">to</span>
+            <span className="text-[var(--foil)]">{laterTarget.name}</span>
+          </h1>
+          <p className="mt-1.5 text-[13px] leading-snug text-[var(--table-muted)] lg:mt-3 lg:text-sm">
+            <span className="mr-2 align-[1px]">
+              <BandBadge band={difficulty} />
+            </span>
+            Lay down people alive at the same time. Each card you play is a stroke.
+          </p>
+          <ScorePlates strokes={strokes} par={parText} tone={scoreTone} large className="mt-6 hidden lg:inline-flex" />
+        </header>
+
+        <div className="relative z-20 order-3 shrink-0 border-t border-[var(--table-line)] bg-[var(--table-deep)] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-6 lg:mt-auto lg:border-t-0 lg:pb-6">
+          <div className="mx-auto max-w-2xl space-y-2.5 lg:max-w-none">
+            {reveal && (
+              <PlacementReveal
+                key={reveal.figure.id}
+                figure={reveal.figure}
+                reveal={reveal.reveal}
+                won={hasWon}
+                onDismiss={() => setReveal(null)}
+              />
+            )}
+
+            {error && (
+              <div role="alert" className="rounded-lg border border-red-400 bg-[#3a1517] px-3 py-2 text-sm font-medium text-red-100">
+                {error}
+              </div>
+            )}
+
+            {/* Gone once the chain is complete, so the result cannot change */}
+            {!hasWon && (
+              <>
+                <HintButton
+                  costLabel={policy.label}
+                  hintName={hint && !figures.some(f => f.id === hint.id) ? hint.name : null}
+                  disabled={!roster || isAdding}
+                  onRequest={handleHint}
+                  onPlace={handleAddFigure}
+                />
+                <SearchBar figures={figures} onSelect={setSelectedFigure} onAddFigure={handleAddFigure} isAdding={isAdding} />
+              </>
+            )}
+          </div>
         </div>
+      </div>
 
-        <h1 className="mt-1 text-lg font-bold leading-snug text-foreground [text-shadow:none] sm:text-xl">
-          {earlierTarget.name}
-          <span aria-hidden className="mx-1.5 text-foreground-muted">→</span>
-          <span className="sr-only"> to </span>
-          {laterTarget.name}
-        </h1>
-        <p className="mt-1 text-sm leading-relaxed text-foreground-muted">
-          <span className="mr-2 align-[1px]">
-            <BandBadge band={difficulty} />
-          </span>
-          Link them through people alive at the same time. Each person you place is a stroke.
-        </p>
-      </header>
-
-      <main className="min-h-0 flex-1">
+      <main className="order-2 min-h-0 flex-1 lg:order-2">
         <Board
           figures={figures}
           targetA={targetA}
@@ -361,40 +413,6 @@ export function GameRound({
           onSelect={setSelectedFigure}
         />
       </main>
-
-      <div className="relative z-20 shrink-0 border-t border-[var(--card-border)] bg-background px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-8">
-        <div className="mx-auto max-w-2xl space-y-2">
-          {reveal && (
-            <PlacementReveal
-              key={reveal.figure.id}
-              figure={reveal.figure}
-              reveal={reveal.reveal}
-              won={hasWon}
-              onDismiss={() => setReveal(null)}
-            />
-          )}
-
-          {error && (
-            <div role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
-              {error}
-            </div>
-          )}
-
-          {/* Gone once the chain is complete, so the result cannot change */}
-          {!hasWon && (
-            <>
-              <HintButton
-                costLabel={policy.label}
-                hintName={hint && !figures.some(f => f.id === hint.id) ? hint.name : null}
-                disabled={!roster || isAdding}
-                onRequest={handleHint}
-                onPlace={handleAddFigure}
-              />
-              <SearchBar figures={figures} onSelect={setSelectedFigure} onAddFigure={handleAddFigure} isAdding={isAdding} />
-            </>
-          )}
-        </div>
-      </div>
 
       {selectedFigure && <DetailPanel figure={selectedFigure} onClose={() => setSelectedFigure(null)} />}
 

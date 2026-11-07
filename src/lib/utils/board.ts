@@ -109,3 +109,85 @@ export function laneYears(life: Life, axisHasBce: boolean): string {
   if (life.isLiving) return `born ${birth}`;
   return `${birth}${axisHasBce ? ' – ' : '–'}${year(life.deathYear, life.deathApproximate)}`;
 }
+
+/** The era a card's frame is coloured by, from the birth year. */
+export type Era = 'ancient' | 'medieval' | 'renaissance' | 'enlightenment' | 'modern';
+
+export function eraOf(birthYear: number): Era {
+  if (birthYear < 500) return 'ancient';
+  if (birthYear < 1400) return 'medieval';
+  if (birthYear < 1650) return 'renaissance';
+  if (birthYear < 1850) return 'enlightenment';
+  return 'modern';
+}
+
+export interface TableCard {
+  lane: Lane;
+  /** Pixels from the top of the table to the birth year. */
+  top: number;
+  /** The life's length in pixels, raised to the card's minimum height. */
+  height: number;
+  /** Which column of the table the card lies in, from the left. */
+  column: number;
+  /** How many cards it lies on top of in its column; 0 when it lies on the bare table. */
+  depth: number;
+}
+
+export interface TableLayout {
+  pxPerYear: number;
+  /** The table's full height in pixels. */
+  height: number;
+  cards: TableCard[];
+  gap: { top: number; height: number } | null;
+  ticks: { year: number; top: number }[];
+}
+
+export interface TableOptions {
+  columns: number;
+  /** A card is never shorter than this, so its portrait and name fit. */
+  minCardHeight: number;
+  /** The height the whole span should take when the scale allows it. */
+  targetHeight: number;
+  minPxPerYear: number;
+  maxPxPerYear: number;
+  /** Space kept between two cards in the same column. */
+  cardGap?: number;
+}
+
+const PX_PER_TICK = 110;
+
+/**
+ * Lays a board out as a table where time runs down: each card starts at its birth year and is as long as the
+ * life, and cards fill the columns in turn so neighbours in time sit side by side. When every column is
+ * still covered at a card's birth year, the card lies on top of the one that ends first.
+ */
+export function tableLayout(board: BoardLayout, options: TableOptions): TableLayout {
+  const { columns, minCardHeight, targetHeight, minPxPerYear, maxPxPerYear, cardGap = 6 } = options;
+  const span = board.to - board.from;
+  const pxPerYear = Math.min(maxPxPerYear, Math.max(minPxPerYear, targetHeight / span));
+  const at = (year: number) => (year - board.from) * pxPerYear;
+
+  const bottoms: number[] = Array(columns).fill(-Infinity);
+  const depths: number[] = Array(columns).fill(0);
+  let previous = -1;
+  const cards = board.lanes.map(lane => {
+    const top = at(lane.figure.birthYear);
+    const height = Math.max(minCardHeight, (lane.figure.deathYear - lane.figure.birthYear) * pxPerYear);
+    const order = Array.from({ length: columns }, (_, i) => (previous + 1 + i) % columns);
+    let column = order.find(c => bottoms[c] + cardGap <= top);
+    let depth = 0;
+    if (column === undefined) {
+      column = order.reduce((best, c) => (bottoms[c] < bottoms[best] ? c : best));
+      depth = depths[column] + 1;
+    }
+    bottoms[column] = Math.max(bottoms[column], top + height);
+    depths[column] = depth;
+    previous = column;
+    return { lane, top, height, column, depth };
+  });
+
+  const height = Math.max(at(board.to), ...cards.map(card => card.top + card.height));
+  const gap = board.gap ? { top: at(board.gap.from), height: board.gap.years * pxPerYear } : null;
+  const ticks = yearTicks(board.from, board.to, Math.max(2, Math.floor(height / PX_PER_TICK))).map(year => ({ year, top: at(year) }));
+  return { pxPerYear, height, cards, gap, ticks };
+}

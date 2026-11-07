@@ -3,6 +3,7 @@
 Start with these documents:
 
 - `STRATEGY.md`: what the game should become (streamer-first, score the overlap). Check proposed work against it.
+- `PRODUCT.md` and `DESIGN.md`: confirmed product facts, and the built visual world (the Deck: cards on a table). `.impeccable/surfaces/round.md` holds the round screen's direction contract; never copy it into source.
 - `ROADMAP.md` / GitHub issue #37: the prioritised work, as GitHub issues under four epics (#38–#41).
 - `docs/audits/2026-11-02-current-state-audit.md`: the as-built baseline, verified defects, and the design levers still open.
 - `docs/research/2026-11-06-difficulty-balancing.md`: how difficulty is set (par and options per step, not years), with the bands and the analysis script.
@@ -35,7 +36,7 @@ src/
     ├── components/
     │   ├── GameRound.tsx # One round: header (Home, score, goal), board, dock (hint, search, reveal), win check, end screen
     │   ├── DailyRound.tsx # A daily puzzle: scored attempt, resumed attempt, result, or practice
-    │   ├── Board.tsx     # Lifespan bars on one fit-to-width year axis, the open gap shaded; no pan or zoom
+    │   ├── Board.tsx     # The table: one card per person at its birth year, life-length spine, gap bay, landing flip, winning thread
     │   └── ui/           # SearchBar, SearchInput, DetailPanel, PlacementReveal, HintButton, WinModal (end screen vs par), DailyHome, ArchiveList, Countdown, BandBadge
     ├── server/daily.ts   # The only reader of daily-schedule.json; imports 'server-only'
     ├── services/
@@ -56,7 +57,7 @@ src/
     │   └── dailySchedule.ts  # Pure schedule rules: published puzzles, URL parsing, the health check (never imports the JSON)
     ├── utils/
     │   ├── ChainAnalyzer.ts  # areContemporaries, livesConnectedTo, BFS shortest path between targets
-    │   ├── board.ts      # Board layout: lane positions and statuses, the gap neither chain reaches, axis ticks
+    │   ├── board.ts      # Board layout: statuses, the gap neither chain reaches, eras, the vertical table (tableLayout), ticks
     │   ├── par.ts            # computePar (greedy furthest-reach over the roster) and nextHint
     │   ├── difficulty.ts     # chainShape (par + options per step), DIFFICULTY_BANDS, pickTargets from the 400 best-known people
     │   ├── overlap.ts        # sharedYears, revealPlacement, clutch / long-life thresholds
@@ -105,7 +106,7 @@ CAPTURE_DAILY=1 npx vitest run src/lib/services/daily.capture.test.ts --silent=f
 3. The player submits a name. `handleAddFigure` locks input, calls `WikipediaService.lookupPerson(name)`, shows the typed rejection reason or appends with a functional update, and opens the reveal (`revealPlacement`, against the board before the placement).
 4. Strokes are `countStrokes(figures, hintsUsed, difficulty)`: every placed person, plus hints on Hard. A hint is `nextHint(roster, ...)`; the hinted name is saved with the round.
 5. An effect runs `finalChain`; a complete chain sets `hasWon`, and `WinModal` shows `describeResult(strokes, par)`, both chains and the badges.
-6. `Board` lays the lanes out with `boardLayout`: one bar per life, coloured by whether it links to a target, and the gap between the two chains shaded with its length in years.
+6. `Board` lays the table out with `boardLayout` and `tableLayout`: one card per person, starting at the birth year with a spine as long as the life, marked by whether it links to a target, and the gap between the two chains as a chalk bay with its length in years.
 
 Steps 2–6 happen inside `GameRound`, which both modes render.
 
@@ -128,7 +129,7 @@ Steps 2–6 happen inside `GameRound`, which both modes render.
 - **Imports**: code in `src/app` imports library code from `@/lib`. Inside `src/lib`, modules import each other by relative path; never import the `@/lib` barrel from inside `src/lib` (it re-exports everything and would create cycles). The one exception: server pages import `@/lib/server/daily` directly. Never re-export it from the barrel or import it from client code; its `server-only` import fails the build if you do.
 - **Daily puzzles are fixed once published.** Extend the schedule only with the capture command, which appends. Never edit or regenerate a published entry: links, practice and compared results depend on #n never changing.
 - **Client components**: anything with hooks or browser APIs starts with `'use client'`.
-- **Styling**: Tailwind utilities first. Colours and shadows come from CSS variables in `globals.css`, mapped in `tailwind.config.ts`.
+- **Styling**: Tailwind utilities first. Colours come from CSS variables in `globals.css`; the round screen uses the Deck tokens (`--table*`, `--card-*`, `--foil*`, `--chalk*`, `--era-*`) and the `.type-display` class, as `DESIGN.md` describes.
 - **Logging**: emoji-prefixed `console.*` (🚀 start, ✅ success, ⚠️ warn, ❌ error, 📊 data, 🔍 search). `WikipediaService` logs one line per resolved figure and each lookup error.
 - **Naming**: PascalCase for components, services and types. camelCase for functions. kebab-case for CSS classes and JSON data files.
 

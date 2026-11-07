@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { axisLabel, boardLayout, laneYears, yearTicks } from './board';
+import { axisLabel, boardLayout, eraOf, laneYears, tableLayout, yearTicks } from './board';
 import type { HistoricalFigure } from '../types/HistoricalFigure';
 
 const person = (id: string, birthYear: number, deathYear: number): HistoricalFigure => ({
@@ -97,5 +97,50 @@ describe('laneYears', () => {
     expect(laneYears({ birthYear: -100, deathYear: -44 }, true)).toBe('100 BCE – 44 BCE');
     expect(laneYears({ birthYear: 1343, deathYear: 1400, birthApproximate: true }, false)).toBe('c. 1343–1400');
     expect(laneYears({ birthYear: 1950, deathYear: 2026, isLiving: true }, false)).toBe('born 1950');
+  });
+});
+
+describe('eraOf', () => {
+  it('splits history into five eras by birth year', () => {
+    expect([-100, 499, 500, 1399, 1400, 1649, 1650, 1849, 1850].map(eraOf)).toEqual([
+      'ancient', 'ancient', 'medieval', 'medieval', 'renaissance', 'renaissance', 'enlightenment', 'enlightenment', 'modern',
+    ]);
+  });
+});
+
+describe('tableLayout', () => {
+  const options = { columns: 2, minCardHeight: 60, targetHeight: 900, minPxPerYear: 0.8, maxPxPerYear: 2.4 };
+
+  it('scales the span to the target height within the allowed range', () => {
+    const board = boardLayout([ibnBattuta, walterScott], ibnBattuta, walterScott);
+    const table = tableLayout(board, options);
+    expect(table.pxPerYear).toBeCloseTo(900 / (board.to - board.from));
+    expect(tableLayout(board, { ...options, targetHeight: 100 }).pxPerYear).toBe(0.8);
+    expect(tableLayout(board, { ...options, targetHeight: 5000 }).pxPerYear).toBe(2.4);
+  });
+
+  it('starts each card at its birth year and makes it as long as the life', () => {
+    const board = boardLayout([ibnBattuta, chaucer, walterScott], ibnBattuta, walterScott);
+    const table = tableLayout(board, options);
+    const card = table.cards.find(c => c.lane.figure.id === 'Chaucer')!;
+    expect(card.top).toBeCloseTo((1343 - board.from) * table.pxPerYear);
+    expect(card.height).toBeCloseTo(57 * table.pxPerYear);
+  });
+
+  it('puts overlapping lives side by side, and stacks a card when every column is taken', () => {
+    const board = boardLayout([ibnBattuta, chaucer, person('Third', 1350, 1390), walterScott], ibnBattuta, walterScott);
+    const table = tableLayout(board, options);
+    const byId = Object.fromEntries(table.cards.map(c => [c.lane.figure.id, c]));
+    expect(byId['Ibn Battuta'].column).not.toBe(byId.Chaucer.column);
+    expect(byId.Third.depth).toBe(1);
+    expect(byId['Walter Scott'].depth).toBe(0);
+  });
+
+  it('places the gap and the ticks on the same scale', () => {
+    const board = boardLayout([ibnBattuta, walterScott], ibnBattuta, walterScott);
+    const table = tableLayout(board, options);
+    expect(table.gap!.top).toBeCloseTo((1369 - board.from) * table.pxPerYear);
+    expect(table.gap!.height).toBeCloseTo(402 * table.pxPerYear);
+    expect(table.ticks.every(t => t.top >= 0 && t.top <= table.height)).toBe(true);
   });
 });

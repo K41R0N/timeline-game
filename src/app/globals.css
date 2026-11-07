@@ -25,6 +25,29 @@
   --interactive-hover: var(--color-primary-bright);
   --interactive-glow: var(--color-primary-glow);
   
+  /* The Deck table: a lit petrol table, white card stock, gold foil for targets, era colours for card spines */
+  --table: #0d3a42;
+  --table-deep: #082a30;
+  --table-light: #135560;
+  --table-ink: #e6f2f2;
+  --table-muted: #9cc6c9;
+  --table-line: rgba(207, 231, 232, 0.16);
+  --card-stock: #fbfaf7;
+  --card-ink: #18242a;
+  --card-muted: #4f5f64;
+  --foil: #e8b931;
+  --foil-light: #f7dc83;
+  --foil-deep: #a77c00;
+  --foil-ink: #2a1f00;
+  --chalk: rgba(243, 207, 134, 0.6);
+  --chalk-text: #f3cf86;
+  --under-par: #c62828;
+  --era-ancient: #c2410c;
+  --era-medieval: #3557d4;
+  --era-renaissance: #d6332b;
+  --era-enlightenment: #8e3bb5;
+  --era-modern: #0e9f6e;
+
   /* Board lanes: one colour per lane status (src/lib/utils/board.ts) */
   --lane-target: #F2B705;
   --lane-target-ring: rgba(242, 183, 5, 0.35);
@@ -79,7 +102,7 @@
   --transition-slow: 500ms;
   
   /* Typography */
-  --font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-family: var(--font-body), system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
@@ -108,6 +131,13 @@
 }
 
 @layer components {
+  /* Names and numerals: the condensed signage face at its display optical size */
+  .type-display {
+    font-family: var(--font-display), "Arial Narrow", sans-serif;
+    font-variation-settings: "opsz" 72;
+    font-variant-numeric: tabular-nums;
+  }
+
   .timeline-card {
     @apply bg-background-marble backdrop-blur-sm rounded-lg border shadow-glow 
     transition-all duration-300 ease-in-out;
@@ -205,7 +235,56 @@
     animation: laneLand 1600ms ease-out;
   }
 
+  /* A card drawn face down turns over as it lands */
+  @keyframes cardFront {
+    0%, 25% { transform: rotateY(180deg); }
+    100% { transform: rotateY(0deg); }
+  }
+
+  @keyframes cardBack {
+    0%, 25% { transform: rotateY(0deg); }
+    100% { transform: rotateY(-180deg); }
+  }
+
+  @keyframes cardDrop {
+    from { translate: 0 -18px; }
+    to { translate: 0 0; }
+  }
+
+  .card-landing {
+    animation: cardDrop 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .card-landing .card-front {
+    animation: cardFront 900ms cubic-bezier(0.2, 0.9, 0.25, 1.1);
+  }
+
+  .card-landing .card-back {
+    animation: cardBack 900ms cubic-bezier(0.2, 0.9, 0.25, 1.1) forwards;
+  }
+
+  /* The winning chain's gold thread draws itself from target to target */
+  @keyframes threadDraw {
+    from { stroke-dashoffset: var(--thread-length); }
+    to { stroke-dashoffset: 0; }
+  }
+
+  .thread-draw {
+    stroke-dasharray: var(--thread-length);
+    animation: threadDraw 1400ms cubic-bezier(0.65, 0, 0.35, 1) both;
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .card-landing,
+    .card-landing .card-front,
+    .thread-draw {
+      animation: none;
+    }
+
+    .card-landing .card-back {
+      display: none;
+    }
+
     .animate-barGrow,
     .animate-laneLand,
     .animate-sheetIn,

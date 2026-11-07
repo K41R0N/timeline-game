@@ -26,19 +26,19 @@ export function PlacementReveal({ figure, reveal, won = false, onDismiss }: Plac
     <div
       role="status"
       aria-live="polite"
-      className={`max-h-[40dvh] overflow-y-auto rounded-xl border-2 bg-background p-4 shadow-[0_-6px_24px_rgba(44,62,80,0.12)] animate-fadeIn ${reveal.miss ? 'border-red-400' : 'border-green-500'}`}
+      className={`max-h-[40dvh] overflow-y-auto rounded-xl border-l-0 bg-[var(--card-stock)] p-3.5 text-[var(--card-ink)] shadow-[0_-6px_24px_rgba(0,0,0,0.35)] animate-fadeIn ring-2 ${reveal.miss ? 'ring-red-400' : 'ring-[var(--foil)]'}`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-lg font-bold text-foreground leading-tight">{figure.name}</div>
-          <div className="text-base font-semibold tabular-nums text-foreground-muted">{formatLifespan(figure)}</div>
-          {figure.shortDescription && <div className="text-sm text-foreground-muted">{figure.shortDescription}</div>}
+        <div className="min-w-0">
+          <div className="type-display text-[17px] font-extrabold uppercase leading-none tracking-[0.02em]">
+            {figure.name} <span className="font-semibold text-[var(--card-muted)]">{formatLifespan(figure)}</span>
+          </div>
         </div>
         <button
           type="button"
           onClick={onDismiss}
           aria-label="Dismiss"
-          className="-mr-2 -mt-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-foreground-muted hover:bg-background-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="-mr-2 -mt-2.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--card-muted)] hover:bg-[#efece3] hover:text-[var(--card-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foil)]"
         >
           <svg aria-hidden className="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
             <path d="M5 5l10 10M15 5 5 15" />
@@ -47,14 +47,14 @@ export function PlacementReveal({ figure, reveal, won = false, onDismiss }: Plac
       </div>
 
       {reveal.miss ? (
-        <div className="mt-3 text-base font-semibold text-red-700">
+        <div className="mt-1.5 text-base font-semibold text-red-700">
           Missed {reveal.miss.nearest.name} by {reveal.miss.gapYears} {reveal.miss.gapYears === 1 ? 'year' : 'years'}
         </div>
       ) : (
-        <ul className="mt-3 space-y-1">
+        <ul className="mt-1.5 space-y-1">
           {listed.map(overlap => (
             <li key={overlap.other.id} className="flex flex-wrap items-center gap-2 text-base">
-              <span className={overlap.extendsChain ? 'font-semibold text-green-700' : 'text-foreground-muted'}>
+              <span className={overlap.extendsChain ? 'font-semibold text-[var(--card-ink)]' : 'text-[var(--card-muted)]'}>
                 Shared {describeShared(figure, overlap.other)} with {overlap.other.name}
               </span>
               {overlap.clutch && (
@@ -64,7 +64,7 @@ export function PlacementReveal({ figure, reveal, won = false, onDismiss }: Plac
           ))}
           {hidden > 0 && (
             <li>
-              <button onClick={() => setShowAll(true)} className="text-sm text-foreground-subtle underline hover:text-foreground">
+              <button onClick={() => setShowAll(true)} className="text-sm text-[var(--card-muted)] underline hover:text-[var(--card-ink)]">
                 and {hidden} more
               </button>
             </li>
@@ -81,7 +81,7 @@ export function PlacementReveal({ figure, reveal, won = false, onDismiss }: Plac
       )}
 
       {anyBadge && (
-        <div className="mt-2 text-xs text-foreground-subtle">
+        <div className="mt-2 text-xs text-[var(--card-muted)]">
           Badges count if they stay on your final chain (clutch: 5 shared years or fewer; long bridge: {LONG_BRIDGE_MIN_YEARS}+ years).
         </div>
       )}
@@ -89,7 +89,7 @@ export function PlacementReveal({ figure, reveal, won = false, onDismiss }: Plac
       {won && (
         <button
           onClick={onDismiss}
-          className="mt-3 w-full px-4 py-2 bg-primary hover:bg-primary-bright text-white font-semibold rounded-lg transition-all"
+          className="type-display mt-3 h-12 w-full rounded-xl bg-[var(--foil)] px-4 text-lg font-black uppercase tracking-[0.05em] text-[var(--foil-ink)] shadow-[0_3px_0_var(--foil-deep)] transition-transform hover:-translate-y-px"
         >
           Chain complete: see your result
         </button>
