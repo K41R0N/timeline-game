@@ -1,6 +1,6 @@
 import { HistoricalFigure } from '../types/HistoricalFigure';
 import { WIKIDATA_API, WIKIPEDIA_API, WikimediaClient, WikimediaRequestError, buildApiUrl, wikimedia } from './wikimediaClient';
-import { WikidataClaim, isHuman, resolveLifespan, summarize } from './personData';
+import { WikidataClaim, datelessDescription, isHuman, resolveLifespan, summarize } from './personData';
 
 export interface WikipediaSearchResult {
   pageid: number;
@@ -151,32 +151,11 @@ export class WikipediaService {
         .map(page => ({
           pageid: page.pageid ?? 0,
           title: page.title,
-          snippet: page.description ?? '',
+          snippet: datelessDescription(page.description ?? ''),
           thumbnail: page.thumbnail?.source,
         }));
     } catch (error) {
       console.error('[WikipediaService] ❌ Error searching Wikipedia:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Hint titles for the detail panel. Known to return noise (year articles); tracked in #51.
-   * Kept on the shared client so it is throttled and cached.
-   */
-  static async findContemporaries(figure: HistoricalFigure, client: WikimediaClient = wikimedia): Promise<string[]> {
-    const url = buildApiUrl(WIKIPEDIA_API, {
-      action: 'query',
-      list: 'search',
-      srsearch: `${figure.birthYear} ${figure.deathYear} births deaths -disambiguation`,
-      srlimit: '20',
-    });
-
-    try {
-      const data = await client.getJson<{ query?: { search?: Array<{ title: string }> } }>(url);
-      return (data.query?.search ?? []).map(result => result.title).filter(title => title !== figure.name);
-    } catch (error) {
-      console.error(`[WikipediaService] ❌ Error finding contemporaries for ${figure.name}:`, error);
       return [];
     }
   }
