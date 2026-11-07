@@ -48,6 +48,8 @@ export default function Home() {
   const figuresRef = useRef<HistoricalFigure[]>([]);
   const isAddingRef = useRef(false);
   const roundStartedAtRef = useRef(0);
+  /** A person was placed in this page session, so a win is new rather than a finished round restored on reload. */
+  const placedThisSessionRef = useRef(false);
   // Bumped on every new game; lookups started in an earlier game are ignored when they resolve.
   const gameGenerationRef = useRef(0);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -183,18 +185,21 @@ export default function Home() {
       setHasWon(true);
       setWinningChain(final.chain);
       setWinningBadges(final.badges);
-      analytics.track(
-        'game_completed',
-        roundCompletedProps({
-          difficulty,
-          strokes: countStrokes(figures, hintsUsed, difficulty),
-          par: parChain?.length ?? null,
-          hintsUsed,
-          badgeKinds: final.badges.map(badge => badge.kind),
-          startedAt: roundStartedAtRef.current,
-          now: currentTime(),
-        })
-      );
+      // A finished round restored on reload is not a new completion.
+      if (placedThisSessionRef.current) {
+        analytics.track(
+          'game_completed',
+          roundCompletedProps({
+            difficulty,
+            strokes: countStrokes(figures, hintsUsed, difficulty),
+            par: parChain?.length ?? null,
+            hintsUsed,
+            badgeKinds: final.badges.map(badge => badge.kind),
+            startedAt: roundStartedAtRef.current,
+            now: currentTime(),
+          })
+        );
+      }
     }
   }, [figures, targetA, targetB, hasWon, difficulty, hintsUsed, parChain]);
 
@@ -235,6 +240,7 @@ export default function Home() {
     setHint(null);
     setReveal(null);
     setParChain(null);
+    placedThisSessionRef.current = false;
     setFigures([]);
     setTargetA(null);
     setTargetB(null);
@@ -284,6 +290,7 @@ export default function Home() {
       if (targetA && targetB) {
         const placement = revealPlacement(figure, figuresRef.current, targetA, targetB);
         setReveal({ figure, reveal: placement });
+        placedThisSessionRef.current = true;
         analytics.track('figure_added', {
           accepted: true,
           overlaps: placement.overlaps.length,
