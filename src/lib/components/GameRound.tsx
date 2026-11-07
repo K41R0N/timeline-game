@@ -7,7 +7,14 @@ import { WinModal } from './ui/WinModal';
 import { PlacementReveal } from './ui/PlacementReveal';
 import { HintButton } from './ui/HintButton';
 import { DetailPanel } from './ui/DetailPanel';
-import { BandBadge } from './ui/BandBadge';
+import { ScorePlates, type ScoreTone } from './ui/ScorePlates';
+
+/** The difficulty word in the header, coloured like the free-play choice. */
+const BAND_TEXT: Record<Difficulty, string> = {
+  easy: 'text-[#7ee0a1]',
+  medium: 'text-[#f5d06b]',
+  hard: 'text-[#ff8f80]',
+};
 import { HistoricalFigure } from '../types/HistoricalFigure';
 import { WikipediaService, lookupFailureMessage } from '../services/WikipediaService';
 import { analytics, currentTime } from '../services/analytics';
@@ -48,27 +55,6 @@ export interface GameRoundProps {
   endExtra?: ReactNode;
   /** Free play or a daily puzzle, attached to every round event. */
   analyticsContext: RoundContext;
-}
-
-type ScoreTone = 'under' | 'over' | 'even';
-
-/** Strokes on white card stock beside par on gold foil; an under-par finish shows red, the golf convention. */
-function ScorePlates({ strokes, par, tone, large = false, className = '' }: { strokes: number; par: string | number; tone: ScoreTone; large?: boolean; className?: string }) {
-  const number = `type-display font-black leading-none ${large ? 'text-[44px]' : 'text-[26px]'}`;
-  const label = `font-bold uppercase tracking-[0.1em] ${large ? 'text-[11px]' : 'text-[9px]'}`;
-  const plate = `flex flex-col-reverse items-center ${large ? 'min-w-[5.5rem] px-4 py-2' : 'min-w-[3.25rem] px-2.5 py-1'}`;
-  return (
-    <dl className={`flex shrink-0 overflow-hidden rounded-lg text-center shadow-[0_3px_0_rgba(0,0,0,0.35)] ${className}`}>
-      <div className={`${plate} bg-[var(--card-stock)] text-[var(--card-ink)]`}>
-        <dt className={label}>Strokes</dt>
-        <dd className={`${number} ${tone === 'under' ? 'text-[var(--under-par)]' : tone === 'over' ? 'text-amber-700' : ''}`}>{strokes}</dd>
-      </div>
-      <div className={`${plate} bg-[var(--foil)] text-[var(--foil-ink)]`}>
-        <dt className={label}>Par</dt>
-        <dd className={number}>{par}</dd>
-      </div>
-    </dl>
-  );
 }
 
 /** One round: the board, strokes and par, search, hints, the placement reveal and the end screen. */
@@ -338,9 +324,10 @@ export function GameRound({
               </svg>
               <span className="hidden lg:inline">Home</span>
             </button>
-            {roundLabel && (
-              <div className="type-display min-w-0 truncate text-[15px] font-bold uppercase tracking-[0.06em] text-[var(--table-ink)]">{roundLabel}</div>
-            )}
+            <div className="type-display min-w-0 truncate text-[15px] font-bold uppercase tracking-[0.06em] text-[var(--table-ink)]">
+              {roundLabel && <>{roundLabel} · </>}
+              <span className={BAND_TEXT[difficulty]}>{difficulty}</span>
+            </div>
             {onRestart && (
               <button
                 type="button"
@@ -355,15 +342,13 @@ export function GameRound({
 
           <h1 className="type-display mt-2 text-[24px] font-extrabold uppercase leading-[1.02] tracking-[0.01em] text-[var(--table-ink)] [text-shadow:none] lg:mt-5 lg:text-[34px]">
             <span className="text-[var(--foil)]">{earlierTarget.name}</span>
-            <span className="mx-1.5 font-bold text-[var(--table-muted)]">to</span>
+            <span className="font-bold text-[var(--table-muted)]"> to </span>
             <span className="text-[var(--foil)]">{laterTarget.name}</span>
           </h1>
-          <p className="mt-1.5 text-[13px] leading-snug text-[var(--table-muted)] lg:mt-3 lg:text-sm">
-            <span className="mr-2 align-[1px]">
-              <BandBadge band={difficulty} />
-            </span>
-            Lay down people alive at the same time. Each card you play is a stroke.
-          </p>
+          {/* The rule shows until the first card is played; after that the table speaks for itself. */}
+          {figures.length <= 2 && !hasWon && (
+            <p className="mt-1.5 text-[13px] leading-snug text-[var(--table-muted)] lg:mt-3 lg:text-sm">Play people alive at the same time to link the gold cards.</p>
+          )}
           <ScorePlates strokes={strokes} par={parText} tone={scoreTone} large className="mt-6 hidden lg:inline-flex" />
         </header>
 
@@ -389,7 +374,7 @@ export function GameRound({
             {!hasWon && (
               <>
                 <HintButton
-                  costLabel={policy.label}
+                  costsStroke={policy.costsStroke}
                   hintName={hint && !figures.some(f => f.id === hint.id) ? hint.name : null}
                   disabled={!roster || isAdding}
                   onRequest={handleHint}

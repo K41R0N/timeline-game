@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { HistoricalFigure } from '../types/HistoricalFigure';
-import { axisLabel, boardLayout, eraOf, laneYears, tableLayout, type Era, type LaneStatus, type TableCard } from '../utils/board';
+import { axisLabel, boardLayout, eraOf, laneYears, tableLayout, type LaneStatus, type TableCard } from '../utils/board';
+import { ERA_COLOR, Portrait } from './ui/Portrait';
 import { formatLifespan } from '../utils/GameLogic';
 
 interface BoardProps {
@@ -17,13 +18,6 @@ interface BoardProps {
   onSelect: (figure: HistoricalFigure) => void;
 }
 
-const ERA_COLOR: Record<Era, string> = {
-  ancient: 'var(--era-ancient)',
-  medieval: 'var(--era-medieval)',
-  renaissance: 'var(--era-renaissance)',
-  enlightenment: 'var(--era-enlightenment)',
-  modern: 'var(--era-modern)',
-};
 
 const STATUS_TEXT: Record<LaneStatus, string> = {
   target: 'target',
@@ -81,42 +75,6 @@ function useCountedYears(figure: HistoricalFigure, active: boolean) {
   return shown;
 }
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(part => /^[A-Z]/.test(part))
-    .map(part => part[0])
-    .join('')
-    .slice(0, 2);
-}
-
-function Portrait({ figure, era, large }: { figure: HistoricalFigure; era: Era; large: boolean }) {
-  const [failed, setFailed] = useState(false);
-  const box = large ? 'h-14 w-14' : 'h-10 w-10';
-  if (figure.imageUrl && !failed) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element -- Wikimedia thumbnails at their own size; nothing to optimise
-      <img
-        src={figure.imageUrl}
-        alt=""
-        loading="lazy"
-        referrerPolicy="no-referrer"
-        onError={() => setFailed(true)}
-        className={`${box} shrink-0 rounded-md bg-[var(--card-muted)] object-cover object-top`}
-      />
-    );
-  }
-  return (
-    <span
-      aria-hidden
-      className={`type-display grid ${box} shrink-0 place-items-center rounded-md font-extrabold text-white ${large ? 'text-2xl' : 'text-lg'}`}
-      style={{ background: ERA_COLOR[era] }}
-    >
-      {initials(figure.name) || '?'}
-    </span>
-  );
-}
-
 interface CardProps {
   card: TableCard;
   left: number;
@@ -159,14 +117,14 @@ function Card({ card, left, width, pxPerYear, axisHasBce, fresh, selected, onSel
         type="button"
         onClick={() => onSelect(figure)}
         aria-label={`${figure.name}, ${formatLifespan(figure)}, ${STATUS_TEXT[status]}`}
-        className={`card-front relative block h-full w-full overflow-hidden rounded-[10px] bg-[var(--card-stock)] text-left text-[var(--card-ink)] shadow-[0_4px_0_rgba(0,0,0,0.28),0_10px_18px_rgba(0,0,0,0.2)] transition-[transform,opacity,filter] duration-200 [backface-visibility:hidden] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--foil-light)] ${
+        className={`card-front relative flex h-full w-full flex-col justify-start overflow-hidden rounded-[10px] bg-[var(--card-stock)] text-left text-[var(--card-ink)] shadow-[0_4px_0_rgba(0,0,0,0.28),0_10px_18px_rgba(0,0,0,0.2)] transition-[transform,opacity,filter] duration-200 [backface-visibility:hidden] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--foil-light)] ${
           isTarget ? 'ring-2 ring-[var(--foil)]' : ''
         } ${selected ? 'ring-4 ring-[var(--foil-light)]' : ''} ${treatment}`}
       >
         {/* The spine is the life to scale: it starts at birth and is exactly as long as the life. */}
         <span aria-hidden className="absolute left-0 top-0 w-[5px] rounded-br-sm" style={{ height: Math.min(lifeHeight, card.height), background: spine }} />
         <span className={`flex items-start ${large ? 'gap-3 p-3 pl-4' : 'gap-2 py-2 pl-3 pr-2'}`}>
-          <Portrait figure={figure} era={era} large={large} />
+          <Portrait figure={figure} size={large ? 'lg' : 'md'} />
           <span className="min-w-0">
             <span className={`type-display line-clamp-2 block font-extrabold uppercase leading-[0.95] tracking-[0.01em] ${large ? 'text-[22px]' : 'text-[15px]'}`}>
               {figure.name}
