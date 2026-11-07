@@ -33,6 +33,15 @@ export function normalizeSavedState(saved: unknown): GameState | null {
 // v2: figures are keyed by Wikidata QID with corrected dates; v1 saves are discarded.
 const STORAGE_KEY = 'timeline-game-state-v2';
 
+/** Whether this browser holds an unfinished free-play round (for the home page's "Resume free play"). */
+export function hasSavedFreePlay(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
 /** Reads, writes and clears the free-play round saved in this browser. */
 export function useGameStatePersistence() {
   // Load initial state from localStorage
