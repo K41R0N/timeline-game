@@ -9,6 +9,7 @@ import { Countdown } from './Countdown';
 import { DifficultyChoice } from './DifficultyChoice';
 import { HowToPlay } from './HowToPlay';
 import { dailyStatusLine } from './dailyStatus';
+import { STYLE_HOW, STYLE_ON_STOCK } from './styles';
 
 export interface TodayCard {
   number: number;
@@ -21,17 +22,10 @@ interface DailyHomeProps {
   nextSwitchAt: number;
 }
 
-/** Each style's word on card stock, in a darker shade of its free-play colour so it reads on white. */
-const STYLE_ON_STOCK: Record<Difficulty, string> = {
-  easy: 'text-[#15803d]',
-  medium: 'text-[#a16207]',
-  hard: 'text-[#b91c1c]',
-};
-
-const STYLES: { style: Difficulty; how: string; path: string }[] = [
-  { style: 'easy', how: 'Arrange cards', path: '/easy' },
-  { style: 'medium', how: 'Fill blanks', path: '/medium' },
-  { style: 'hard', how: 'Type vs par', path: '' },
+const STYLES: { style: Difficulty; path: string }[] = [
+  { style: 'easy', path: '/easy' },
+  { style: 'medium', path: '/medium' },
+  { style: 'hard', path: '' },
 ];
 
 const noSubscribe = () => () => {};
@@ -41,7 +35,6 @@ export function DailyHome({ today, nextSwitchAt }: DailyHomeProps) {
   const progress = useDailyProgress();
   const canContinue = useSyncExternalStore(noSubscribe, hasFreePlayRound, () => false);
   const lines = today && progress ? STYLES.map(({ style }) => dailyStatusLine(progress, style, today.number, today.number)) : null;
-  // One gold action: the first style still waiting to be played or finished.
   const next = lines ? lines.findIndex(line => line.status !== 'result') : 0;
 
   return (
@@ -60,7 +53,7 @@ export function DailyHome({ today, nextSwitchAt }: DailyHomeProps) {
               Daily #{today.number} <span className="text-[var(--card-muted)]">· {today.weekday}</span>
             </h2>
             <ul className="mt-3 divide-y divide-[rgba(15,30,34,0.12)]">
-              {STYLES.map(({ style, how, path }, i) => {
+              {STYLES.map(({ style, path }, i) => {
                 const line = lines?.[i];
                 const done = line?.status === 'result';
                 return (
@@ -71,7 +64,7 @@ export function DailyHome({ today, nextSwitchAt }: DailyHomeProps) {
                     >
                       <span className="min-w-0 flex-1">
                         <span className={`type-display block text-2xl font-black uppercase leading-none ${STYLE_ON_STOCK[style]}`}>{style}</span>
-                        <span className="mt-1 block text-sm text-[var(--card-muted)]">{how}</span>
+                        <span className="mt-1 block text-sm text-[var(--card-muted)]">{STYLE_HOW[style]}</span>
                       </span>
                       {done ? (
                         <span className="type-display text-xl font-bold uppercase text-[var(--card-ink)]">{line.text}</span>

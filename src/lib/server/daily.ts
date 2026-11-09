@@ -11,13 +11,8 @@ import {
   type DailyPuzzle,
   type ScheduleFile,
 } from '../data/dailySchedule';
-import {
-  parseStyleSchedule,
-  publishedStylePuzzle,
-  type ChainStyle,
-  type StylePuzzleData,
-  type StyleScheduleFile,
-} from '../data/styleSchedule';
+import { parseStyleSchedule, publishedStylePuzzle, type StylePuzzleData, type StyleScheduleFile } from '../data/styleSchedule';
+import type { ChainStyle } from '../utils/chainPuzzle';
 import { nextSwitch, puzzleDate, utcDateKey, type DateKey } from '../utils/daily';
 
 const schedule = parseSchedule(scheduleFile as unknown as ScheduleFile);

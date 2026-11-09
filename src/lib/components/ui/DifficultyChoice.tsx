@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import type { Difficulty } from '../../utils/GameLogic';
+import { STYLE_HOW } from './styles';
 
-/** Each style says how it plays; only Hard is scored against par. */
-const CHOICES: { difficulty: Difficulty; backs: number; accent: string; how: string }[] = [
-  { difficulty: 'easy', backs: 1, accent: '#7ee0a1', how: 'Arrange cards' },
-  { difficulty: 'medium', backs: 2, accent: '#f5d06b', how: 'Fill blanks' },
-  { difficulty: 'hard', backs: 3, accent: '#ff8f80', how: 'Type vs par' },
+const CHOICES: { difficulty: Difficulty; backs: number; accent: string }[] = [
+  { difficulty: 'easy', backs: 1, accent: '#7ee0a1' },
+  { difficulty: 'medium', backs: 2, accent: '#f5d06b' },
+  { difficulty: 'hard', backs: 3, accent: '#ff8f80' },
 ];
 
 /** A small fan of card backs: one for Easy, two for Medium, three for Hard. */
@@ -32,12 +32,12 @@ const choiceClass =
 export function DifficultyChoice({ hrefFor, onPick }: { hrefFor?: (difficulty: Difficulty) => string; onPick?: (difficulty: Difficulty) => void }) {
   return (
     <div className="flex gap-3">
-      {CHOICES.map(({ difficulty, backs, accent, how }) => {
+      {CHOICES.map(({ difficulty, backs, accent }) => {
         const body = (
           <>
             <Backs count={backs} accent={accent} />
             <span className="type-display text-xl font-black uppercase tracking-[0.04em]">{difficulty}</span>
-            <span className="type-display text-sm font-semibold uppercase text-[var(--card-muted)]">{how}</span>
+            <span className="type-display text-sm font-semibold uppercase text-[var(--card-muted)]">{STYLE_HOW[difficulty]}</span>
           </>
         );
         return hrefFor ? (

@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { PuzzlePerson } from '../data/dailySchedule';
 import { loadRoster, type RosterPerson } from '../data/roster';
 import { usePortraits } from '../hooks/usePortraits';
-import { analytics, currentTime } from '../services/analytics';
+import { useClearingLine, useStyleRound } from '../hooks/useStyleRound';
 import { WikipediaService, lookupFailureMessage } from '../services/WikipediaService';
 import { letterPattern } from '../utils/chainPuzzle';
 import type { StyleResult as Result } from '../utils/dailyProgress';
-import { chainRoundCompletedProps, type RoundContext } from '../utils/roundEvents';
+import type { RoundContext } from '../utils/roundEvents';
 import { formatLifespan } from '../utils/GameLogic';
 import { judgeGuess, judgeLookup, type GuessVerdict } from '../utils/guessMatch';
 import { applyVerdict, mediumFinished, mediumResult, mediumScore, newMediumRound, nextOpenBlank, revealBlank, type MediumRound as MediumState } from '../utils/styleRound';
@@ -33,14 +33,6 @@ export interface MediumRoundProps {
   analyticsContext: RoundContext;
 }
 
-const LINE_MS = 4500;
-const RESULT_DELAY_MS = 1100;
-
-function prefersReducedMotion(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-/** An open blank: one box per letter, grouped by word. */
 function LetterBoxes({ name }: { name: string }) {
   const words = letterPattern(name);
   return (
@@ -56,7 +48,6 @@ function LetterBoxes({ name }: { name: string }) {
   );
 }
 
-/** The one line the dock shows after a guess. */
 function lineFor(verdict: GuessVerdict, guess: string): string | null {
   switch (verdict.kind) {
     case 'match':
@@ -79,45 +70,19 @@ export function MediumRound({ puzzle, initial, label, onSave, onFinish, onHome, 
 
   const [round, setRound] = useState<MediumState>(() => initial ?? newMediumRound(puzzle.chain.length));
   const [selected, setSelected] = useState<number | null>(() => nextOpenBlank(initial ?? newMediumRound(puzzle.chain.length), -1));
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useClearingLine();
   const [checking, setChecking] = useState(false);
   const [fresh, setFresh] = useState<number | null>(null);
   const [roster, setRoster] = useState<RosterPerson[] | null>(null);
   const finished = mediumFinished(round);
-  const [showResult, setShowResult] = useState(finished);
+  const showResult = useStyleRound(round, {
+    finished,
+    score: done => ({ result: mediumResult(done), reveals: done.filled.filter(fill => fill === 'revealed').length }),
+    onSave,
+    onFinish,
+    analyticsContext,
+  });
 
-  const onSaveRef = useRef(onSave);
-  const onFinishRef = useRef(onFinish);
-  const reported = useRef(finished);
-  const startedAt = useRef(0);
-  useEffect(() => {
-    startedAt.current = currentTime();
-  }, []);
-  useEffect(() => {
-    onSaveRef.current = onSave;
-    onFinishRef.current = onFinish;
-  }, [onSave, onFinish]);
-  useEffect(() => {
-    onSaveRef.current(round);
-  }, [round]);
-  useEffect(() => {
-    if (!finished || reported.current) return;
-    reported.current = true;
-    const result = mediumResult(round);
-    onFinishRef.current(round, result);
-    const reveals = round.filled.filter(fill => fill === 'revealed').length;
-    analytics.track('game_completed', chainRoundCompletedProps({ result, reveals, startedAt: startedAt.current, now: currentTime(), context: analyticsContext }));
-  }, [finished, round, analyticsContext]);
-  useEffect(() => {
-    if (!finished || showResult) return;
-    const timer = setTimeout(() => setShowResult(true), prefersReducedMotion() ? 0 : RESULT_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [finished, showResult]);
-  useEffect(() => {
-    if (!message) return;
-    const timer = setTimeout(() => setMessage(null), LINE_MS);
-    return () => clearTimeout(timer);
-  }, [message]);
   useEffect(() => {
     loadRoster()
       .then(setRoster)

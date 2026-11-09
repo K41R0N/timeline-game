@@ -5,16 +5,14 @@
  */
 import { PERSON_GAP_DAYS, pairKey, type ScheduleFile } from '../data/dailySchedule';
 import { toRosterRow, type RosterPerson } from '../data/roster';
-import { leftOutFor, type ChainStyle, type StyleEntryRow, type StyleScheduleFile } from '../data/styleSchedule';
-import { buildEasyPuzzle, buildMediumPuzzle } from '../utils/chainPuzzle';
+import { leftOutFor, type StyleEntryRow, type StyleScheduleFile } from '../data/styleSchedule';
+import { buildStylePuzzle, type ChainStyle } from '../utils/chainPuzzle';
 import { seededRandom, seedFor } from '../utils/random';
-
-const BUILDERS = { easy: buildEasyPuzzle, medium: buildMediumPuzzle };
 
 function entryFor(style: ChainStyle, roster: RosterPerson[], revision: string, n: number, date: string, entries: StyleEntryRow[], leaveOut: Set<string>): StyleEntryRow {
   const usedPairs = new Set(entries.map(entry => pairKey(entry.a[0], entry.b[0])));
   const recent = new Set(entries.slice(-PERSON_GAP_DAYS).flatMap(entry => [entry.a[0], entry.b[0]]));
-  const puzzle = BUILDERS[style](roster, seededRandom(seedFor(style + date)), {
+  const puzzle = buildStylePuzzle(style, roster, seededRandom(seedFor(style + date)), {
     leaveOut,
     accept: (a, b) => !usedPairs.has(pairKey(a.id, b.id)) && !recent.has(a.id) && !recent.has(b.id),
   });

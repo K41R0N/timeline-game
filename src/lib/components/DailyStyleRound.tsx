@@ -21,10 +21,12 @@ import {
   type StyleRoundSave,
 } from '../utils/dailyProgress';
 import { normalizeEasyRound, normalizeMediumRound } from '../utils/styleRound';
+import { DailyLoading } from './DailyRound';
 import { EasyRound } from './EasyRound';
 import { MediumRound } from './MediumRound';
 import { Countdown } from './ui/Countdown';
 import { StyleResult } from './ui/StyleResult';
+import { STYLE_NAME } from './ui/styles';
 
 interface DailyStyleRoundProps {
   puzzle: StylePuzzleData;
@@ -34,18 +36,10 @@ interface DailyStyleRoundProps {
   nextSwitchAt: number;
 }
 
-const STYLE_NAME = { easy: 'Easy', medium: 'Medium' } as const;
-
 /** An Easy or Medium daily puzzle: today's scored attempt, a resumed one, its result, or practice on a past puzzle. */
 export function DailyStyleRound(props: DailyStyleRoundProps) {
   const progress = useDailyProgress();
-  if (!progress) {
-    return (
-      <div className="flex h-dvh w-full items-center justify-center bg-[var(--table-deep)]">
-        <div className="type-display animate-pulse text-2xl font-extrabold uppercase tracking-[0.08em] text-[var(--chalk-text)]">Dealing today&apos;s puzzle</div>
-      </div>
-    );
-  }
+  if (!progress) return <DailyLoading />;
   return <LoadedStyleRound {...props} progress={progress} />;
 }
 
@@ -91,7 +85,6 @@ function LoadedStyleRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
   const kind: AttemptKind | null = view.kind === 'result' ? null : view.kind;
   const context = useMemo<RoundContext>(() => ({ mode: 'daily', puzzle: n, scored: kind === 'scored', style, band: null }), [n, kind, style]);
 
-  // A new attempt (scored or practice) starts a round; resuming one does not.
   useEffect(() => {
     if (view.kind === 'result' || view.save !== null) return;
     analytics.track('game_started', chainRoundStartedProps(puzzle.targetA, puzzle.targetB, puzzle.chain.length, context));

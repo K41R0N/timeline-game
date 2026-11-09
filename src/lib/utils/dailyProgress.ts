@@ -1,4 +1,5 @@
 import type { HistoricalFigure } from '../types/HistoricalFigure';
+import type { ChainStyle } from './chainPuzzle';
 import { DAY_MS } from './daily';
 
 /**
@@ -65,8 +66,6 @@ export interface StyleProgress {
   attempts: Record<number, StyleAttempt>;
   practice: { number: number; round: StyleRoundSave } | null;
 }
-
-export type ChainStyleKey = 'easy' | 'medium';
 
 export interface DailyProgress {
   /** Hard attempts. */
@@ -164,7 +163,7 @@ export function puzzleStatus(progress: DailyProgress, n: number, todayNumber: nu
 }
 
 /** What opening Easy or Medium puzzle n shows, by the same rules as Hard. */
-export function openStylePuzzle(progress: DailyProgress, style: ChainStyleKey, n: number, todayNumber: number): StyleOpening {
+export function openStylePuzzle(progress: DailyProgress, style: ChainStyle, n: number, todayNumber: number): StyleOpening {
   const attempt = progress[style].attempts[n];
   if (attempt?.result) return { kind: 'result', attempt, canPractice: n < todayNumber };
   if (attempt) return { kind: 'scored', save: attempt.round };
@@ -173,13 +172,13 @@ export function openStylePuzzle(progress: DailyProgress, style: ChainStyleKey, n
 }
 
 /** Replaying Easy or Medium puzzle n as practice, resuming that style's practice slot when it holds that puzzle. */
-export function openStylePractice(progress: DailyProgress, style: ChainStyleKey, n: number): StyleOpening {
+export function openStylePractice(progress: DailyProgress, style: ChainStyle, n: number): StyleOpening {
   const { practice } = progress[style];
   return { kind: 'practice', save: practice?.number === n ? practice.round : null };
 }
 
 /** Records an Easy or Medium round's progress: the scored attempt for n, or that style's practice slot. */
-export function saveStyleRound(progress: DailyProgress, style: ChainStyleKey, n: number, kind: AttemptKind, round: StyleRoundSave, now: number): DailyProgress {
+export function saveStyleRound(progress: DailyProgress, style: ChainStyle, n: number, kind: AttemptKind, round: StyleRoundSave, now: number): DailyProgress {
   const record = progress[style];
   if (kind === 'practice') return { ...progress, [style]: { ...record, practice: { number: n, round } } };
   const existing = record.attempts[n];
@@ -189,7 +188,7 @@ export function saveStyleRound(progress: DailyProgress, style: ChainStyleKey, n:
 }
 
 /** Marks the scored Easy or Medium attempt for n finished with its final round and result. */
-export function finishStyleScored(progress: DailyProgress, style: ChainStyleKey, n: number, round: StyleRoundSave, result: StyleResult, now: number): DailyProgress {
+export function finishStyleScored(progress: DailyProgress, style: ChainStyle, n: number, round: StyleRoundSave, result: StyleResult, now: number): DailyProgress {
   const record = progress[style];
   const existing = record.attempts[n];
   if (existing?.result) return progress;
@@ -198,7 +197,7 @@ export function finishStyleScored(progress: DailyProgress, style: ChainStyleKey,
 }
 
 /** How the menu and the archive label Easy or Medium puzzle n for this browser. */
-export function styleStatus(progress: DailyProgress, style: ChainStyleKey, n: number, todayNumber: number): StyleStatus {
+export function styleStatus(progress: DailyProgress, style: ChainStyle, n: number, todayNumber: number): StyleStatus {
   const { attempts, practice } = progress[style];
   const attempt = attempts[n];
   if (attempt?.result) return { status: 'result', result: attempt.result };
@@ -207,7 +206,7 @@ export function styleStatus(progress: DailyProgress, style: ChainStyleKey, n: nu
   return { status: practice?.number === n ? 'practice' : 'unplayed' };
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+export const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 function normalizeRound(value: Record<string, unknown>): RoundSave | null {
   if (!Array.isArray(value.figures)) return null;

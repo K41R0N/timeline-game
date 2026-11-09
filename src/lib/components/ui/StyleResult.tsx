@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import type { PuzzlePerson } from '../../data/dailySchedule';
+import type { ChainStyle } from '../../utils/chainPuzzle';
 import type { SlotOutcome, StyleResult as Result } from '../../utils/dailyProgress';
 import { CountPlate } from './ChainTable';
 import { ChainHand } from './WinModal';
@@ -24,7 +25,7 @@ export function ResultSquares({ squares, className = '' }: { squares: SlotOutcom
 }
 
 interface StyleResultProps {
-  style: 'easy' | 'medium';
+  style: ChainStyle;
   result: Result;
   /** The chain, target to target, with portraits where known. */
   chain: (PuzzlePerson & { imageUrl?: string })[];

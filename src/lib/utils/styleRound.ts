@@ -2,10 +2,8 @@
  * Round state for the one-answer styles, kept as plain data so a round can be saved after every
  * change and resumed. Easy: cards placed in slots and Checked. Medium: blanks filled by guesses.
  */
-import type { SlotOutcome, StyleResult } from './dailyProgress';
+import { isRecord, type SlotOutcome, type StyleResult } from './dailyProgress';
 import type { GuessVerdict } from './guessMatch';
-
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export interface EasyRound {
   /** The card in each slot, by person id, or null when the slot is empty. */

@@ -21,6 +21,7 @@ export { ArchiveList } from './components/ui/ArchiveList';
 export { BandBadge } from './components/ui/BandBadge';
 export { PlacementReveal } from './components/ui/PlacementReveal';
 export { HintButton } from './components/ui/HintButton';
+export { STYLE_NAME } from './components/ui/styles';
 export { Countdown } from './components/ui/Countdown';
 
 // Types

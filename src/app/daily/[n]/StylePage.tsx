@@ -1,10 +1,10 @@
 import { connection } from 'next/server';
-import { DailyStyleRound, currentTime } from '@/lib';
+import { DailyStyleRound, currentTime, type ChainStyle } from '@/lib';
 import { dailyStylePuzzle, dailyToday, parsePuzzleParam } from '@/lib/server/daily';
 import { NotOut } from './NotOut';
 
 /** One Easy or Medium daily puzzle. Rendered per request, so a puzzle exists only once its UTC date arrives. */
-export async function StylePage({ style, params }: { style: 'easy' | 'medium'; params: Promise<{ n: string }> }) {
+export async function StylePage({ style, params }: { style: ChainStyle; params: Promise<{ n: string }> }) {
   await connection();
   const { n: raw } = await params;
   const now = currentTime();

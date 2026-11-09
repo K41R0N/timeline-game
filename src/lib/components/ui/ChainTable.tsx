@@ -6,13 +6,7 @@ import type { Difficulty } from '../../utils/GameLogic';
 import { formatLifespan } from '../../utils/GameLogic';
 import { eraOf } from '../../utils/board';
 import { ERA_COLOR, Portrait } from './Portrait';
-
-/** The style word in a round's header, coloured like its choice on the menu. */
-export const STYLE_TEXT: Record<Difficulty, string> = {
-  easy: 'text-[#7ee0a1]',
-  medium: 'text-[#f5d06b]',
-  hard: 'text-[#ff8f80]',
-};
+import { STYLE_TEXT } from './styles';
 
 /** One number on card stock: Checks in Easy, misses in Medium. */
 export function CountPlate({ label, value, large = false, className = '' }: { label: string; value: number; large?: boolean; className?: string }) {

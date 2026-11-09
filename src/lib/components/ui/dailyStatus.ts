@@ -8,6 +8,7 @@ export interface DailyStatusLine {
 }
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+const TEXT = { play: 'Play', resume: 'Continue', unplayed: 'Practise', practice: 'Practising' } as const;
 
 /** How the menu and the archive describe one style of daily puzzle n for this browser. */
 export function dailyStatusLine(progress: DailyProgress, style: Difficulty, n: number, todayNumber: number): DailyStatusLine {
@@ -27,4 +28,3 @@ export function dailyStatusLine(progress: DailyProgress, style: Difficulty, n: n
   return { status: status.status, text: TEXT[status.status] };
 }
 
-const TEXT = { play: 'Play', resume: 'Continue', unplayed: 'Practise', practice: 'Practising' } as const;

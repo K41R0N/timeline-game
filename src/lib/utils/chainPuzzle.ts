@@ -18,6 +18,9 @@ export const DECOY_COUNT = 2;
 const MAX_TRIES = 400;
 const DECOY_TRIES = 60;
 
+/** The styles with one fixed answer. Hard is free typing against par. */
+export type ChainStyle = 'easy' | 'medium';
+
 /** A one-answer puzzle: the targets (earlier-born first), the chain between them, and Easy's decoys. */
 export interface StylePuzzle {
   a: RosterPerson;
@@ -50,7 +53,7 @@ export function linksWithMargin(x: Life, y: Life): boolean {
 interface PathNode {
   person: RosterPerson;
   /** Language editions of the least known person on the path so far. */
-  fame: number;
+  weakestFame: number;
   path: RosterPerson[];
 }
 
@@ -60,14 +63,14 @@ interface PathNode {
  */
 export function bestChain(pool: RosterPerson[], a: RosterPerson, b: RosterPerson, leaveOut: ReadonlySet<string> = new Set()): RosterPerson[] | null {
   const people = pool.filter(p => p.id !== a.id && p.id !== b.id && !leaveOut.has(p.id));
-  let layer = new Map<string, PathNode>([[a.id, { person: a, fame: Infinity, path: [] }]]);
+  let layer = new Map<string, PathNode>([[a.id, { person: a, weakestFame: Infinity, path: [] }]]);
   const seen = new Set([a.id]);
 
   for (let depth = 0; depth <= MAX_MIDDLE; depth++) {
     const finals = [...layer.values()].filter(node => linksWithMargin(node.person, b));
     if (finals.length > 0) {
       if (depth < MIN_MIDDLE) return null;
-      return finals.reduce((best, node) => (node.fame > best.fame ? node : best)).path;
+      return finals.reduce((best, node) => (node.weakestFame > best.weakestFame ? node : best)).path;
     }
     if (depth === MAX_MIDDLE) break;
 
@@ -75,9 +78,9 @@ export function bestChain(pool: RosterPerson[], a: RosterPerson, b: RosterPerson
     for (const node of layer.values()) {
       for (const candidate of people) {
         if (seen.has(candidate.id) || !linksWithMargin(node.person, candidate)) continue;
-        const fame = Math.min(node.fame, candidate.sitelinks);
+        const weakestFame = Math.min(node.weakestFame, candidate.sitelinks);
         const current = next.get(candidate.id);
-        if (!current || current.fame < fame) next.set(candidate.id, { person: candidate, fame, path: [...node.path, candidate] });
+        if (!current || current.weakestFame < weakestFame) next.set(candidate.id, { person: candidate, weakestFame, path: [...node.path, candidate] });
       }
     }
     if (next.size === 0) break;
@@ -181,4 +184,9 @@ export function buildMediumPuzzle(roster: RosterPerson[], random: () => number, 
     if (unique) return { a, b, chain, decoys: [] };
   }
   return null;
+}
+
+/** Builds a puzzle in either one-answer style. */
+export function buildStylePuzzle(style: ChainStyle, roster: RosterPerson[], random: () => number, options: BuildOptions = {}): StylePuzzle | null {
+  return style === 'easy' ? buildEasyPuzzle(roster, random, options) : buildMediumPuzzle(roster, random, options);
 }

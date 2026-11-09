@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { PuzzlePerson } from '../data/dailySchedule';
 import { usePortraits } from '../hooks/usePortraits';
-import { analytics, currentTime } from '../services/analytics';
+import { useClearingLine, useStyleRound } from '../hooks/useStyleRound';
 import type { StyleResult as Result } from '../utils/dailyProgress';
-import { chainRoundCompletedProps, type RoundContext } from '../utils/roundEvents';
+import type { RoundContext } from '../utils/roundEvents';
 import { formatLifespan } from '../utils/GameLogic';
 import { seededRandom, seedFor } from '../utils/random';
 import { canCheck, checkEasy, easyFinished, easyResult, handCards, newEasyRound, placeCard, returnCard, type EasyRound as EasyState } from '../utils/styleRound';
@@ -34,9 +34,6 @@ export interface EasyRoundProps {
   analyticsContext: RoundContext;
 }
 
-const LINE_MS = 4500;
-const RESULT_DELAY_MS = 1100;
-
 /** The same shuffled hand every time a puzzle is opened, so a reload does not reorder it. */
 function dealOrder(ids: string[]): string[] {
   const random = seededRandom(seedFor([...ids].sort().join('|')));
@@ -46,10 +43,6 @@ function dealOrder(ids: string[]): string[] {
     [order[i], order[j]] = [order[j], order[i]];
   }
   return order;
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /** Easy: arrange the dealt name cards, decoys included, between the two gold targets, and Check. */
@@ -62,42 +55,10 @@ export function EasyRound({ puzzle, initial, label, onSave, onFinish, onHome, on
 
   const [round, setRound] = useState<EasyState>(() => initial ?? newEasyRound(answerIds.length));
   const [selected, setSelected] = useState<string | null>(null);
-  const [line, setLine] = useState<string | null>(null);
+  const [line, setLine] = useClearingLine();
   const [fresh, setFresh] = useState<ReadonlySet<number>>(new Set());
   const finished = easyFinished(round);
-  const [showResult, setShowResult] = useState(finished);
-
-  const onSaveRef = useRef(onSave);
-  const onFinishRef = useRef(onFinish);
-  const reported = useRef(finished);
-  const startedAt = useRef(0);
-  useEffect(() => {
-    startedAt.current = currentTime();
-  }, []);
-  useEffect(() => {
-    onSaveRef.current = onSave;
-    onFinishRef.current = onFinish;
-  }, [onSave, onFinish]);
-  useEffect(() => {
-    onSaveRef.current(round);
-  }, [round]);
-  useEffect(() => {
-    if (!finished || reported.current) return;
-    reported.current = true;
-    const result = easyResult(round);
-    onFinishRef.current(round, result);
-    analytics.track('game_completed', chainRoundCompletedProps({ result, reveals: 0, startedAt: startedAt.current, now: currentTime(), context: analyticsContext }));
-  }, [finished, round, analyticsContext]);
-  useEffect(() => {
-    if (!finished || showResult) return;
-    const timer = setTimeout(() => setShowResult(true), prefersReducedMotion() ? 0 : RESULT_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [finished, showResult]);
-  useEffect(() => {
-    if (!line) return;
-    const timer = setTimeout(() => setLine(null), LINE_MS);
-    return () => clearTimeout(timer);
-  }, [line]);
+  const showResult = useStyleRound(round, { finished, score: done => ({ result: easyResult(done), reveals: 0 }), onSave, onFinish, analyticsContext });
 
   const tapSlot = (slot: number) => {
     if (round.locked[slot]) return;

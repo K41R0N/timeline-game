@@ -8,6 +8,7 @@
  */
 import { areContemporaries } from '../utils/ChainAnalyzer';
 import {
+  type ChainStyle,
   DECOY_COUNT,
   MAX_MIDDLE,
   MIN_MIDDLE,
@@ -21,9 +22,6 @@ import { famousPeople, FAMOUS_COUNT } from '../utils/difficulty';
 import { seedFor } from '../utils/random';
 import { MIN_DAYS_AHEAD, PERSON_GAP_DAYS, pairKey, type PuzzlePerson, type ScheduleEntryRow, type ScheduleFile } from './dailySchedule';
 import { fromRosterRow, type RosterPerson, type RosterRow } from './roster';
-
-/** The styles with one fixed answer. Hard keeps the original schedule. */
-export type ChainStyle = 'easy' | 'medium';
 
 export interface StyleEntryRow {
   n: number;
@@ -145,9 +143,8 @@ function snapshotProblems(style: ChainStyle, entry: StyleEntryRow, where: string
 }
 
 /** Checks against today's roster, for puzzles generated from this roster revision. */
-function rosterProblems(style: ChainStyle, entry: StyleEntryRow, where: string, roster: RosterPerson[], famous: RosterPerson[], leaveOut: Set<string>): string[] {
+function rosterProblems(style: ChainStyle, entry: StyleEntryRow, where: string, roster: RosterPerson[], famous: RosterPerson[], famousIds: Set<string>, leaveOut: Set<string>): string[] {
   const problems: string[] = [];
-  const famousIds = new Set(famous.map(p => p.id));
   const [a, b] = [fromRosterRow(entry.a), fromRosterRow(entry.b)];
   const chain = entry.chain.map(fromRosterRow);
   const mustBeFamous = style === 'easy' ? [a, b, ...chain, ...entry.decoys.map(fromRosterRow)] : [a, b];
@@ -180,6 +177,7 @@ function rosterProblems(style: ChainStyle, entry: StyleEntryRow, where: string, 
 export function styleScheduleProblems(files: ScheduleSet, today: DateKey, roster?: { people: RosterPerson[]; revision: string }): string[] {
   const problems: string[] = [];
   const famous = roster ? famousPeople(roster.people) : [];
+  const famousIds = new Set(famous.map(p => p.id));
 
   for (const style of ['easy', 'medium'] as const) {
     const file = files[style];
@@ -210,7 +208,7 @@ export function styleScheduleProblems(files: ScheduleSet, today: DateKey, roster
         if (leaveOut.has(row[0])) problems.push(`${where}: ${row[1]} is also in another style's puzzle for this date`);
       }
 
-      if (roster && entry.rev === roster.revision) problems.push(...rosterProblems(style, entry, where, roster.people, famous, leaveOut));
+      if (roster && entry.rev === roster.revision) problems.push(...rosterProblems(style, entry, where, roster.people, famous, famousIds, leaveOut));
     });
 
     const ahead = file.entries.filter(entry => entry.date > today).length;

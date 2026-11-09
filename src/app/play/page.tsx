@@ -14,12 +14,12 @@ import {
   analytics,
   roundStartedProps,
   chainRoundStartedProps,
-  buildEasyPuzzle,
-  buildMediumPuzzle,
+  buildStylePuzzle,
   drawHardBand,
   freePlay,
+  STYLE_NAME,
 } from '@/lib';
-import type { Difficulty, HistoricalFigure, RoundSave, StylePuzzle } from '@/lib';
+import type { ChainStyle, Difficulty, HistoricalFigure, RoundSave, StylePuzzle } from '@/lib';
 
 type FreeRound =
   | {
@@ -32,9 +32,7 @@ type FreeRound =
       band: Difficulty;
       initial: RoundSave | null;
     }
-  | { kind: 'easy' | 'medium'; id: number; puzzle: StylePuzzle };
-
-const BUILDERS = { easy: buildEasyPuzzle, medium: buildMediumPuzzle };
+  | { kind: ChainStyle; id: number; puzzle: StylePuzzle };
 
 /** Free play: pick a style and play rounds back to back. Easy and Medium puzzles are built here from the roster. */
 export default function FreePlay() {
@@ -56,9 +54,9 @@ export default function FreePlay() {
     analytics.track('game_started', roundStartedProps(rosterPeople, targetA, targetB, freePlay('hard', band)));
   };
 
-  const startChain = async (style: 'easy' | 'medium') => {
+  const startChain = async (style: ChainStyle) => {
     const rosterPeople = await loadRoster();
-    const puzzle = BUILDERS[style](rosterPeople, Math.random);
+    const puzzle = buildStylePuzzle(style, rosterPeople, Math.random);
     if (!puzzle) throw new Error(`No ${style} puzzle could be built`);
     console.log(`✅ ${style} puzzle: ${puzzle.a.name} → ${puzzle.b.name}`);
     setRound(previous => ({ kind: style, id: (previous?.id ?? 0) + 1, puzzle }));
@@ -78,7 +76,6 @@ export default function FreePlay() {
     }
   };
 
-  // On mount: start the style the menu asked for (/play?d=easy), or resume the saved Hard round.
   useEffect(() => {
     const asked = new URLSearchParams(window.location.search).get('d');
     if (asked === 'easy' || asked === 'medium' || asked === 'hard') {
@@ -170,7 +167,7 @@ export default function FreePlay() {
       onFinish: () => {},
       onHome: () => router.push('/'),
       onRestart: newGame,
-      endHeading: `Free play · ${round.kind === 'easy' ? 'Easy' : 'Medium'}`,
+      endHeading: `Free play · ${STYLE_NAME[round.kind]}`,
       endActionLabel: 'Play again',
       onEndAction: newGame,
       analyticsContext: freePlay(round.kind),

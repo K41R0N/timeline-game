@@ -8,13 +8,7 @@ import { PlacementReveal } from './ui/PlacementReveal';
 import { HintButton } from './ui/HintButton';
 import { DetailPanel } from './ui/DetailPanel';
 import { ScorePlates, type ScoreTone } from './ui/ScorePlates';
-
-/** The difficulty word in the header, coloured like the free-play choice. */
-const BAND_TEXT: Record<Difficulty, string> = {
-  easy: 'text-[#7ee0a1]',
-  medium: 'text-[#f5d06b]',
-  hard: 'text-[#ff8f80]',
-};
+import { STYLE_TEXT } from './ui/styles';
 import { HistoricalFigure } from '../types/HistoricalFigure';
 import { WikipediaService, lookupFailureMessage } from '../services/WikipediaService';
 import { analytics, currentTime } from '../services/analytics';
@@ -324,7 +318,7 @@ export function GameRound({
             </button>
             <div className="type-display min-w-0 truncate text-[15px] font-bold uppercase tracking-[0.06em] text-[var(--table-ink)]">
               {roundLabel && <>{roundLabel} · </>}
-              <span className={BAND_TEXT[difficulty]}>{difficulty}</span>
+              <span className={STYLE_TEXT[difficulty]}>{difficulty}</span>
             </div>
             {onRestart && (
               <button

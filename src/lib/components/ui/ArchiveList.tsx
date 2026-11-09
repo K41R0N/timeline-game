@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { Difficulty } from '../../utils/GameLogic';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
 import { dailyStatusLine } from './dailyStatus';
+import { STYLE_ON_STOCK } from './styles';
 
 export interface ArchiveRow {
   number: number;
@@ -11,10 +12,10 @@ export interface ArchiveRow {
   weekday: string;
 }
 
-const STYLES: { style: Difficulty; path: string; color: string }[] = [
-  { style: 'easy', path: '/easy', color: 'text-[#15803d]' },
-  { style: 'medium', path: '/medium', color: 'text-[#a16207]' },
-  { style: 'hard', path: '', color: 'text-[#b91c1c]' },
+const STYLES: { style: Difficulty; path: string }[] = [
+  { style: 'easy', path: '/easy' },
+  { style: 'medium', path: '/medium' },
+  { style: 'hard', path: '' },
 ];
 
 /** Published daily puzzles, newest first, with what this browser did in each style. */
@@ -30,7 +31,7 @@ export function ArchiveList({ rows, todayNumber }: { rows: ArchiveRow[]; todayNu
             <span className="block text-xs font-bold uppercase text-[var(--card-muted)]">{row.weekday.slice(0, 3)}</span>
           </span>
           <span className="grid flex-1 grid-cols-3 gap-1.5">
-            {STYLES.map(({ style, path, color }) => {
+            {STYLES.map(({ style, path }) => {
               const line = progress && todayNumber !== null ? dailyStatusLine(progress, style, row.number, todayNumber) : null;
               return (
                 <Link
@@ -39,7 +40,7 @@ export function ArchiveList({ rows, todayNumber }: { rows: ArchiveRow[]; todayNu
                   aria-label={`Daily #${row.number}, ${style}${line ? `: ${line.text}` : ''}`}
                   className="type-display flex min-h-12 flex-col items-center justify-center rounded-lg px-1 py-1 text-center uppercase leading-tight transition-colors hover:bg-[rgba(15,30,34,0.06)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--foil-light)]"
                 >
-                  <span className={`text-sm font-black ${color}`}>{style}</span>
+                  <span className={`text-sm font-black ${STYLE_ON_STOCK[style]}`}>{style}</span>
                   <span className={`text-[13px] font-bold ${line?.status === 'result' ? 'text-[var(--card-ink)]' : 'text-[var(--card-muted)]'}`}>{line?.text ?? ''}</span>
                 </Link>
               );

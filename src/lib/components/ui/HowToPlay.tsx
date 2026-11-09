@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { Difficulty } from '../../utils/GameLogic';
 import { CLUTCH_MAX_SHARED_YEARS, LONG_BRIDGE_MIN_YEARS } from '../../utils/overlap';
+import { STYLE_NAME, STYLE_ON_STOCK } from './styles';
 
 /** One short step per style; only Hard is scored against par. */
-const STEPS: { style: string; color: string; text: string }[] = [
-  { style: 'Easy', color: 'text-[#15803d]', text: 'Put the name cards in order so each life overlaps the next, then Check. Fewer Checks is better.' },
-  { style: 'Medium', color: 'text-[#a16207]', text: 'Name the hidden people; each box is a letter. A wrong name or a wild card is a miss.' },
-  { style: 'Hard', color: 'text-[#b91c1c]', text: 'Name anyone alive alongside a card on the table, and link the gold cards in as few as you can. Par is the best chain the game knows.' },
+const STEPS: { style: Difficulty; text: string }[] = [
+  { style: 'easy', text: 'Put the name cards in order so each life overlaps the next, then Check. Fewer Checks is better.' },
+  { style: 'medium', text: 'Name the hidden people; each box is a letter. A wrong name or a wild card is a miss.' },
+  { style: 'hard', text: 'Name anyone alive alongside a card on the table, and link the gold cards in as few as you can. Par is the best chain the game knows.' },
 ];
 
 /** The rules, one line per style, behind one quiet button. */
@@ -46,7 +48,7 @@ export function HowToPlay() {
             <ul className="mt-4 space-y-3">
               {STEPS.map(step => (
                 <li key={step.style} className="text-[15px] leading-snug">
-                  <span className={`type-display text-lg font-black uppercase ${step.color}`}>{step.style}</span> {step.text}
+                  <span className={`type-display text-lg font-black uppercase ${STYLE_ON_STOCK[step.style]}`}>{STYLE_NAME[step.style]}</span> {step.text}
                 </li>
               ))}
             </ul>

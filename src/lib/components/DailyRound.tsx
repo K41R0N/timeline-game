@@ -67,7 +67,7 @@ export function DailyRound(props: DailyRoundProps) {
   return <LoadedDailyRound {...props} progress={progress} />;
 }
 
-function DailyLoading() {
+export function DailyLoading() {
   return (
     <div className="flex h-dvh w-full items-center justify-center bg-[var(--table-deep)]">
       <div className="type-display animate-pulse text-2xl font-extrabold uppercase tracking-[0.08em] text-[var(--chalk-text)]">Dealing today&apos;s puzzle</div>
@@ -98,7 +98,6 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
   }, [puzzle]);
 
   const kind = view.kind === 'result' ? null : view.kind;
-  // The round plays on Hard rules; the weekday's band only chose the pair.
   const context = useMemo<RoundContext>(() => ({ mode: 'daily', puzzle: n, scored: kind === 'scored', style: 'hard', band: puzzle.band }), [n, kind, puzzle.band]);
 
   // A new attempt (scored or practice) starts a round; resuming one does not.
