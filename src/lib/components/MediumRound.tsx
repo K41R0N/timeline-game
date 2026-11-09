@@ -4,9 +4,11 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { PuzzlePerson } from '../data/dailySchedule';
 import { loadRoster, type RosterPerson } from '../data/roster';
 import { usePortraits } from '../hooks/usePortraits';
+import { analytics, currentTime } from '../services/analytics';
 import { WikipediaService, lookupFailureMessage } from '../services/WikipediaService';
 import { letterPattern } from '../utils/chainPuzzle';
 import type { StyleResult as Result } from '../utils/dailyProgress';
+import { chainRoundCompletedProps, type RoundContext } from '../utils/roundEvents';
 import { formatLifespan } from '../utils/GameLogic';
 import { judgeGuess, judgeLookup, type GuessVerdict } from '../utils/guessMatch';
 import { applyVerdict, mediumFinished, mediumResult, mediumScore, newMediumRound, nextOpenBlank, revealBlank, type MediumRound as MediumState } from '../utils/styleRound';
@@ -27,6 +29,8 @@ export interface MediumRoundProps {
   endActionLabel: string;
   onEndAction: () => void;
   endExtra?: ReactNode;
+  /** Free play or a daily puzzle, attached to the completion event. */
+  analyticsContext: RoundContext;
 }
 
 const LINE_MS = 4500;
@@ -68,7 +72,7 @@ function lineFor(verdict: GuessVerdict, guess: string): string | null {
 }
 
 /** Medium: name the hidden people between the two gold targets; each blank shows its letter count. */
-export function MediumRound({ puzzle, initial, label, onSave, onFinish, onHome, onRestart, endHeading, endActionLabel, onEndAction, endExtra }: MediumRoundProps) {
+export function MediumRound({ puzzle, initial, label, onSave, onFinish, onHome, onRestart, endHeading, endActionLabel, onEndAction, endExtra, analyticsContext }: MediumRoundProps) {
   const line = useMemo(() => [puzzle.targetA, ...puzzle.chain, puzzle.targetB], [puzzle]);
   const titles = useMemo(() => line.map(p => p.name), [line]);
   const images = usePortraits(titles);
@@ -85,6 +89,10 @@ export function MediumRound({ puzzle, initial, label, onSave, onFinish, onHome, 
   const onSaveRef = useRef(onSave);
   const onFinishRef = useRef(onFinish);
   const reported = useRef(finished);
+  const startedAt = useRef(0);
+  useEffect(() => {
+    startedAt.current = currentTime();
+  }, []);
   useEffect(() => {
     onSaveRef.current = onSave;
     onFinishRef.current = onFinish;
@@ -95,8 +103,11 @@ export function MediumRound({ puzzle, initial, label, onSave, onFinish, onHome, 
   useEffect(() => {
     if (!finished || reported.current) return;
     reported.current = true;
-    onFinishRef.current(round, mediumResult(round));
-  }, [finished, round]);
+    const result = mediumResult(round);
+    onFinishRef.current(round, result);
+    const reveals = round.filled.filter(fill => fill === 'revealed').length;
+    analytics.track('game_completed', chainRoundCompletedProps({ result, reveals, startedAt: startedAt.current, now: currentTime(), context: analyticsContext }));
+  }, [finished, round, analyticsContext]);
   useEffect(() => {
     if (!finished || showResult) return;
     const timer = setTimeout(() => setShowResult(true), prefersReducedMotion() ? 0 : RESULT_DELAY_MS);

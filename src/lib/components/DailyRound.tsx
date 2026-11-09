@@ -98,7 +98,8 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
   }, [puzzle]);
 
   const kind = view.kind === 'result' ? null : view.kind;
-  const context = useMemo<RoundContext>(() => ({ mode: 'daily', puzzle: n, scored: kind === 'scored' }), [n, kind]);
+  // The round plays on Hard rules; the weekday's band only chose the pair.
+  const context = useMemo<RoundContext>(() => ({ mode: 'daily', puzzle: n, scored: kind === 'scored', style: 'hard', band: puzzle.band }), [n, kind, puzzle.band]);
 
   // A new attempt (scored or practice) starts a round; resuming one does not.
   useEffect(() => {
@@ -106,13 +107,13 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
     let cancelled = false;
     loadRoster()
       .then(roster => {
-        if (!cancelled) analytics.track('game_started', roundStartedProps(roster, puzzle.band, targets[0], targets[1], context));
+        if (!cancelled) analytics.track('game_started', roundStartedProps(roster, targets[0], targets[1], context));
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [targets, view, puzzle.band, context]);
+  }, [targets, view, context]);
   const save = useCallback(
     (round: RoundSave) => {
       if (kind) updateDailyProgress(p => saveRound(p, n, kind, round, currentTime()));

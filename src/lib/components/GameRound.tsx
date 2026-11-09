@@ -187,7 +187,6 @@ export function GameRound({
       analytics.track(
         'game_completed',
         roundCompletedProps({
-          difficulty,
           strokes: finalStrokes,
           par: parChain?.length ?? null,
           hintsUsed,
@@ -213,7 +212,6 @@ export function GameRound({
       analytics.track(
         'game_abandoned',
         roundCompletedProps({
-          difficulty,
           strokes,
           par,
           hintsUsed,
@@ -301,7 +299,7 @@ export function GameRound({
     }
     setHint({ id: next.id, name: next.name });
     setHintsUsed(count => count + 1);
-    analytics.track('hint_taken', { difficulty, costs_stroke: policy.costsStroke, ...analyticsContext });
+    analytics.track('hint_taken', { costs_stroke: policy.costsStroke, ...analyticsContext });
   };
 
   const parText = par ?? (parUnavailable ? '–' : '…');

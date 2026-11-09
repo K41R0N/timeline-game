@@ -13,10 +13,11 @@ import {
   loadRoster,
   analytics,
   roundStartedProps,
+  chainRoundStartedProps,
   buildEasyPuzzle,
   buildMediumPuzzle,
   drawHardBand,
-  FREE_PLAY,
+  freePlay,
 } from '@/lib';
 import type { Difficulty, HistoricalFigure, RoundSave, StylePuzzle } from '@/lib';
 
@@ -52,7 +53,7 @@ export default function FreePlay() {
     const [targetA, targetB] = targets;
     console.log(`✅ Hard targets (${band} pair): ${targetA.name} → ${targetB.name}`);
     setRound(previous => ({ kind: 'hard', id: (previous?.id ?? 0) + 1, targetA, targetB, band, initial: null }));
-    analytics.track('game_started', roundStartedProps(rosterPeople, band, targetA, targetB, FREE_PLAY));
+    analytics.track('game_started', roundStartedProps(rosterPeople, targetA, targetB, freePlay('hard', band)));
   };
 
   const startChain = async (style: 'easy' | 'medium') => {
@@ -61,6 +62,7 @@ export default function FreePlay() {
     if (!puzzle) throw new Error(`No ${style} puzzle could be built`);
     console.log(`✅ ${style} puzzle: ${puzzle.a.name} → ${puzzle.b.name}`);
     setRound(previous => ({ kind: style, id: (previous?.id ?? 0) + 1, puzzle }));
+    analytics.track('game_started', chainRoundStartedProps(puzzle.a, puzzle.b, puzzle.chain.length, freePlay(style)));
   };
 
   const start = async (style: Difficulty) => {
@@ -171,6 +173,7 @@ export default function FreePlay() {
       endHeading: `Free play · ${round.kind === 'easy' ? 'Easy' : 'Medium'}`,
       endActionLabel: 'Play again',
       onEndAction: newGame,
+      analyticsContext: freePlay(round.kind),
     };
     return round.kind === 'easy' ? <EasyRound {...shared} /> : <MediumRound {...shared} />;
   }
@@ -187,7 +190,7 @@ export default function FreePlay() {
       onRestart={newGame}
       restartConfirm="Start a new game? Your current progress will be lost."
       endActionLabel="Play Again"
-      analyticsContext={FREE_PLAY}
+      analyticsContext={freePlay('hard', round.band)}
     />
   );
 }

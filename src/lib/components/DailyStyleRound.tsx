@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { StylePuzzleData } from '../data/styleSchedule';
 import { useDailyProgress, updateDailyProgress } from '../hooks/useDailyProgress';
 import { usePortraits } from '../hooks/usePortraits';
-import { currentTime } from '../services/analytics';
+import { analytics, currentTime } from '../services/analytics';
+import { chainRoundStartedProps, type RoundContext } from '../utils/roundEvents';
 import { weekdayName } from '../utils/daily';
 import {
   finishStyleScored,
@@ -88,6 +89,13 @@ function LoadedStyleRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
   // Decided once when the page opens; saving progress must not switch what is on screen.
   const [view, setView] = useState<StyleOpening>(() => openStylePuzzle(progress, style, n, todayNumber));
   const kind: AttemptKind | null = view.kind === 'result' ? null : view.kind;
+  const context = useMemo<RoundContext>(() => ({ mode: 'daily', puzzle: n, scored: kind === 'scored', style, band: null }), [n, kind, style]);
+
+  // A new attempt (scored or practice) starts a round; resuming one does not.
+  useEffect(() => {
+    if (view.kind === 'result' || view.save !== null) return;
+    analytics.track('game_started', chainRoundStartedProps(puzzle.targetA, puzzle.targetB, puzzle.chain.length, context));
+  }, [view, puzzle, context]);
 
   const save = useCallback(
     (round: StyleRoundSave) => {
@@ -132,7 +140,7 @@ function LoadedStyleRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
 
   const isToday = n === todayNumber;
   const label = <span>#{n} · {practice ? 'Practice' : isToday ? 'Today' : weekdayName(puzzle.date)}</span>;
-  const shared = { puzzle, label, onSave: save, onFinish: finish, onHome: goHome, endHeading: title, endActionLabel: 'Back to home', onEndAction: goHome, endExtra: countdown };
+  const shared = { puzzle, label, onSave: save, onFinish: finish, onHome: goHome, endHeading: title, endActionLabel: 'Back to home', onEndAction: goHome, endExtra: countdown, analyticsContext: context };
 
   return style === 'easy' ? (
     <EasyRound {...shared} initial={normalizeEasyRound(view.save, puzzle.chain.length, cardIds)} />

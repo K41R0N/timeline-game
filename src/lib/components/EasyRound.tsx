@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { PuzzlePerson } from '../data/dailySchedule';
 import { usePortraits } from '../hooks/usePortraits';
+import { analytics, currentTime } from '../services/analytics';
 import type { StyleResult as Result } from '../utils/dailyProgress';
+import { chainRoundCompletedProps, type RoundContext } from '../utils/roundEvents';
 import { formatLifespan } from '../utils/GameLogic';
 import { seededRandom, seedFor } from '../utils/random';
 import { canCheck, checkEasy, easyFinished, easyResult, handCards, newEasyRound, placeCard, returnCard, type EasyRound as EasyState } from '../utils/styleRound';
@@ -28,6 +30,8 @@ export interface EasyRoundProps {
   endActionLabel: string;
   onEndAction: () => void;
   endExtra?: ReactNode;
+  /** Free play or a daily puzzle, attached to the completion event. */
+  analyticsContext: RoundContext;
 }
 
 const LINE_MS = 4500;
@@ -49,7 +53,7 @@ function prefersReducedMotion(): boolean {
 }
 
 /** Easy: arrange the dealt name cards, decoys included, between the two gold targets, and Check. */
-export function EasyRound({ puzzle, initial, label, onSave, onFinish, onHome, onRestart, endHeading, endActionLabel, onEndAction, endExtra }: EasyRoundProps) {
+export function EasyRound({ puzzle, initial, label, onSave, onFinish, onHome, onRestart, endHeading, endActionLabel, onEndAction, endExtra, analyticsContext }: EasyRoundProps) {
   const people = useMemo(() => new Map([...puzzle.chain, ...puzzle.decoys].map(p => [p.id, p])), [puzzle]);
   const answerIds = useMemo(() => puzzle.chain.map(p => p.id), [puzzle]);
   const deck = useMemo(() => dealOrder([...puzzle.chain, ...puzzle.decoys].map(p => p.id)), [puzzle]);
@@ -66,6 +70,10 @@ export function EasyRound({ puzzle, initial, label, onSave, onFinish, onHome, on
   const onSaveRef = useRef(onSave);
   const onFinishRef = useRef(onFinish);
   const reported = useRef(finished);
+  const startedAt = useRef(0);
+  useEffect(() => {
+    startedAt.current = currentTime();
+  }, []);
   useEffect(() => {
     onSaveRef.current = onSave;
     onFinishRef.current = onFinish;
@@ -76,8 +84,10 @@ export function EasyRound({ puzzle, initial, label, onSave, onFinish, onHome, on
   useEffect(() => {
     if (!finished || reported.current) return;
     reported.current = true;
-    onFinishRef.current(round, easyResult(round));
-  }, [finished, round]);
+    const result = easyResult(round);
+    onFinishRef.current(round, result);
+    analytics.track('game_completed', chainRoundCompletedProps({ result, reveals: 0, startedAt: startedAt.current, now: currentTime(), context: analyticsContext }));
+  }, [finished, round, analyticsContext]);
   useEffect(() => {
     if (!finished || showResult) return;
     const timer = setTimeout(() => setShowResult(true), prefersReducedMotion() ? 0 : RESULT_DELAY_MS);

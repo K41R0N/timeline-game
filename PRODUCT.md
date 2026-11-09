@@ -16,11 +16,11 @@ History Links makes chronology a competitive sport: who was alive at the same ti
 
 ## Positioning
 
-The game scores the overlap itself. Every placement reveals when a person lived and who they shared years with, scored like golf against par, on one daily puzzle shared by everyone.
+The game scores the overlap itself. Every placement reveals when a person lived and who they shared years with, on daily puzzles shared by everyone. Three ways to play make it the difficulty scale: Easy arranges name cards, Medium fills letter-count blanks, and Hard is free typing scored like golf against par.
 
 ## Operating Context
 
-- One daily puzzle per UTC date (Easy Monday and Tuesday, Medium Wednesday and Thursday, Hard Friday to Sunday), one scored attempt per browser, past puzzles replayed as practice; free play at a chosen difficulty.
+- Three daily puzzles per UTC date, one per style, all with the same number; Hard's pairs are closer early in the week. One scored attempt per browser per style, past puzzles replayed as practice; free play in a chosen style.
 - Streamers play on desktop with the game window captured into a stream; viewers play on phones, often one-handed.
 
 ## Capabilities and Constraints
@@ -29,7 +29,7 @@ The game scores the overlap itself. Every placement reveals when a person lived 
 - Data only from Wikipedia and Wikidata, including portraits.
 - No accounts: play and share without signing up.
 - Lifespans stay hidden until a person is placed.
-- Par and hints come from a committed roster of well-known people.
+- Par, hints and the Easy and Medium puzzles come from a committed roster of well-known people.
 
 ## Brand Commitments
 
