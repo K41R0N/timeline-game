@@ -2,9 +2,10 @@ import type { HistoricalFigure } from '../types/HistoricalFigure';
 import { DAY_MS } from './daily';
 
 /**
- * What this browser has done with each daily puzzle: one scored attempt per puzzle, plus one
- * practice slot for replaying a past puzzle. Kept apart from the free-play save, so neither can
- * overwrite the other.
+ * What this browser has done with each daily puzzle: one scored attempt per puzzle and style, plus
+ * one practice slot per style for replaying a past puzzle. Hard records keep their original place
+ * (`attempts`, `practice`), so a record stored before Easy and Medium existed reads as Hard. Kept
+ * apart from the free-play save, so neither can overwrite the other.
  */
 
 export interface SavedHintName {
@@ -39,9 +40,41 @@ export interface PracticeSave extends RoundSave {
   number: number;
 }
 
+/** How one slot of an Easy or Medium puzzle was solved: at once, after a wrong try, or revealed. */
+export type SlotOutcome = 'first' | 'later' | 'revealed';
+
+/** A finished Easy or Medium attempt: Checks (Easy) or misses (Medium), and one outcome per slot. */
+export interface StyleResult {
+  score: number;
+  squares: SlotOutcome[];
+}
+
+/** An Easy or Medium round in progress, as its round module saves it. */
+export type StyleRoundSave = object;
+
+export interface StyleAttempt {
+  number: number;
+  startedAt: number;
+  finishedAt: number | null;
+  /** Null once a finished attempt has been compacted. */
+  round: StyleRoundSave | null;
+  result: StyleResult | null;
+}
+
+export interface StyleProgress {
+  attempts: Record<number, StyleAttempt>;
+  practice: { number: number; round: StyleRoundSave } | null;
+}
+
+export type ChainStyleKey = 'easy' | 'medium';
+
 export interface DailyProgress {
+  /** Hard attempts. */
   attempts: Record<number, DailyAttempt>;
+  /** Hard practice. */
   practice: PracticeSave | null;
+  easy: StyleProgress;
+  medium: StyleProgress;
 }
 
 export type AttemptKind = 'scored' | 'practice';
@@ -53,7 +86,16 @@ export type PuzzleOpening =
 
 export type PuzzleStatus = { status: 'play' | 'resume' | 'unplayed' | 'practice' } | { status: 'result'; result: DailyResult };
 
-export const EMPTY_PROGRESS: DailyProgress = { attempts: {}, practice: null };
+export type StyleOpening =
+  | { kind: 'scored'; save: StyleRoundSave | null }
+  | { kind: 'practice'; save: StyleRoundSave | null }
+  | { kind: 'result'; attempt: StyleAttempt; canPractice: boolean };
+
+export type StyleStatus = { status: 'play' | 'resume' | 'unplayed' | 'practice' } | { status: 'result'; result: StyleResult };
+
+const EMPTY_STYLE: StyleProgress = { attempts: {}, practice: null };
+
+export const EMPTY_PROGRESS: DailyProgress = { attempts: {}, practice: null, easy: EMPTY_STYLE, medium: EMPTY_STYLE };
 
 /** Finished attempts older than this keep only their result, so storage stays small. */
 export const COMPACT_AFTER_DAYS = 7;
@@ -97,12 +139,19 @@ export function finishScored(progress: DailyProgress, n: number, round: RoundSav
 }
 
 export function compactProgress(progress: DailyProgress, now: number): DailyProgress {
+  const isOld = (finishedAt: number | null) => finishedAt !== null && now - finishedAt > COMPACT_AFTER_DAYS * DAY_MS;
   const attempts: Record<number, DailyAttempt> = {};
   for (const [key, attempt] of Object.entries(progress.attempts)) {
-    const old = attempt.finishedAt !== null && now - attempt.finishedAt > COMPACT_AFTER_DAYS * DAY_MS;
-    attempts[Number(key)] = old && attempt.figures.length > 0 ? { ...attempt, figures: [], hint: null } : attempt;
+    attempts[Number(key)] = isOld(attempt.finishedAt) && attempt.figures.length > 0 ? { ...attempt, figures: [], hint: null } : attempt;
   }
-  return { ...progress, attempts };
+  const compactStyle = (style: StyleProgress): StyleProgress => {
+    const styleAttempts: Record<number, StyleAttempt> = {};
+    for (const [key, attempt] of Object.entries(style.attempts)) {
+      styleAttempts[Number(key)] = isOld(attempt.finishedAt) && attempt.round ? { ...attempt, round: null } : attempt;
+    }
+    return { ...style, attempts: styleAttempts };
+  };
+  return { ...progress, attempts, easy: compactStyle(progress.easy), medium: compactStyle(progress.medium) };
 }
 
 /** How the home card and the archive label puzzle n for this browser. */
@@ -112,6 +161,45 @@ export function puzzleStatus(progress: DailyProgress, n: number, todayNumber: nu
   if (attempt) return { status: 'resume' };
   if (n === todayNumber) return { status: 'play' };
   return { status: progress.practice?.number === n ? 'practice' : 'unplayed' };
+}
+
+/** What opening Easy or Medium puzzle n shows, by the same rules as Hard. */
+export function openStylePuzzle(progress: DailyProgress, style: ChainStyleKey, n: number, todayNumber: number): StyleOpening {
+  const { attempts, practice } = progress[style];
+  const attempt = attempts[n];
+  if (attempt?.result) return { kind: 'result', attempt, canPractice: n < todayNumber };
+  if (attempt) return { kind: 'scored', save: attempt.round };
+  if (n === todayNumber) return { kind: 'scored', save: null };
+  return { kind: 'practice', save: practice?.number === n ? practice.round : null };
+}
+
+/** Records an Easy or Medium round's progress: the scored attempt for n, or that style's practice slot. */
+export function saveStyleRound(progress: DailyProgress, style: ChainStyleKey, n: number, kind: AttemptKind, round: StyleRoundSave, now: number): DailyProgress {
+  const record = progress[style];
+  if (kind === 'practice') return { ...progress, [style]: { ...record, practice: { number: n, round } } };
+  const existing = record.attempts[n];
+  if (existing?.result) return progress;
+  const attempt: StyleAttempt = { number: n, startedAt: existing?.startedAt ?? now, finishedAt: null, round, result: null };
+  return { ...progress, [style]: { ...record, attempts: { ...record.attempts, [n]: attempt } } };
+}
+
+/** Marks the scored Easy or Medium attempt for n finished with its final round and result. */
+export function finishStyleScored(progress: DailyProgress, style: ChainStyleKey, n: number, round: StyleRoundSave, result: StyleResult, now: number): DailyProgress {
+  const record = progress[style];
+  const existing = record.attempts[n];
+  if (existing?.result) return progress;
+  const attempt: StyleAttempt = { number: n, startedAt: existing?.startedAt ?? now, finishedAt: now, round, result };
+  return { ...progress, [style]: { ...record, attempts: { ...record.attempts, [n]: attempt } } };
+}
+
+/** How the menu and the archive label Easy or Medium puzzle n for this browser. */
+export function styleStatus(progress: DailyProgress, style: ChainStyleKey, n: number, todayNumber: number): StyleStatus {
+  const { attempts, practice } = progress[style];
+  const attempt = attempts[n];
+  if (attempt?.result) return { status: 'result', result: attempt.result };
+  if (attempt) return { status: 'resume' };
+  if (n === todayNumber) return { status: 'play' };
+  return { status: practice?.number === n ? 'practice' : 'unplayed' };
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -132,6 +220,31 @@ function normalizeResult(value: unknown): DailyResult | null {
     clutchBadges: count('clutchBadges'),
     longBridgeBadges: count('longBridgeBadges'),
   };
+}
+
+const OUTCOMES: readonly string[] = ['first', 'later', 'revealed'];
+
+function normalizeStyleResult(value: unknown): StyleResult | null {
+  if (!isRecord(value) || typeof value.score !== 'number' || !Array.isArray(value.squares)) return null;
+  if (!value.squares.every(square => typeof square === 'string' && OUTCOMES.includes(square))) return null;
+  return { score: value.score, squares: value.squares as SlotOutcome[] };
+}
+
+function normalizeStyleProgress(raw: unknown): StyleProgress {
+  if (!isRecord(raw)) return EMPTY_STYLE;
+  const attempts: Record<number, StyleAttempt> = {};
+  if (isRecord(raw.attempts)) {
+    for (const [key, value] of Object.entries(raw.attempts)) {
+      const n = Number(key);
+      if (!Number.isInteger(n) || n < 1 || !isRecord(value) || typeof value.startedAt !== 'number') continue;
+      const result = normalizeStyleResult(value.result);
+      const round = isRecord(value.round) ? value.round : null;
+      if (!round && !result) continue;
+      attempts[n] = { number: n, startedAt: value.startedAt, finishedAt: result && typeof value.finishedAt === 'number' ? value.finishedAt : null, round, result };
+    }
+  }
+  const practice = isRecord(raw.practice) && typeof raw.practice.number === 'number' && isRecord(raw.practice.round) ? { number: raw.practice.number, round: raw.practice.round } : null;
+  return { attempts, practice };
 }
 
 /** Stored progress in the current shape; anything unreadable is dropped rather than trusted. */
@@ -159,5 +272,5 @@ export function normalizeDailyProgress(raw: unknown): DailyProgress {
     const round = normalizeRound(raw.practice);
     if (round) practice = { number: raw.practice.number, ...round };
   }
-  return { attempts, practice };
+  return { attempts, practice, easy: normalizeStyleProgress(raw.easy), medium: normalizeStyleProgress(raw.medium) };
 }
