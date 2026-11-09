@@ -7,17 +7,9 @@ import type { StyleResult as Result } from '../utils/dailyProgress';
 import { formatLifespan } from '../utils/GameLogic';
 import { seededRandom, seedFor } from '../utils/random';
 import { canCheck, checkEasy, easyFinished, easyResult, handCards, newEasyRound, placeCard, returnCard, type EasyRound as EasyState } from '../utils/styleRound';
-import { ChainLine, CountPlate, EmptySlot, PersonCard, StyleShell } from './ui/ChainTable';
+import { ChainLine, CountPlate, EmptySlot, PersonCard, StyleShell, type ChainPuzzleView } from './ui/ChainTable';
 import { Portrait } from './ui/Portrait';
 import { StyleResult } from './ui/StyleResult';
-
-/** The people of a one-answer puzzle, targets earlier-born first. */
-export interface ChainPuzzleView {
-  targetA: PuzzlePerson;
-  targetB: PuzzlePerson;
-  chain: PuzzlePerson[];
-  decoys: PuzzlePerson[];
-}
 
 export interface EasyRoundProps {
   puzzle: ChainPuzzleView;
@@ -222,6 +214,7 @@ export function EasyRound({ puzzle, initial, label, onSave, onFinish, onHome, on
       onHome={onHome}
       onRestart={onRestart}
       dock={dock}
+      dockScrolls
       table={table}
       overlay={overlay}
     />

@@ -1,5 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { canCheck, checkEasy, easyFinished, easyResult, handCards, newEasyRound, normalizeEasyRound, placeCard, returnCard } from './styleRound';
+import { judgeGuess } from './guessMatch';
+import {
+  applyVerdict,
+  canCheck,
+  checkEasy,
+  easyFinished,
+  easyResult,
+  handCards,
+  mediumFinished,
+  mediumResult,
+  mediumScore,
+  newEasyRound,
+  newMediumRound,
+  nextOpenBlank,
+  normalizeEasyRound,
+  normalizeMediumRound,
+  placeCard,
+  returnCard,
+  revealBlank,
+} from './styleRound';
+
+const person = (id: string, name: string, birthYear: number, deathYear: number) => ({ id, name, birthYear, deathYear, birthApproximate: false, deathApproximate: false });
 
 const ANSWER = ['M1', 'M2', 'M3'];
 const CARDS = ['M1', 'M2', 'M3', 'D1', 'D2'];
@@ -68,5 +89,52 @@ describe('an Easy round', () => {
     expect(normalizeEasyRound({ ...saved, slots: ['M1', 'X', null] }, 3, CARDS)).toBeNull();
     expect(normalizeEasyRound({ ...saved, slots: ['M1'] }, 3, CARDS)).toBeNull();
     expect(normalizeEasyRound('nonsense', 3, CARDS)).toBeNull();
+  });
+});
+
+describe('a Medium round', () => {
+  const chain = [person('Q1', 'Before', 1600, 1660), person('Q935', 'Isaac Newton', 1643, 1727), person('Q9', 'Voltaire', 1694, 1778), person('Q2', 'After', 1760, 1820)];
+  const line = chain;
+
+  it('fills the selected blank on a match and moves to the next open blank', () => {
+    const round = applyVerdict(newMediumRound(2), 0, { kind: 'match' });
+    expect(round.filled).toEqual(['guessed', null]);
+    expect(nextOpenBlank(round, 0)).toBe(1);
+  });
+
+  it('adds one miss for a wrong guess and leaves the blank open', () => {
+    const round = applyVerdict(newMediumRound(2), 0, { kind: 'miss', name: 'Isaac Barrow', fits: false });
+    expect(round.filled).toEqual([null, null]);
+    expect(mediumScore(round)).toBe(1);
+  });
+
+  it('changes nothing for a guess that could not be checked or names nobody', () => {
+    const round = newMediumRound(2);
+    expect(applyVerdict(round, 0, { kind: 'unchecked', reason: 'network', title: 'Newton' })).toBe(round);
+    expect(applyVerdict(round, 0, { kind: 'nobody', reason: 'not_found', title: 'Nwton' })).toBe(round);
+  });
+
+  it('finishes when the wild card reveals the last open blank, counting the reveal as a miss', () => {
+    let round = applyVerdict(newMediumRound(2), 0, { kind: 'miss', name: 'X', fits: false });
+    round = applyVerdict(round, 0, { kind: 'match' });
+    round = revealBlank(round, 1);
+    expect(mediumFinished(round)).toBe(true);
+    expect(mediumScore(round)).toBe(2);
+    expect(mediumResult(round)).toEqual({ score: 2, squares: ['later', 'revealed'] });
+    expect(nextOpenBlank(round, 1)).toBeNull();
+  });
+
+  it('counts the answer of another blank as a miss for the selected blank', () => {
+    const roster = chain.map(p => ({ ...p, sitelinks: 100 }));
+    const verdict = judgeGuess('Voltaire', roster[1], line[0], line[2], roster);
+    expect(verdict.kind).toBe('miss');
+    expect(mediumScore(applyVerdict(newMediumRound(2), 0, verdict))).toBe(1);
+  });
+
+  it('restores a saved round and rejects one that does not fit the puzzle', () => {
+    const saved = JSON.parse(JSON.stringify(applyVerdict(newMediumRound(3), 1, { kind: 'match' })));
+    expect(normalizeMediumRound(saved, 3)).toEqual(saved);
+    expect(normalizeMediumRound(saved, 2)).toBeNull();
+    expect(normalizeMediumRound({ filled: ['nope', null, null], misses: [0, 0, 0] }, 3)).toBeNull();
   });
 });

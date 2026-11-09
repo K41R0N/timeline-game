@@ -28,6 +28,14 @@ export function CountPlate({ label, value, large = false, className = '' }: { la
   );
 }
 
+/** The people of a one-answer puzzle, targets earlier-born first. */
+export interface ChainPuzzleView {
+  targetA: PuzzlePerson;
+  targetB: PuzzlePerson;
+  chain: PuzzlePerson[];
+  decoys: PuzzlePerson[];
+}
+
 export type CardState = 'target' | 'placed' | 'locked' | 'revealed';
 
 interface PersonCardProps {
@@ -115,12 +123,14 @@ interface ShellProps {
   onHome: () => void;
   onRestart?: () => void;
   dock: ReactNode;
+  /** Let the dock scroll on short phones, for a large hand; off when it holds a field with a pop-up list. */
+  dockScrolls?: boolean;
   table: ReactNode;
   overlay?: ReactNode;
 }
 
 /** The Easy and Medium screen: header and hand in a left column on desktop, stacked around the table on phones. */
-export function StyleShell({ label, style, plate, targetA, targetB, rule, onHome, onRestart, dock, table, overlay }: ShellProps) {
+export function StyleShell({ label, style, plate, targetA, targetB, rule, onHome, onRestart, dock, dockScrolls = false, table, overlay }: ShellProps) {
   return (
     <div className="flex h-dvh flex-col bg-[var(--table-deep)] text-[var(--table-ink)] lg:flex-row">
       <div className="contents lg:order-1 lg:flex lg:w-[400px] lg:shrink-0 lg:flex-col lg:border-r lg:border-[var(--table-line)]">
@@ -160,7 +170,7 @@ export function StyleShell({ label, style, plate, targetA, targetB, rule, onHome
           <div className="mt-6 hidden lg:block">{plate(true)}</div>
         </header>
 
-        <div className="relative z-20 order-3 max-h-[45dvh] shrink-0 overflow-y-auto border-t border-[var(--table-line)] bg-[var(--table-deep)] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-6 lg:mt-auto lg:max-h-none lg:border-t-0 lg:pb-6">
+        <div className={`relative z-20 order-3 shrink-0 border-t ${dockScrolls ? 'max-h-[45dvh] overflow-y-auto lg:max-h-none' : ''} border-[var(--table-line)] bg-[var(--table-deep)] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-6 lg:mt-auto lg:border-t-0 lg:pb-6`}>
           <div className="mx-auto max-w-2xl space-y-2.5 lg:max-w-none">{dock}</div>
         </div>
       </div>
