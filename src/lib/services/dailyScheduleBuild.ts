@@ -8,25 +8,9 @@ import { PERSON_GAP_DAYS, pairKey, toPuzzleRow, type ScheduleEntryRow, type Sche
 import { addDays, bandForDate, puzzleNumber, type DateKey } from '../utils/daily';
 import { chainShape, pickTargets } from '../utils/difficulty';
 import { computePar } from '../utils/par';
+import { seededRandom, seedFor } from '../utils/random';
 
 const MAX_TRIES_PER_DAY = 200;
-
-/** Deterministic random numbers (mulberry32), so a date always draws the same candidates. */
-function seededRandom(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s + 0x6d2b79f5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function seedFor(date: DateKey): number {
-  let hash = 2166136261;
-  for (const char of date) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
-  return hash >>> 0;
-}
 
 function puzzleFor(roster: RosterPerson[], date: DateKey, firstDate: DateKey, previous: ScheduleEntryRow[], usedPairs: Set<string>): ScheduleEntryRow {
   const band = bandForDate(date);
