@@ -3,19 +3,12 @@ import Link from 'next/link';
 import { ArchiveList, currentTime, weekdayName } from '@/lib';
 import { dailyArchive, dailyToday } from '@/lib/server/daily';
 
-/** Every daily puzzle so far, newest first. Past puzzles play as practice. */
+/** Every daily puzzle so far, newest first, in each style. Past puzzles play as practice. */
 export default async function Archive() {
   await connection();
   const now = currentTime();
   const today = dailyToday(now);
-  const rows = dailyArchive(now).map(p => ({
-    number: p.number,
-    date: p.date,
-    weekday: weekdayName(p.date),
-    band: p.band,
-    targetA: p.targetA.name,
-    targetB: p.targetB.name,
-  }));
+  const rows = dailyArchive(now).map(p => ({ number: p.number, date: p.date, weekday: weekdayName(p.date) }));
 
   return (
     <main className="min-h-dvh w-full bg-[radial-gradient(120%_70%_at_50%_0%,var(--table-light)_0%,var(--table)_50%,var(--table-deep)_100%)] px-4 pb-10 pt-[max(1.5rem,env(safe-area-inset-top))] text-[var(--table-ink)]">

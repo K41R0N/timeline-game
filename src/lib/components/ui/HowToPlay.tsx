@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react';
 import { CLUTCH_MAX_SHARED_YEARS, LONG_BRIDGE_MIN_YEARS } from '../../utils/overlap';
 
-const STEPS = [
-  'Two gold cards are your targets.',
-  'Name someone alive at the same time as a card on the table. Their card lands where they lived.',
-  'Link the gold cards in as few cards as you can. Par is the best chain the game knows.',
+/** One short step per style; only Hard is scored against par. */
+const STEPS: { style: string; color: string; text: string }[] = [
+  { style: 'Easy', color: 'text-[#15803d]', text: 'Put the name cards in order so each life overlaps the next, then Check. Fewer Checks is better.' },
+  { style: 'Medium', color: 'text-[#a16207]', text: 'Name the hidden people; each box is a letter. A wrong name or a wild card is a miss.' },
+  { style: 'Hard', color: 'text-[#b91c1c]', text: 'Name anyone alive alongside a card on the table, and link the gold cards in as few as you can. Par is the best chain the game knows.' },
 ];
 
-/** The rules in three lines, behind one quiet button. */
+/** The rules, one line per style, behind one quiet button. */
 export function HowToPlay() {
   const [open, setOpen] = useState(false);
 
@@ -41,16 +42,16 @@ export function HowToPlay() {
             <h2 id="how-to-play-title" className="type-display text-3xl font-black uppercase [text-shadow:none]">
               How to play
             </h2>
-            <ol className="mt-4 space-y-3">
-              {STEPS.map((step, i) => (
-                <li key={step} className="flex gap-3 text-[15px] leading-snug">
-                  <span className="type-display grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--foil)] text-base font-black text-[var(--foil-ink)]">{i + 1}</span>
-                  <span className="pt-0.5">{step}</span>
+            <p className="mt-2 text-[15px] leading-snug">Link the two gold cards through people whose lives overlapped.</p>
+            <ul className="mt-4 space-y-3">
+              {STEPS.map(step => (
+                <li key={step.style} className="text-[15px] leading-snug">
+                  <span className={`type-display text-lg font-black uppercase ${step.color}`}>{step.style}</span> {step.text}
                 </li>
               ))}
-            </ol>
+            </ul>
             <p className="mt-4 text-sm leading-snug text-[var(--card-muted)]">
-              Gold marks on your result: Clutch for a link of {CLUTCH_MAX_SHARED_YEARS} shared years or fewer, Long bridge for someone who lived {LONG_BRIDGE_MIN_YEARS} years or more.
+              Gold marks on a Hard result: Clutch for a link of {CLUTCH_MAX_SHARED_YEARS} shared years or fewer, Long bridge for someone who lived {LONG_BRIDGE_MIN_YEARS} years or more.
             </p>
             <button
               type="button"
