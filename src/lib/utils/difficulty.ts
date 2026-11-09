@@ -109,3 +109,11 @@ export function pickTargets(roster: RosterPerson[], difficulty: Difficulty, rand
   }
   return null;
 }
+
+/** Free-play Hard's pair bands, in the daily week's proportions: easy 2, medium 2, hard 3 in 7. */
+const HARD_BANDS: Difficulty[] = ['easy', 'easy', 'medium', 'medium', 'hard', 'hard', 'hard'];
+
+/** How far apart a free-play Hard pair is: Hard is a way to play, not only the hardest pairs. */
+export function drawHardBand(random: () => number = Math.random): Difficulty {
+  return HARD_BANDS[Math.floor(random() * HARD_BANDS.length)];
+}

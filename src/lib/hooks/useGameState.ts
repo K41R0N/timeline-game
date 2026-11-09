@@ -6,6 +6,7 @@ export interface GameState {
   figures: HistoricalFigure[];
   targetA: HistoricalFigure | null;
   targetB: HistoricalFigure | null;
+  /** The pair's band, which chose the targets; the round itself always plays on Hard rules. */
   difficulty: Difficulty;
   hintsUsed: number;
   /** The hinted person not yet placed, so a reload shows the same name without charging again. */
@@ -34,14 +35,14 @@ export function normalizeSavedState(saved: unknown): GameState | null {
 // v2: figures are keyed by Wikidata QID with corrected dates; v1 saves are discarded.
 const STORAGE_KEY = 'timeline-game-state-v2';
 
-/** The difficulty of the free-play round saved in this browser, or '' when there is none (for the menu's Continue). */
-export function savedFreePlayBand(): Difficulty | '' {
+/** Whether this browser holds a free-play Hard round to continue (for the menu's Continue). */
+export function hasFreePlayRound(): boolean {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     const state = saved ? normalizeSavedState(JSON.parse(saved)) : null;
-    return state && state.targetA && state.targetB ? state.difficulty : '';
+    return Boolean(state && state.targetA && state.targetB);
   } catch {
-    return '';
+    return false;
   }
 }
 

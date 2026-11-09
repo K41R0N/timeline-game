@@ -5,29 +5,37 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   DifficultyChoice,
+  EasyRound,
   GameRound,
+  MediumRound,
   TargetSelectionService,
   useGameStatePersistence,
   loadRoster,
   analytics,
   roundStartedProps,
+  buildEasyPuzzle,
+  buildMediumPuzzle,
+  drawHardBand,
   FREE_PLAY,
 } from '@/lib';
-import type { Difficulty, HistoricalFigure, RoundSave } from '@/lib';
+import type { Difficulty, HistoricalFigure, RoundSave, StylePuzzle } from '@/lib';
 
-console.log('🚀 Initializing Timeline Game...');
+type FreeRound =
+  | {
+      kind: 'hard';
+      /** Remounts the round for each new game. */
+      id: number;
+      targetA: HistoricalFigure;
+      targetB: HistoricalFigure;
+      /** The pair's band; the round plays on Hard rules whatever it is. */
+      band: Difficulty;
+      initial: RoundSave | null;
+    }
+  | { kind: 'easy' | 'medium'; id: number; puzzle: StylePuzzle };
 
+const BUILDERS = { easy: buildEasyPuzzle, medium: buildMediumPuzzle };
 
-interface FreeRound {
-  /** Remounts the round for each new game. */
-  id: number;
-  targetA: HistoricalFigure;
-  targetB: HistoricalFigure;
-  difficulty: Difficulty;
-  initial: RoundSave | null;
-}
-
-/** Free play: pick a difficulty, get a random pair of targets, and play rounds back to back. */
+/** Free play: pick a style and play rounds back to back. Easy and Medium puzzles are built here from the roster. */
 export default function FreePlay() {
   const router = useRouter();
   const { loadSavedState, saveState, clearState } = useGameStatePersistence();
@@ -36,50 +44,56 @@ export default function FreePlay() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const startHard = async () => {
+    const band = drawHardBand();
+    const rosterPeople = await loadRoster();
+    const targets = await TargetSelectionService.selectTargets(rosterPeople, band);
+    if (!targets) throw new Error('Failed to load historical figures');
+    const [targetA, targetB] = targets;
+    console.log(`✅ Hard targets (${band} pair): ${targetA.name} → ${targetB.name}`);
+    setRound(previous => ({ kind: 'hard', id: (previous?.id ?? 0) + 1, targetA, targetB, band, initial: null }));
+    analytics.track('game_started', roundStartedProps(rosterPeople, band, targetA, targetB, FREE_PLAY));
+  };
 
-  const loadGame = async (difficulty: Difficulty) => {
+  const startChain = async (style: 'easy' | 'medium') => {
+    const rosterPeople = await loadRoster();
+    const puzzle = BUILDERS[style](rosterPeople, Math.random);
+    if (!puzzle) throw new Error(`No ${style} puzzle could be built`);
+    console.log(`✅ ${style} puzzle: ${puzzle.a.name} → ${puzzle.b.name}`);
+    setRound(previous => ({ kind: style, id: (previous?.id ?? 0) + 1, puzzle }));
+  };
+
+  const start = async (style: Difficulty) => {
     try {
-      console.log(`🔄 Loading ${difficulty} difficulty game...`);
       setIsLoading(true);
       setError(null);
-
-      const rosterPeople = await loadRoster();
-      const targets = await TargetSelectionService.selectTargets(rosterPeople, difficulty);
-      if (!targets) throw new Error('Failed to load historical figures');
-
-      const [targetA, targetB] = targets;
-      console.log('✅ Game targets loaded:', {
-        difficulty,
-        targetA: { name: targetA.name, years: `${targetA.birthYear}-${targetA.deathYear}` },
-        targetB: { name: targetB.name, years: `${targetB.birthYear}-${targetB.deathYear}` },
-      });
-      setRound(previous => ({ id: (previous?.id ?? 0) + 1, targetA, targetB, difficulty, initial: null }));
-      analytics.track('game_started', roundStartedProps(rosterPeople, difficulty, targetA, targetB, FREE_PLAY));
+      await (style === 'hard' ? startHard() : startChain(style));
     } catch (err) {
-      console.error('❌ Error loading initial figures:', err);
-      setError('Failed to load initial figures. Please refresh the page.');
+      console.error('❌ Error starting a round:', err);
+      setError('Could not deal a puzzle. Please refresh the page.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // On mount: start the difficulty the menu asked for (/play?d=hard), or resume the saved round.
+  // On mount: start the style the menu asked for (/play?d=easy), or resume the saved Hard round.
   useEffect(() => {
     const asked = new URLSearchParams(window.location.search).get('d');
     if (asked === 'easy' || asked === 'medium' || asked === 'hard') {
       router.replace('/play');
       setRestoring(false);
-      loadGame(asked);
+      start(asked);
       return;
     }
     const saved = loadSavedState();
     if (saved && saved.figures.length > 0 && saved.targetA && saved.targetB) {
       console.log('🔄 Restoring saved game...');
       setRound({
+        kind: 'hard',
         id: 0,
         targetA: saved.targetA,
         targetB: saved.targetB,
-        difficulty: saved.difficulty,
+        band: saved.difficulty,
         initial: { figures: saved.figures, hintsUsed: saved.hintsUsed, hint: saved.hint },
       });
     }
@@ -89,17 +103,18 @@ export default function FreePlay() {
 
   const save = useCallback(
     (progress: RoundSave) => {
-      if (!round) return;
-      saveState({ ...progress, targetA: round.targetA, targetB: round.targetB, difficulty: round.difficulty });
+      if (round?.kind !== 'hard') return;
+      saveState({ ...progress, targetA: round.targetA, targetB: round.targetB, difficulty: round.band });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [round]
   );
 
+  /** Another round of the same style; an unfinished Hard round is given up. */
   const newGame = () => {
-    console.log('🔄 Returning to the difficulty picker...');
-    clearState();
-    setRound(null);
+    if (!round) return;
+    if (round.kind === 'hard') clearState();
+    start(round.kind);
   };
 
   if (restoring) return null;
@@ -130,7 +145,7 @@ export default function FreePlay() {
           <h1 className="type-display text-center text-5xl font-black uppercase leading-none text-[var(--table-ink)] [text-shadow:none]">
             Free <span className="text-[var(--foil)]">play</span>
           </h1>
-          <DifficultyChoice onPick={loadGame} />
+          <DifficultyChoice onPick={start} />
           <Link
             href="/"
             className="type-display mx-auto inline-flex h-11 items-center px-3 text-base font-bold uppercase tracking-[0.08em] text-[var(--table-muted)] hover:text-[var(--chalk-text)]"
@@ -142,12 +157,30 @@ export default function FreePlay() {
     );
   }
 
+  if (round.kind !== 'hard') {
+    const { puzzle } = round;
+    const shared = {
+      key: round.id,
+      puzzle: { targetA: puzzle.a, targetB: puzzle.b, chain: puzzle.chain, decoys: puzzle.decoys },
+      initial: null,
+      label: 'Free play',
+      onSave: () => {},
+      onFinish: () => {},
+      onHome: () => router.push('/'),
+      onRestart: newGame,
+      endHeading: `Free play · ${round.kind === 'easy' ? 'Easy' : 'Medium'}`,
+      endActionLabel: 'Play again',
+      onEndAction: newGame,
+    };
+    return round.kind === 'easy' ? <EasyRound {...shared} /> : <MediumRound {...shared} />;
+  }
+
   return (
     <GameRound
       key={round.id}
       targetA={round.targetA}
       targetB={round.targetB}
-      difficulty={round.difficulty}
+      difficulty="hard"
       initial={round.initial}
       onSave={save}
       onHome={() => router.push('/')}

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import rosterFile from '../data/roster.json';
 import { RosterFile, RosterPerson, fromRosterRow } from '../data/roster';
 import { computePar } from './par';
-import { DIFFICULTY_BANDS, FALLBACK_TARGETS, chainShape, famousPeople, fitsBand, pickTargets } from './difficulty';
+import { DIFFICULTY_BANDS, FALLBACK_TARGETS, chainShape, drawHardBand, famousPeople, fitsBand, pickTargets } from './difficulty';
 
 const roster = (rosterFile as unknown as RosterFile).people.map(fromRosterRow);
 const byName = new Map(roster.map(p => [p.name, p]));
@@ -101,5 +101,16 @@ describe('pickTargets', () => {
       const [a, b] = FALLBACK_TARGETS[difficulty].map(named);
       expect(fitsBand(chainShape(roster, a, b)!, DIFFICULTY_BANDS[difficulty])).toBe(true);
     }
+  });
+});
+
+describe('drawHardBand', () => {
+  it('draws free-play Hard pairs in the daily week\'s proportions: easy 2, medium 2, hard 3 in 7', () => {
+    const random = seeded(7);
+    const counts = { easy: 0, medium: 0, hard: 0 };
+    for (let i = 0; i < 7000; i++) counts[drawHardBand(random)]++;
+    expect(counts.easy / 7000).toBeCloseTo(2 / 7, 1);
+    expect(counts.medium / 7000).toBeCloseTo(2 / 7, 1);
+    expect(counts.hard / 7000).toBeCloseTo(3 / 7, 1);
   });
 });

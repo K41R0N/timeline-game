@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { DIFFICULTY_BANDS } from '../../utils/difficulty';
 import type { Difficulty } from '../../utils/GameLogic';
 
-const CHOICES: { difficulty: Difficulty; backs: number; accent: string }[] = [
-  { difficulty: 'easy', backs: 1, accent: '#7ee0a1' },
-  { difficulty: 'medium', backs: 2, accent: '#f5d06b' },
-  { difficulty: 'hard', backs: 3, accent: '#ff8f80' },
+/** Each style says how it plays; only Hard is scored against par. */
+const CHOICES: { difficulty: Difficulty; backs: number; accent: string; how: string }[] = [
+  { difficulty: 'easy', backs: 1, accent: '#7ee0a1', how: 'Arrange cards' },
+  { difficulty: 'medium', backs: 2, accent: '#f5d06b', how: 'Fill blanks' },
+  { difficulty: 'hard', backs: 3, accent: '#ff8f80', how: 'Type vs par' },
 ];
 
 /** A small fan of card backs: one for Easy, two for Medium, three for Hard. */
@@ -28,19 +28,16 @@ function Backs({ count, accent }: { count: number; accent: string }) {
 const choiceClass =
   'group flex flex-1 flex-col items-center gap-2 rounded-xl bg-[var(--card-stock)] px-2 pb-3 pt-4 text-[var(--card-ink)] shadow-[0_4px_0_rgba(0,0,0,0.3)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--foil-light)]';
 
-/** Easy, Medium or Hard, each as a card: as links on the menu, as buttons where the game starts in place. */
+/** Easy, Medium or Hard, each as a card saying how it plays: as links on the menu, as buttons where the game starts in place. */
 export function DifficultyChoice({ hrefFor, onPick }: { hrefFor?: (difficulty: Difficulty) => string; onPick?: (difficulty: Difficulty) => void }) {
   return (
     <div className="flex gap-3">
-      {CHOICES.map(({ difficulty, backs, accent }) => {
-        const band = DIFFICULTY_BANDS[difficulty];
+      {CHOICES.map(({ difficulty, backs, accent, how }) => {
         const body = (
           <>
             <Backs count={backs} accent={accent} />
             <span className="type-display text-xl font-black uppercase tracking-[0.04em]">{difficulty}</span>
-            <span className="type-display text-sm font-semibold uppercase text-[var(--card-muted)]">
-              Par {band.minPar}–{band.maxPar}
-            </span>
+            <span className="type-display text-sm font-semibold uppercase text-[var(--card-muted)]">{how}</span>
           </>
         );
         return hrefFor ? (

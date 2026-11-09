@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useSyncExternalStore } from 'react';
 import type { Difficulty } from '../../utils/GameLogic';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
-import { savedFreePlayBand } from '../../hooks/useGameState';
+import { hasFreePlayRound } from '../../hooks/useGameState';
 import { puzzleStatus } from '../../utils/dailyProgress';
 import { describeResult } from '../../utils/GameLogic';
 import { Countdown } from './Countdown';
@@ -40,7 +40,7 @@ const primaryButton =
 /** The game menu: today's puzzle on a gold-edged card, free play by difficulty below it. */
 export function DailyHome({ today, nextSwitchAt }: DailyHomeProps) {
   const progress = useDailyProgress();
-  const savedBand = useSyncExternalStore(noSubscribe, savedFreePlayBand, () => '' as const);
+  const canContinue = useSyncExternalStore(noSubscribe, hasFreePlayRound, () => false);
   const status = today && progress ? puzzleStatus(progress, today.number, today.number) : null;
   const finished = status?.status === 'result' ? status.result : null;
   const result = finished && finished.par !== null ? describeResult(finished.strokes, finished.par) : null;
@@ -95,12 +95,12 @@ export function DailyHome({ today, nextSwitchAt }: DailyHomeProps) {
           <h2 id="free-play" className="type-display text-center text-lg font-bold uppercase tracking-[0.12em] text-[var(--chalk-text)] [text-shadow:none]">
             Free play
           </h2>
-          {savedBand && (
+          {canContinue && (
             <Link
               href="/play"
               className="type-display flex h-12 items-center justify-center rounded-xl border-2 border-[var(--foil)] text-lg font-black uppercase tracking-[0.06em] text-[var(--chalk-text)] transition-colors hover:bg-[rgba(232,185,49,0.12)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--foil-light)]"
             >
-              Continue {savedBand}
+              Continue Hard
             </Link>
           )}
           <DifficultyChoice hrefFor={difficulty => `/play?d=${difficulty}`} />

@@ -40,6 +40,7 @@ export * from './utils/style';
 export * from './utils/board';
 export * from './utils/par';
 export * from './utils/difficulty';
+export * from './utils/chainPuzzle';
 export * from './utils/roundEvents';
 export * from './utils/daily';
 export * from './utils/dailyProgress';
