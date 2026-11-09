@@ -126,7 +126,7 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
     [kind, n]
   );
 
-  const title = `Daily #${n} · ${weekdayName(puzzle.date)}`;
+  const title = `Daily #${n} · Hard`;
   const isToday = n === todayNumber;
   const goHome = () => router.push('/');
   const countdown = (
@@ -154,7 +154,7 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
         chain={final?.chain ?? []}
         badges={final?.badges ?? []}
         parChain={[a, ...puzzle.parChain, b]}
-        hintsUsed={hintPolicy(puzzle.band).recorded ? result.hintsUsed : null}
+        hintsUsed={hintPolicy('hard').recorded ? result.hintsUsed : null}
         onPlayAgain={goHome}
         playAgainLabel="Back to home"
         extra={
@@ -184,7 +184,7 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
     <GameRound
       targetA={targets[0]}
       targetB={targets[1]}
-      difficulty={puzzle.band}
+      difficulty="hard"
       initial={view.save}
       fixedParChain={puzzle.parChain}
       onSave={save}

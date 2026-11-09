@@ -165,11 +165,16 @@ export function puzzleStatus(progress: DailyProgress, n: number, todayNumber: nu
 
 /** What opening Easy or Medium puzzle n shows, by the same rules as Hard. */
 export function openStylePuzzle(progress: DailyProgress, style: ChainStyleKey, n: number, todayNumber: number): StyleOpening {
-  const { attempts, practice } = progress[style];
-  const attempt = attempts[n];
+  const attempt = progress[style].attempts[n];
   if (attempt?.result) return { kind: 'result', attempt, canPractice: n < todayNumber };
   if (attempt) return { kind: 'scored', save: attempt.round };
   if (n === todayNumber) return { kind: 'scored', save: null };
+  return openStylePractice(progress, style, n);
+}
+
+/** Replaying Easy or Medium puzzle n as practice, resuming that style's practice slot when it holds that puzzle. */
+export function openStylePractice(progress: DailyProgress, style: ChainStyleKey, n: number): StyleOpening {
+  const { practice } = progress[style];
   return { kind: 'practice', save: practice?.number === n ? practice.round : null };
 }
 

@@ -96,7 +96,7 @@ export function EmptySlot({ index, active, onClick, children }: { index: number;
       onClick={onClick}
       aria-label={children ? undefined : `Slot ${index + 1}, empty${active ? ', place the selected card here' : ''}`}
       className={`flex min-h-[60px] w-full items-center justify-center rounded-[10px] border-2 border-dashed px-3 py-2 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--foil-light)] ${
-        active ? 'border-[var(--chalk-text)] bg-[rgba(243,207,134,0.1)]' : 'border-[var(--chalk)]'
+        active ? 'border-[var(--chalk-text)] bg-[#1d4b4c]' : 'border-[var(--chalk)] bg-[var(--table)]'
       }`}
     >
       {children ?? <span className="type-display text-lg font-extrabold text-[var(--chalk-text)]">{index + 1}</span>}
@@ -107,7 +107,7 @@ export function EmptySlot({ index, active, onClick, children }: { index: number;
 /** The column of cards from one target to the other, with a chalk line joining them. */
 export function ChainLine({ children }: { children: ReactNode }) {
   return (
-    <ol className="relative mx-auto flex w-full max-w-md flex-col gap-3 before:absolute before:inset-y-6 before:left-1/2 before:w-px before:bg-[var(--table-line)] before:content-['']">
+    <ol className="relative mx-auto flex w-full max-w-md flex-col gap-3 before:pointer-events-none before:absolute before:inset-y-6 before:left-1/2 before:w-px before:bg-[var(--table-line)] before:content-[''] [&>li]:relative">
       {children}
     </ol>
   );

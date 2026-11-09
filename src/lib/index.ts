@@ -3,6 +3,9 @@ export { Board } from './components/Board';
 export { GameRound } from './components/GameRound';
 export type { GameRoundProps, ParPerson } from './components/GameRound';
 export { DailyRound } from './components/DailyRound';
+export { DailyStyleRound } from './components/DailyStyleRound';
+export { EasyRound } from './components/EasyRound';
+export { MediumRound } from './components/MediumRound';
 
 // UI components
 export { SearchBar } from './components/ui/SearchBar';

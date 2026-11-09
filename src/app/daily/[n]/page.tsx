@@ -1,9 +1,9 @@
 import { connection } from 'next/server';
-import Link from 'next/link';
-import { DailyRound, Countdown, currentTime, weekdayName } from '@/lib';
-import { dailyDate, dailyPuzzle, dailyToday, parsePuzzleParam } from '@/lib/server/daily';
+import { DailyRound, currentTime } from '@/lib';
+import { dailyPuzzle, dailyToday, parsePuzzleParam } from '@/lib/server/daily';
+import { NotOut } from './NotOut';
 
-/** One daily puzzle. Rendered per request, so a puzzle exists only once its UTC date arrives. */
+/** One daily puzzle, played Hard. Rendered per request, so a puzzle exists only once its UTC date arrives. */
 export default async function DailyPuzzlePage({ params }: { params: Promise<{ n: string }> }) {
   await connection();
   const { n: raw } = await params;
@@ -11,39 +11,6 @@ export default async function DailyPuzzlePage({ params }: { params: Promise<{ n:
   const today = dailyToday(now);
   const n = parsePuzzleParam(raw);
   const puzzle = n === null ? null : dailyPuzzle(n, now);
-
-  if (!puzzle) {
-    const future = n !== null && (today.number === null || n > today.number);
-    const date = future ? dailyDate(n) : null;
-    return (
-      <div className="flex min-h-dvh w-full items-center justify-center bg-[var(--table-deep)] px-4 text-[var(--table-ink)]">
-        <div className="w-full max-w-md space-y-4 rounded-2xl bg-[var(--card-stock)] p-7 text-center text-[var(--card-ink)]">
-          <h1 className="type-display text-3xl font-black uppercase leading-none text-[var(--card-ink)] [text-shadow:none]">{future ? `#${n} isn't out yet` : 'No such puzzle'}</h1>
-          <p className="text-[var(--card-muted)]">
-            {date ? (
-              <>
-                Out on {weekdayName(date)} {date}
-                <br />
-                <Countdown until={Date.parse(`${date}T00:00:00Z`)} label="in" />
-              </>
-            ) : (
-              <Countdown until={today.nextSwitchAt} />
-            )}
-          </p>
-          <div className="flex justify-center gap-3">
-            {today.puzzle && (
-              <Link href={`/daily/${today.puzzle.number}`} className="type-display inline-flex h-12 items-center rounded-xl bg-[var(--foil)] px-5 text-lg font-black uppercase text-[var(--foil-ink)] shadow-[0_3px_0_var(--foil-deep)]">
-                Play #{today.puzzle.number}
-              </Link>
-            )}
-            <Link href="/" className="type-display inline-flex h-12 items-center rounded-xl border-2 border-[var(--card-ink)] px-5 text-lg font-black uppercase text-[var(--card-ink)]">
-              Home
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  if (!puzzle) return <NotOut n={n} today={today} />;
   return <DailyRound key={puzzle.number} puzzle={puzzle} todayNumber={today.number ?? puzzle.number} nextSwitchAt={today.nextSwitchAt} />;
 }
