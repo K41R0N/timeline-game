@@ -32,7 +32,7 @@ interface WinModalProps {
 }
 
 /** A chain as a row of small cards, with the years each neighbouring pair shared between them. */
-function Hand({ label, people, badges }: { label: string; people: ChainPerson[]; badges: StyleBadge[] }) {
+export function ChainHand({ label, people, badges = [] }: { label: string; people: ChainPerson[]; badges?: StyleBadge[] }) {
   const clutch = (a: ChainPerson, b: ChainPerson) => badges.some(badge => badge.kind === 'clutch' && badge.from.id === a.id && badge.to.id === b.id);
   const last = people.length - 1;
   return (
@@ -100,7 +100,7 @@ export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onP
               <h3 className="type-display mb-2 text-sm font-bold uppercase tracking-[0.1em] text-[var(--table-muted)]">
                 {sameAsPar ? 'Your chain, same as par' : 'Your chain'}
               </h3>
-              <Hand label="Your chain" people={chain} badges={badges} />
+              <ChainHand label="Your chain" people={chain} badges={badges} />
               {longBridges > 0 && (
                 <p className="type-display mt-1 text-sm font-bold uppercase text-[var(--foil)]">
                   Long bridge{longBridges > 1 ? ` ×${longBridges}` : ''}
@@ -111,7 +111,7 @@ export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onP
                   <summary className="type-display inline-flex h-11 cursor-pointer list-none items-center text-sm font-bold uppercase tracking-[0.1em] text-[var(--chalk-text)] [&::-webkit-details-marker]:hidden">
                     Par&apos;s chain <span className="ml-1.5 transition-transform group-open:rotate-90">›</span>
                   </summary>
-                  <Hand label="Par's chain" people={parChain} badges={[]} />
+                  <ChainHand label="Par's chain" people={parChain} badges={[]} />
                 </details>
               )}
             </>
@@ -119,7 +119,7 @@ export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onP
             parChain && (
               <>
                 <h3 className="type-display mb-2 text-sm font-bold uppercase tracking-[0.1em] text-[var(--table-muted)]">Par&apos;s chain</h3>
-                <Hand label="Par's chain" people={parChain} badges={[]} />
+                <ChainHand label="Par's chain" people={parChain} badges={[]} />
               </>
             )
           )}
