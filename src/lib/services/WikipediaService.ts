@@ -28,7 +28,12 @@ interface QueryPage {
 }
 
 interface QueryResponse {
-  query?: { pages?: QueryPage[] };
+  query?: { pages?: QueryPage[]; normalized?: TitleChange[]; redirects?: TitleChange[] };
+}
+
+interface TitleChange {
+  from: string;
+  to: string;
 }
 
 interface ClaimsResponse {
@@ -50,6 +55,20 @@ export function personPageUrl(title: string): string {
     exintro: '1',
     explaintext: '1',
     cllimit: 'max',
+  });
+}
+
+/** One request for the portraits of many pages (Wikipedia allows up to 50 titles per query). */
+export function portraitsUrl(titles: string[]): string {
+  return buildApiUrl(WIKIPEDIA_API, {
+    action: 'query',
+    formatversion: '2',
+    titles: titles.join('|'),
+    redirects: '1',
+    prop: 'pageimages',
+    piprop: 'thumbnail',
+    pithumbsize: THUMBNAIL_SIZE,
+    pilimit: 'max',
   });
 }
 
@@ -119,6 +138,32 @@ export class WikipediaService {
       // Only request failures are worth retrying; malformed data fails the same way every time.
       const reason: PersonLookupFailure = error instanceof WikimediaRequestError ? 'network' : 'no_dates';
       return { ok: false, reason, title: trimmed };
+    }
+  }
+
+  /**
+   * Portraits for a puzzle's people in one request, keyed by the titles asked for. A title with no
+   * image is left out, and a failed request gives none, so cards fall back to initials.
+   */
+  static async portraits(titles: string[], client: WikimediaClient = wikimedia): Promise<Record<string, string>> {
+    if (titles.length === 0) return {};
+    try {
+      const data = await client.getJson<QueryResponse>(portraitsUrl(titles));
+      // Follow normalisation and redirects back to the title each page was asked for.
+      const askedFor = new Map(titles.map(title => [title, title]));
+      for (const change of [...(data.query?.normalized ?? []), ...(data.query?.redirects ?? [])]) {
+        const original = askedFor.get(change.from);
+        if (original) askedFor.set(change.to, original);
+      }
+      const images: Record<string, string> = {};
+      for (const page of data.query?.pages ?? []) {
+        const title = askedFor.get(page.title);
+        if (title && page.thumbnail?.source) images[title] = page.thumbnail.source;
+      }
+      return images;
+    } catch (error) {
+      console.error('[WikipediaService] ❌ Portraits failed:', error);
+      return {};
     }
   }
 

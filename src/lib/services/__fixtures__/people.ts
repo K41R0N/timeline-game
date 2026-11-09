@@ -11,3 +11,6 @@ export const FIXTURE_PEOPLE = [
   'Machiavelli', // redirect to Niccolò Machiavelli
   'Aristotle', // description regex used to produce "istotle was..."
 ] as const;
+
+/** Titles recorded as one batched portrait request (an Easy puzzle's chain). */
+export const FIXTURE_PORTRAITS = ['Michelangelo', 'Galileo Galilei', 'Isaac Newton'] as const;
