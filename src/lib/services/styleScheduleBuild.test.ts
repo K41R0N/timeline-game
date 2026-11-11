@@ -3,7 +3,7 @@ import hardFile from '../data/daily-schedule.json';
 import rosterFile from '../data/roster.json';
 import type { ScheduleFile } from '../data/dailySchedule';
 import { RosterFile, fromRosterRow } from '../data/roster';
-import { hardPeople, rosterRevision, stylePeople, styleScheduleProblems } from '../data/styleSchedule';
+import { CHAIN_GAP_DAYS, hardPeople, recentChainPeople, rosterRevision, stylePeople, styleScheduleProblems } from '../data/styleSchedule';
 import { generateStyleSchedules } from './styleScheduleBuild';
 
 const file = rosterFile as unknown as RosterFile;
@@ -39,6 +39,16 @@ describe('generateStyleSchedules', () => {
       expect(e.filter(id => h.includes(id))).toEqual([]);
       expect(m.filter(id => h.includes(id) || e.includes(id))).toEqual([]);
     });
+  });
+
+  it(`keeps a person out of a style's chains for ${CHAIN_GAP_DAYS} days after they appear`, () => {
+    const longer = generateStyleSchedules(roster, revision, shortHard(30), { easy, medium });
+    for (const file of [longer.easy, longer.medium]) {
+      file.entries.forEach((entry, i) => {
+        const recent = recentChainPeople(file.entries, i);
+        expect(entry.chain.filter(row => recent.has(row[0]))).toEqual([]);
+      });
+    }
   });
 
   it('passes the health check apart from how far ahead it reaches', () => {

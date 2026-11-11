@@ -14,6 +14,8 @@ export const APPROXIMATE_MARGIN_YEARS = 5;
 export const MIN_MIDDLE = 2;
 export const MAX_MIDDLE = 4;
 export const DECOY_COUNT = 2;
+/** Easy's chains come from this many of the best-known people; its targets and decoys from the best-known 400. */
+export const EASY_CHAIN_POOL = 600;
 
 const MAX_TRIES = 400;
 const DECOY_TRIES = 60;
@@ -50,44 +52,55 @@ export function linksWithMargin(x: Life, y: Life): boolean {
   return approximateStart || approximateEnd ? shared >= APPROXIMATE_MARGIN_YEARS : true;
 }
 
-interface PathNode {
-  person: RosterPerson;
-  /** Language editions of the least known person on the path so far. */
-  weakestFame: number;
-  path: RosterPerson[];
+/** Hops from each person in `people` to b, counting b's own contemporaries as 1, up to the longest chain allowed. */
+function hopsTo(people: RosterPerson[], b: RosterPerson): Map<string, number> {
+  const hops = new Map<string, number>();
+  let layer: Life[] = [b];
+  for (let hop = 1; hop <= MAX_MIDDLE && layer.length > 0; hop++) {
+    const next: RosterPerson[] = [];
+    for (const person of people) {
+      if (!hops.has(person.id) && layer.some(reached => linksWithMargin(reached, person))) {
+        hops.set(person.id, hop);
+        next.push(person);
+      }
+    }
+    layer = next;
+  }
+  return hops;
+}
+
+function chainPeople(pool: RosterPerson[], a: RosterPerson, b: RosterPerson, leaveOut: ReadonlySet<string>) {
+  const people = pool.filter(p => p.id !== a.id && p.id !== b.id && !leaveOut.has(p.id));
+  const hops = hopsTo(people, b);
+  const firsts = people.filter(p => hops.has(p.id) && linksWithMargin(a, p));
+  const middle = linksWithMargin(a, b) ? 0 : Math.min(...firsts.map(p => hops.get(p.id)!));
+  return { people, hops, middle: middle >= MIN_MIDDLE && middle <= MAX_MIDDLE ? middle : null };
+}
+
+/** How many people stand between a and b on a shortest chain through `pool`, or null when that is fewer or more than allowed. */
+export function shortestMiddle(pool: RosterPerson[], a: RosterPerson, b: RosterPerson, leaveOut: ReadonlySet<string> = new Set()): number | null {
+  return chainPeople(pool, a, b, leaveOut).middle;
 }
 
 /**
- * The shortest chain from a to b through `pool`, choosing the one whose least known member is best
- * known. Null when the shortest chain has fewer or more people between the targets than allowed.
+ * A shortest chain from a to b through `pool`, drawn one person at a time with odds in proportion
+ * to how widely known each candidate is, so famous people are likely but not certain. Null when the
+ * shortest chain has fewer or more people between the targets than allowed.
  */
-export function bestChain(pool: RosterPerson[], a: RosterPerson, b: RosterPerson, leaveOut: ReadonlySet<string> = new Set()): RosterPerson[] | null {
-  const people = pool.filter(p => p.id !== a.id && p.id !== b.id && !leaveOut.has(p.id));
-  let layer = new Map<string, PathNode>([[a.id, { person: a, weakestFame: Infinity, path: [] }]]);
-  const seen = new Set([a.id]);
-
-  for (let depth = 0; depth <= MAX_MIDDLE; depth++) {
-    const finals = [...layer.values()].filter(node => linksWithMargin(node.person, b));
-    if (finals.length > 0) {
-      if (depth < MIN_MIDDLE) return null;
-      return finals.reduce((best, node) => (node.weakestFame > best.weakestFame ? node : best)).path;
-    }
-    if (depth === MAX_MIDDLE) break;
-
-    const next = new Map<string, PathNode>();
-    for (const node of layer.values()) {
-      for (const candidate of people) {
-        if (seen.has(candidate.id) || !linksWithMargin(node.person, candidate)) continue;
-        const weakestFame = Math.min(node.weakestFame, candidate.sitelinks);
-        const current = next.get(candidate.id);
-        if (!current || current.weakestFame < weakestFame) next.set(candidate.id, { person: candidate, weakestFame, path: [...node.path, candidate] });
-      }
-    }
-    if (next.size === 0) break;
-    for (const id of next.keys()) seen.add(id);
-    layer = next;
+export function sampleChain(pool: RosterPerson[], a: RosterPerson, b: RosterPerson, random: () => number, leaveOut: ReadonlySet<string> = new Set()): RosterPerson[] | null {
+  const { people, hops, middle } = chainPeople(pool, a, b, leaveOut);
+  if (middle === null) return null;
+  const chain: RosterPerson[] = [];
+  let current: Life = a;
+  for (let step = 1; step <= middle; step++) {
+    const options = people.filter(p => hops.get(p.id) === middle - step + 1 && linksWithMargin(current, p));
+    const total = options.reduce((sum, p) => sum + p.sitelinks, 0);
+    let ticket = random() * total;
+    const pick = options.find(p => (ticket -= p.sitelinks) < 0) ?? options[options.length - 1];
+    chain.push(pick);
+    current = pick;
   }
-  return null;
+  return chain;
 }
 
 /** How many ways `slots` cards from the hand can sit between a and b as a linked chain, counting no further than `stopAt`. */
@@ -154,14 +167,15 @@ function pickDecoys(famous: RosterPerson[], a: RosterPerson, b: RosterPerson, ch
   return null;
 }
 
-/** An Easy puzzle: famous targets, a chain of famous people, and two famous decoys that leave one arrangement. */
+/** An Easy puzzle: famous targets, a chain of well-known people, and two famous decoys that leave one arrangement. */
 export function buildEasyPuzzle(roster: RosterPerson[], random: () => number, { leaveOut = new Set(), accept }: BuildOptions = {}): StylePuzzle | null {
   const famous = famousPeople(roster);
+  const pool = famousPeople(roster, EASY_CHAIN_POOL);
   for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
     const targets = drawTargets(famous, random, leaveOut, accept);
     if (!targets) continue;
     const [a, b] = targets;
-    const chain = bestChain(famous, a, b, leaveOut);
+    const chain = sampleChain(pool, a, b, random, leaveOut);
     if (!chain) continue;
     const decoys = pickDecoys(famous, a, b, chain, random, leaveOut);
     if (decoys) return { a, b, chain, decoys };
@@ -176,7 +190,7 @@ export function buildMediumPuzzle(roster: RosterPerson[], random: () => number, 
     const targets = drawTargets(famous, random, leaveOut, accept);
     if (!targets) continue;
     const [a, b] = targets;
-    const chain = bestChain(roster, a, b, leaveOut);
+    const chain = sampleChain(roster, a, b, random, leaveOut);
     if (!chain) continue;
     const line = [a, ...chain, b];
     const ids = new Set(line.map(p => p.id));

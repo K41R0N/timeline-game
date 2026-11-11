@@ -19,7 +19,7 @@ execution: code
 - **Execution profile:** One PR from `ccr-eb562100-0cl3wr`, which already carries the unmerged daily puzzle and Deck redesign; no project rule asks for a split. Units land as separate commits in dependency order.
 - **Stop conditions:** Stop and report if generating the Easy or Medium year fails any day or the health check reports any problem; if any existing entry of `src/lib/data/daily-schedule.json` changes (the capture may append days to keep a year ahead); or if a browser's existing daily record stops showing as its Hard result.
 - **Who finishes:** `ce-work` in this session builds, verifies and pushes; a PR opens only when the user asks.
-- **Product Contract preservation:** Product Contract unchanged. KTD8 records how R21's checks run against frozen puzzles.
+- **Product Contract preservation:** R18 changed during the build at the user's direction (chains drawn by fame from a wider Easy pool, with a 14-day gap), recorded as a Key Decision; the rest of the Product Contract is unchanged. KTD8 records how R21's checks run against frozen puzzles.
 
 ---
 
@@ -42,6 +42,7 @@ Today every round is free typing: the player must recall a name, spell it and kn
 - **Easy hands include decoys.** Decoys turn a sort into a puzzle. Governs R3, R4. (session-settled: user-directed — chosen over a hand of only the chain's people)
 - **Easy and Medium score by misses.** Easy counts Checks, Medium counts wrong guesses and reveals. Governs R9. (session-settled: user-approved — chosen over stars or a plain solved/not result)
 - **Fame by style.** Easy draws only on the best-known people; Medium may use the whole roster, so it plays harder. Governs R18. (session-settled: user-directed — chosen over famous-only chains for both styles and over reusing Hard's par chain)
+- **Chains are drawn by fame, and nobody returns within 14 days.** Each chain is a shortest valid chain drawn one person at a time with odds in proportion to language editions, Easy's chain people come from the 600 best-known (targets and decoys from the 400), and a person stays out of a style's chains for 14 days after appearing. Taking the single best-known chain put Isaac Newton in 117 of 368 Easy puzzles and used only 58 people all year; this rule uses 248, nobody more than 21 times a year or twice in 30 days. Governs R18. (session-settled: user-directed — chosen over always the best-known chain, over a 14-day gap alone, and over sampling from a larger pool without the gap)
 - **The existing daily schedule becomes the Hard daily.** Puzzles #1 and #2 are already published and cannot change. Governs R14.
 
 ### Requirements
@@ -80,7 +81,7 @@ Today every round is free typing: the player must recall a name, spell it and kn
 **Making the puzzles**
 
 - R17. Every puzzle, daily or free play, is generated from the committed roster, and a daily is seeded by its date and stored as a frozen copy of its people, years, chain and decoys.
-- R18. Easy chains use only the 400 best-known people by Wikipedia language editions, Medium chains may use the whole roster, and both take the most famous of the shortest valid chains, with 2 to 4 people between the targets.
+- R18. Targets (and Easy's decoys) come from the 400 best-known people by Wikipedia language editions; Easy's chain people from the 600 best-known; Medium's chain people may come from the whole roster. Both draw a shortest valid chain with odds in proportion to fame, with 2 to 4 people between the targets, and no person appears in a style's daily chains twice within 14 days.
 - R19. Neighbours in an Easy or Medium chain overlap, and where an approximate year sets either end of their shared stretch they must share at least 5 years.
 - R20. A Medium puzzle is rejected when any other roster person who fits a blank has the same letter pattern as that blank's answer.
 - R21. CI rechecks every Easy and Medium copy as it already checks Hard: R18, R19 and R20 hold, R4's single arrangement holds, no pair or recent target repeats, and at least 30 days are scheduled ahead.
@@ -186,7 +187,7 @@ flowchart LR
 - KTD1. **Easy and Medium dailies live in their own schedule files.** `src/lib/data/daily-easy.json` and `src/lib/data/daily-medium.json` share the Hard schedule's first date and numbering, are append-only, and are read only on the server. Adding fields to the Hard file would rewrite published lines. Governs R13, R15. (session-settled: user-approved — chosen over new fields on each Hard entry: published Hard lines never change)
 - KTD2. **`/daily/<n>` stays the Hard puzzle; Easy and Medium live at `/daily/<n>/easy` and `/daily/<n>/medium`.** Links already shared keep working. Governs R1, R13, R14. (session-settled: user-approved — chosen over a style query parameter on one route: existing links stay Hard)
 - KTD3. **Hard records stay where they are; style records sit beside them.** The progress store keeps its key and its per-number Hard attempts, and gains Easy and Medium attempts keyed the same way, so a browser's existing record reads as its Hard result with no migration step. Governs R16. (session-settled: user-approved — chosen over a new storage key with a migration: nothing to migrate, nothing lost)
-- KTD4. **One pure chain-puzzle module serves the daily capture and free play.** It owns the overlap-with-margin rule, the fame-maximising shortest chain, decoy selection with the single-arrangement proof, and letter patterns. The capture seeds it by date; free play seeds it at random in the browser, where a full year of Easy took 0.4 s and of Medium 10 s in the feasibility run. Governs R4, R17, R18, R19, R20. (session-settled: user-approved — chosen over a pre-generated free-play pool: same rules everywhere, nothing extra to ship)
+- KTD4. **One pure chain-puzzle module serves the daily capture and free play.** It owns the overlap-with-margin rule, the fame-weighted shortest chain, decoy selection with the single-arrangement proof, and letter patterns. The capture seeds it by date; free play seeds it at random in the browser, where a full year of Easy took 0.4 s and of Medium 10 s in the feasibility run. Governs R4, R17, R18, R19, R20. (session-settled: user-approved — chosen over a pre-generated free-play pool: same rules everywhere, nothing extra to ship)
 - KTD5. **Medium judges a guess on the device first, then online.** A guess equal to the answer's name, or to its surname, fills the blank at once. Any other name is checked against the roster, then by a live lookup comparing Wikidata IDs, which catches other names for the same person. If Wikipedia cannot be reached, the guess is not counted. Governs R7, R8. (session-settled: user-approved — chosen over live lookup only: "Newton" is a disambiguation page on Wikipedia and would fail)
 - KTD6. **Portraits come from one batched Wikipedia request per puzzle, through `wikimediaClient`.** Initials stand in when a portrait is missing or the request fails. The new request URL needs one fixture re-record. (session-settled: user-approved — chosen over one person lookup per card: four requests a card would hit Wikimedia's rate limit)
 - KTD7. **Easy and Medium answers are delivered to the browser.** Checks run without a server, as the Hard par chain does today. A player could read answers from the page source; accepted for a casual game with no backend. (session-settled: user-approved — chosen over a server check per guess: no backend exists)
@@ -261,7 +262,7 @@ Slot states in an Easy or Medium round:
 
 **Approach:**
 1. A link test that applies R19's margin when an approximate year sets either end of the shared years.
-2. The fame-maximising shortest chain between two people inside a pool, limited to 2 to 4 people between them (R18).
+2. A shortest chain between two people inside a pool, drawn with odds in proportion to fame, limited to 2 to 4 people between them (R18).
 3. An arrangement counter that stops at two, and a decoy picker drawing well-known people born inside the puzzle's span until the hand has exactly one valid arrangement (R4).
 4. Letter patterns per word, without bracketed disambiguation, and the R20 test against roster people who fit a blank.
 5. Builders for an Easy puzzle (targets, chain, 2 decoys) and a Medium puzzle (targets, chain), each taking a random source so the capture can seed by date and free play at random, and a set of people to leave out. Both styles draw their two targets from the 400 best-known people, as the feasibility run did; only Medium's middle people may come from the whole roster.
@@ -270,7 +271,7 @@ Slot states in an Easy or Medium round:
 
 **Test scenarios:**
 - Happy path: two exact-dated people sharing 2 years link.
-- Happy path: the chain builder prefers the chain whose least famous member is more famous when two shortest chains exist.
+- Happy path: over many seeds, a candidate with three times the language editions is drawn about three times as often.
 - Edge case: Chaucer (c. 1343 – c. 1400) and someone born 1398 do not link (AE6).
 - Edge case: a pair needing 5 middle people, or only 1, returns no chain.
 - Edge case: a hand where two middle people can swap places counts 2 arrangements and is rejected.

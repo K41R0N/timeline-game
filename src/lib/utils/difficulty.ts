@@ -87,9 +87,9 @@ export function fitsBand(shape: ChainShape, band: DifficultyBand): boolean {
   return shape.par >= band.minPar && shape.par <= band.maxPar && narrowest >= band.minNarrowest && narrowest <= band.maxNarrowest;
 }
 
-/** The roster's most widely known people, most known first. */
-export function famousPeople(roster: RosterPerson[]): RosterPerson[] {
-  return [...roster].sort((a, b) => b.sitelinks - a.sitelinks).slice(0, FAMOUS_COUNT);
+/** The roster's most widely known people, most known first: the best-known 400 unless told otherwise. */
+export function famousPeople(roster: RosterPerson[], count = FAMOUS_COUNT): RosterPerson[] {
+  return [...roster].sort((a, b) => b.sitelinks - a.sitelinks).slice(0, count);
 }
 
 /** Two famous targets whose chain fits the difficulty's band, earlier first, or null if none turned up. */

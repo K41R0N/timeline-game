@@ -2,13 +2,15 @@ import { describe, expect, it } from 'vitest';
 import rosterFile from '../data/roster.json';
 import { fromRosterRow, type RosterFile, type RosterPerson } from '../data/roster';
 import {
-  bestChain,
+  EASY_CHAIN_POOL,
   buildEasyPuzzle,
   buildMediumPuzzle,
   countArrangements,
   letterPattern,
   linksWithMargin,
   patternIsUnique,
+  sampleChain,
+  shortestMiddle,
   MAX_MIDDLE,
   MIN_MIDDLE,
 } from './chainPuzzle';
@@ -44,36 +46,46 @@ describe('linksWithMargin', () => {
   });
 });
 
-describe('bestChain', () => {
+describe('sampleChain', () => {
   const a = person('A', 1000, 1050);
   const b = person('B', 1200, 1250);
+  const m1 = person('M1', 1040, 1110, 100);
+  const n1 = person('N1', 1040, 1110, 300);
+  const m2 = person('M2', 1100, 1210, 200);
+  const pool = [a, m1, n1, m2, b];
 
-  it('prefers the shortest chain whose least famous member is more famous', () => {
-    const m1 = person('M1', 1040, 1110, 100);
-    const n1 = person('N1', 1040, 1110, 300);
-    const m2 = person('M2', 1100, 1210, 200);
-    const n2 = person('N2', 1100, 1210, 50);
-    const chain = bestChain([a, m1, n1, m2, n2, b], a, b);
-    expect(chain?.map(p => p.id)).toEqual(['N1', 'M2']);
+  it('draws a shortest chain whose neighbours all link', () => {
+    for (let seed = 0; seed < 20; seed++) {
+      const chain = sampleChain(pool, a, b, seededRandom(seed))!;
+      expect(chain).toHaveLength(2);
+      const line = [a, ...chain, b];
+      for (let i = 1; i < line.length; i++) expect(linksWithMargin(line[i - 1], line[i])).toBe(true);
+    }
+  });
+
+  it('draws better-known people more often, in proportion to their language editions', () => {
+    let famousFirst = 0;
+    for (let seed = 0; seed < 400; seed++) if (sampleChain(pool, a, b, seededRandom(seed))![0].id === 'N1') famousFirst++;
+    expect(famousFirst / 400).toBeGreaterThan(0.65);
+    expect(famousFirst / 400).toBeLessThan(0.85);
   });
 
   it('returns no chain when one person bridges the targets', () => {
-    expect(bestChain([a, person('M', 1040, 1210), b], a, b)).toBeNull();
+    expect(sampleChain([a, person('M', 1040, 1210), b], a, b, seededRandom(1))).toBeNull();
+    expect(shortestMiddle([a, person('M', 1040, 1210), b], a, b)).toBeNull();
   });
 
   it(`returns no chain when the targets need more than ${MAX_MIDDLE} people between them`, () => {
     const far = person('far', 1290, 1340);
     const steps = [person('P1', 1040, 1100), person('P2', 1090, 1150), person('P3', 1140, 1200), person('P4', 1190, 1250), person('P5', 1240, 1300)];
-    expect(bestChain([a, ...steps, far], a, far)).toBeNull();
-    expect(bestChain([a, ...steps.slice(0, 4), b], a, b)?.length).toBeGreaterThanOrEqual(MIN_MIDDLE);
+    expect(sampleChain([a, ...steps, far], a, far, seededRandom(1))).toBeNull();
+    expect(shortestMiddle([a, ...steps.slice(0, 4), b], a, b)).toBe(3);
   });
 
   it('never uses a person it is told to leave out', () => {
-    const m1 = person('M1', 1040, 1110, 100);
-    const n1 = person('N1', 1040, 1110, 300);
-    const m2 = person('M2', 1100, 1210, 200);
-    const chain = bestChain([a, m1, n1, m2, b], a, b, new Set(['N1']));
-    expect(chain?.map(p => p.id)).toEqual(['M1', 'M2']);
+    for (let seed = 0; seed < 20; seed++) {
+      expect(sampleChain(pool, a, b, seededRandom(seed), new Set(['N1']))?.map(p => p.id)).toEqual(['M1', 'M2']);
+    }
   });
 });
 
@@ -133,10 +145,11 @@ describe('puzzle builders', () => {
     expect(second).toEqual(first);
   });
 
-  it('builds an Easy puzzle of famous people with exactly one arrangement', () => {
+  it(`builds an Easy puzzle of famous targets and decoys, a chain from the ${EASY_CHAIN_POOL} best-known, and one arrangement`, () => {
     const puzzle = buildEasyPuzzle(roster, seededRandom(seedFor('easy2026-11-08')))!;
-    const everyone = [puzzle.a, ...puzzle.chain, ...puzzle.decoys, puzzle.b];
-    expect(everyone.every(p => famousIds.has(p.id))).toBe(true);
+    const poolIds = new Set(famousPeople(roster, EASY_CHAIN_POOL).map(p => p.id));
+    expect([puzzle.a, ...puzzle.decoys, puzzle.b].every(p => famousIds.has(p.id))).toBe(true);
+    expect(puzzle.chain.every(p => poolIds.has(p.id))).toBe(true);
     expect(puzzle.chain.length).toBeGreaterThanOrEqual(MIN_MIDDLE);
     expect(puzzle.chain.length).toBeLessThanOrEqual(MAX_MIDDLE);
     expect(puzzle.decoys).toHaveLength(2);

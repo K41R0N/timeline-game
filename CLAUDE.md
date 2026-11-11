@@ -74,7 +74,7 @@ src/
     │   ├── board.ts      # Board layout: statuses, the gap neither chain reaches, eras, the vertical table (tableLayout), ticks
     │   ├── par.ts            # computePar (greedy furthest-reach over the roster) and nextHint
     │   ├── difficulty.ts     # chainShape (par + options per step), DIFFICULTY_BANDS, pickTargets from the 400 best-known people, drawHardBand
-    │   ├── chainPuzzle.ts    # Easy and Medium puzzles: links with a 5-year margin on approximate dates, best-known shortest chain, decoys, letter patterns
+    │   ├── chainPuzzle.ts    # Easy and Medium puzzles: links with a 5-year margin on approximate dates, a shortest chain drawn by fame (Easy from the 600 best-known), decoys, letter patterns
     │   ├── styleRound.ts     # Easy and Medium round state: placing and Checking cards, judging and revealing blanks, scores
     │   ├── guessMatch.ts     # Whether a Medium guess names the blank's person: full name or surname, roster, then Wikidata id
     │   ├── random.ts         # Seeded random numbers for the daily builders
@@ -150,7 +150,7 @@ Steps 2–6 happen inside `GameRound`, which both modes render.
 - **Shared years** are the earlier death minus the later birth; 0 means the lives shared part of one calendar year and still count as overlapping.
 - **Contemporaries**: `a.birthYear <= b.deathYear && b.birthYear <= a.deathYear` (`ChainAnalyzer.ts`).
 - **Imports**: code in `src/app` imports library code from `@/lib`. Inside `src/lib`, modules import each other by relative path; never import the `@/lib` barrel from inside `src/lib` (it re-exports everything and would create cycles). The one exception: server pages import `@/lib/server/daily` directly. Never re-export it from the barrel or import it from client code; its `server-only` import fails the build if you do.
-- **Daily puzzles are fixed once published.** Extend the schedules only with the capture command, which appends. Never edit or regenerate a published entry in any of the three files: links, practice and compared results depend on #n never changing. A date's three puzzles share no people, so finishing one style never gives away another.
+- **Daily puzzles are fixed once published.** Extend the schedules only with the capture command, which appends. Never edit or regenerate a published entry in any of the three files: links, practice and compared results depend on #n never changing. A date's three puzzles share no people, so finishing one style never gives away another, and no person returns to a style's chains within 14 days.
 - **Client components**: anything with hooks or browser APIs starts with `'use client'`.
 - **Styling**: Tailwind utilities first. Colours come from CSS variables in `globals.css`; the round screen uses the Deck tokens (`--table*`, `--card-*`, `--foil*`, `--chalk*`, `--era-*`) and the `.type-display` class, as `DESIGN.md` describes.
 - **Logging**: emoji-prefixed `console.*` (🚀 start, ✅ success, ⚠️ warn, ❌ error, 📊 data, 🔍 search). `WikipediaService` logs one line per resolved figure and each lookup error.

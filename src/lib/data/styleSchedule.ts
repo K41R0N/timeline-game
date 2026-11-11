@@ -10,12 +10,13 @@ import { areContemporaries } from '../utils/ChainAnalyzer';
 import {
   type ChainStyle,
   DECOY_COUNT,
+  EASY_CHAIN_POOL,
   MAX_MIDDLE,
   MIN_MIDDLE,
-  bestChain,
   countArrangements,
   linksWithMargin,
   patternIsUnique,
+  shortestMiddle,
 } from '../utils/chainPuzzle';
 import { puzzleDate, puzzleNumber, type DateKey } from '../utils/daily';
 import { famousPeople, FAMOUS_COUNT } from '../utils/difficulty';
@@ -107,6 +108,14 @@ export function stylePeople(entry: StyleEntryRow): string[] {
   return [entry.a[0], entry.b[0], ...entry.chain.map(row => row[0]), ...entry.decoys.map(row => row[0])];
 }
 
+/** A person stays out of a style's daily chains for this many days after appearing in one, so the same faces do not return every day. */
+export const CHAIN_GAP_DAYS = 14;
+
+/** The people in a style's chains over the CHAIN_GAP_DAYS before entry i. */
+export function recentChainPeople(entries: StyleEntryRow[], i: number): Set<string> {
+  return new Set(entries.slice(Math.max(0, i - CHAIN_GAP_DAYS), i).flatMap(entry => entry.chain.map(row => row[0])));
+}
+
 /** People an Easy or Medium puzzle on that date must leave out, so finishing one style never gives away another. */
 export function leftOutFor(style: ChainStyle, hard: ScheduleEntryRow | undefined, easy: StyleEntryRow | undefined): Set<string> {
   const ids = hard ? hardPeople(hard) : [];
@@ -143,21 +152,31 @@ function snapshotProblems(style: ChainStyle, entry: StyleEntryRow, where: string
 }
 
 /** Checks against today's roster, for puzzles generated from this roster revision. */
-function rosterProblems(style: ChainStyle, entry: StyleEntryRow, where: string, roster: RosterPerson[], famous: RosterPerson[], famousIds: Set<string>, leaveOut: Set<string>): string[] {
+interface RosterPools {
+  people: RosterPerson[];
+  famousIds: Set<string>;
+  easyPool: RosterPerson[];
+  easyPoolIds: Set<string>;
+}
+
+function rosterProblems(style: ChainStyle, entry: StyleEntryRow, where: string, pools: RosterPools, leaveOut: Set<string>): string[] {
   const problems: string[] = [];
   const [a, b] = [fromRosterRow(entry.a), fromRosterRow(entry.b)];
   const chain = entry.chain.map(fromRosterRow);
-  const mustBeFamous = style === 'easy' ? [a, b, ...chain, ...entry.decoys.map(fromRosterRow)] : [a, b];
+  const mustBeFamous = style === 'easy' ? [a, b, ...entry.decoys.map(fromRosterRow)] : [a, b];
   for (const person of mustBeFamous) {
-    if (!famousIds.has(person.id)) problems.push(`${where}: ${person.name} is not among the ${FAMOUS_COUNT} best-known people`);
+    if (!pools.famousIds.has(person.id)) problems.push(`${where}: ${person.name} is not among the ${FAMOUS_COUNT} best-known people`);
+  }
+  if (style === 'easy') {
+    for (const person of chain) {
+      if (!pools.easyPoolIds.has(person.id)) problems.push(`${where}: ${person.name} is not among the ${EASY_CHAIN_POOL} best-known people`);
+    }
   }
   if (problems.length > 0) return problems;
 
-  const best = bestChain(style === 'easy' ? famous : roster, a, b, leaveOut);
-  const weakest = (people: RosterPerson[]) => Math.min(...people.map(p => p.sitelinks));
-  if (!best || best.length !== chain.length || weakest(best) !== weakest(chain)) {
-    problems.push(`${where}: the chain is not the best-known shortest chain between ${a.name} and ${b.name}`);
-  }
+  const shortest = shortestMiddle(style === 'easy' ? pools.easyPool : pools.people, a, b, leaveOut);
+  if (shortest !== chain.length) problems.push(`${where}: the chain is not a shortest chain between ${a.name} and ${b.name}`);
+  const roster = pools.people;
 
   if (style === 'medium') {
     const line = [a, ...chain, b];
@@ -176,8 +195,10 @@ function rosterProblems(style: ChainStyle, entry: StyleEntryRow, where: string, 
  */
 export function styleScheduleProblems(files: ScheduleSet, today: DateKey, roster?: { people: RosterPerson[]; revision: string }): string[] {
   const problems: string[] = [];
-  const famous = roster ? famousPeople(roster.people) : [];
-  const famousIds = new Set(famous.map(p => p.id));
+  const easyPool = roster ? famousPeople(roster.people, EASY_CHAIN_POOL) : [];
+  const pools: RosterPools | null = roster
+    ? { people: roster.people, famousIds: new Set(famousPeople(roster.people).map(p => p.id)), easyPool, easyPoolIds: new Set(easyPool.map(p => p.id)) }
+    : null;
 
   for (const style of ['easy', 'medium'] as const) {
     const file = files[style];
@@ -203,12 +224,16 @@ export function styleScheduleProblems(files: ScheduleSet, today: DateKey, roster
         if (earlier) problems.push(`${where}: ${target[1]} was a target ${i + 1 - earlier.n} days earlier (#${earlier.n})`);
       }
 
-      const leaveOut = leftOutFor(style, files.hard.entries[i], style === 'medium' ? files.easy.entries[i] : undefined);
+      const sameDate = leftOutFor(style, files.hard.entries[i], style === 'medium' ? files.easy.entries[i] : undefined);
       for (const row of [entry.a, ...entry.chain, ...entry.decoys, entry.b]) {
-        if (leaveOut.has(row[0])) problems.push(`${where}: ${row[1]} is also in another style's puzzle for this date`);
+        if (sameDate.has(row[0])) problems.push(`${where}: ${row[1]} is also in another style's puzzle for this date`);
+      }
+      const recentChains = recentChainPeople(file.entries, i);
+      for (const row of entry.chain) {
+        if (recentChains.has(row[0])) problems.push(`${where}: ${row[1]} was in a ${style} chain within the last ${CHAIN_GAP_DAYS} days`);
       }
 
-      if (roster && entry.rev === roster.revision) problems.push(...rosterProblems(style, entry, where, roster.people, famous, famousIds, leaveOut));
+      if (pools && roster && entry.rev === roster.revision) problems.push(...rosterProblems(style, entry, where, pools, new Set([...sameDate, ...recentChains])));
     });
 
     const ahead = file.entries.filter(entry => entry.date > today).length;

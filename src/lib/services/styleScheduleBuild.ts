@@ -5,7 +5,7 @@
  */
 import { PERSON_GAP_DAYS, pairKey, type ScheduleFile } from '../data/dailySchedule';
 import { toRosterRow, type RosterPerson } from '../data/roster';
-import { leftOutFor, type StyleEntryRow, type StyleScheduleFile } from '../data/styleSchedule';
+import { leftOutFor, recentChainPeople, type StyleEntryRow, type StyleScheduleFile } from '../data/styleSchedule';
 import { buildStylePuzzle, type ChainStyle } from '../utils/chainPuzzle';
 import { seededRandom, seedFor } from '../utils/random';
 
@@ -42,8 +42,10 @@ export function generateStyleSchedules(
   const medium = [...(existing.medium?.entries ?? [])];
 
   hard.entries.forEach((hardEntry, i) => {
-    if (i >= easy.length) easy.push(entryFor('easy', roster, revision, hardEntry.n, hardEntry.date, easy, leftOutFor('easy', hardEntry, undefined)));
-    if (i >= medium.length) medium.push(entryFor('medium', roster, revision, hardEntry.n, hardEntry.date, medium, leftOutFor('medium', hardEntry, easy[i])));
+    const leaveOut = (style: ChainStyle, entries: StyleEntryRow[]) =>
+      new Set([...leftOutFor(style, hardEntry, style === 'medium' ? easy[i] : undefined), ...recentChainPeople(entries, i)]);
+    if (i >= easy.length) easy.push(entryFor('easy', roster, revision, hardEntry.n, hardEntry.date, easy, leaveOut('easy', easy)));
+    if (i >= medium.length) medium.push(entryFor('medium', roster, revision, hardEntry.n, hardEntry.date, medium, leaveOut('medium', medium)));
   });
 
   return {

@@ -67,6 +67,12 @@ describe('styleScheduleProblems', () => {
     expect(styleScheduleProblems(broken, firstDay).join('\n')).toMatch(/was already used/);
   });
 
+  it('reports a person back in a chain within 14 days', () => {
+    const broken = short();
+    broken.medium.entries[5].chain[0] = broken.medium.entries[2].chain[0];
+    expect(styleScheduleProblems(broken, firstDay).join('\n')).toMatch(/was in a medium chain within the last 14 days/);
+  });
+
   it('reports a person who also appears in another style that day', () => {
     const broken = short();
     broken.medium.entries[0].decoys = [];
