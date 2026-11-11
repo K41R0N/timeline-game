@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
 import { HistoricalFigure } from '../types/HistoricalFigure';
+import type { Difficulty } from '../utils/GameLogic';
 
-interface GameState {
+/** A free-play round as saved in this browser. */
+export interface GameState {
   figures: HistoricalFigure[];
   targetA: HistoricalFigure | null;
   targetB: HistoricalFigure | null;
-  difficulty: 'easy' | 'medium' | 'hard';
+  /** The pair's band, which chose the targets; the round itself always plays on Hard rules. */
+  difficulty: Difficulty;
   hintsUsed: number;
   /** The hinted person not yet placed, so a reload shows the same name without charging again. */
   hint: SavedHint | null;
@@ -32,12 +34,28 @@ export function normalizeSavedState(saved: unknown): GameState | null {
 
 // v2: figures are keyed by Wikidata QID with corrected dates; v1 saves are discarded.
 const STORAGE_KEY = 'timeline-game-state-v2';
-const AUTO_SAVE_DELAY = 2000; // 2 seconds debounce
 
-/**
- * Custom hook for persisting game state to localStorage
- * Auto-saves with debouncing to prevent excessive writes
- */
+/** Whether this browser holds a free-play Hard round to continue (for the menu's Continue). */
+export function hasFreePlayRound(): boolean {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const state = saved ? normalizeSavedState(JSON.parse(saved)) : null;
+    return Boolean(state && state.targetA && state.targetB);
+  } catch {
+    return false;
+  }
+}
+
+/** Whether this browser holds an unfinished free-play round (for the home page's "Resume free play"). */
+export function hasSavedFreePlay(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+/** Reads, writes and clears the free-play round saved in this browser. */
 export function useGameStatePersistence() {
   // Load initial state from localStorage
   const loadSavedState = (): GameState | null => {
@@ -91,39 +109,4 @@ export function useGameStatePersistence() {
     saveState,
     clearState
   };
-}
-
-/**
- * Debounced auto-save hook
- * Automatically saves game state after a delay when it changes
- */
-export function useAutoSave(
-  figures: HistoricalFigure[],
-  targetA: HistoricalFigure | null,
-  targetB: HistoricalFigure | null,
-  difficulty: 'easy' | 'medium' | 'hard',
-  hintsUsed: number,
-  hint: SavedHint | null
-) {
-  const { saveState } = useGameStatePersistence();
-
-  useEffect(() => {
-    // Don't save if game hasn't started
-    if (!targetA || !targetB || figures.length === 0) return;
-
-    const timer = setTimeout(() => {
-      saveState({
-        figures,
-        targetA,
-        targetB,
-        difficulty,
-        hintsUsed,
-        hint: hint ? { id: hint.id, name: hint.name } : null
-      });
-    }, AUTO_SAVE_DELAY);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [figures, targetA, targetB, difficulty, hintsUsed, hint]);
-  // Note: saveState is intentionally excluded - it's a stable function
 }

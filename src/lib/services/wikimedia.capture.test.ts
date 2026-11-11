@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { API_USER_AGENT, createWikimediaClient } from './wikimediaClient';
 import { WikipediaService } from './WikipediaService';
-import { FIXTURE_PEOPLE } from './__fixtures__/people';
+import { FIXTURE_PEOPLE, FIXTURE_PORTRAITS } from './__fixtures__/people';
 
 const FIXTURE_FILE = path.join(__dirname, '__fixtures__', 'wikimedia-responses.json');
 const MIN_INTERVAL_MS = 1500;
@@ -43,6 +43,8 @@ describe.skipIf(!process.env.CAPTURE_WIKIMEDIA)('capture Wikimedia fixtures', ()
       const result = await WikipediaService.lookupPerson(title, client, 2026);
       console.log(title, '=>', result.ok ? `${result.figure.name} ${result.figure.birthYear}..${result.figure.deathYear}` : result.reason);
     }
+    const portraits = await WikipediaService.portraits([...FIXTURE_PORTRAITS], client);
+    console.log('portraits =>', Object.keys(portraits).join(', '));
     fs.writeFileSync(FIXTURE_FILE, JSON.stringify(recorded, null, 1) + '\n');
   }, 900_000);
 });

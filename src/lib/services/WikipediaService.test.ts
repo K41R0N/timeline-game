@@ -142,3 +142,26 @@ describe('WikipediaService.searchPerson', () => {
     expect(result.snippet).toBe('Roman general and dictator');
   });
 });
+
+describe('WikipediaService.portraits (recorded fixture)', () => {
+  it('returns a portrait for each of three titles from one request', async () => {
+    const requested: string[] = [];
+    const counting = createWikimediaClient({
+      sleep: async () => {},
+      maxRetries: 0,
+      fetchImpl: async url => {
+        requested.push(url);
+        if (!(url in recorded)) return new Response(`No fixture for ${url}`, { status: 404 });
+        return new Response(JSON.stringify(recorded[url]), { status: 200 });
+      },
+    });
+    const portraits = await WikipediaService.portraits(['Michelangelo', 'Galileo Galilei', 'Isaac Newton'], counting);
+    expect(requested).toHaveLength(1);
+    expect(Object.keys(portraits).sort()).toEqual(['Galileo Galilei', 'Isaac Newton', 'Michelangelo']);
+    expect(portraits['Isaac Newton']).toMatch(/^https:\/\/.*Newton/);
+  });
+
+  it('gives no portraits when the request fails', async () => {
+    expect(await WikipediaService.portraits(['Nobody recorded'], client)).toEqual({});
+  });
+});

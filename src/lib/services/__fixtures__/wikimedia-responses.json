@@ -8391,5 +8391,45 @@
     }
    ]
   }
+ },
+ "https://en.wikipedia.org/w/api.php?format=json&origin=*&action=query&formatversion=2&titles=Michelangelo%7CGalileo+Galilei%7CIsaac+Newton&redirects=1&prop=pageimages&piprop=thumbnail&pithumbsize=440&pilimit=max": {
+  "batchcomplete": true,
+  "query": {
+   "pages": [
+    {
+     "pageid": 14627,
+     "ns": 0,
+     "title": "Isaac Newton",
+     "thumbnail": {
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f7/Portrait_of_Sir_Isaac_Newton%2C_1689_%28brightened%29.jpg/500px-Portrait_of_Sir_Isaac_Newton%2C_1689_%28brightened%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+      "width": 440,
+      "height": 530
+     }
+    },
+    {
+     "pageid": 21019,
+     "ns": 0,
+     "title": "Michelangelo",
+     "thumbnail": {
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Michelangelo_Daniele_da_Volterra_%28dettaglio%29.jpg/500px-Michelangelo_Daniele_da_Volterra_%28dettaglio%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+      "width": 440,
+      "height": 509
+     }
+    },
+    {
+     "pageid": 29688374,
+     "ns": 0,
+     "title": "Galileo Galilei",
+     "thumbnail": {
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Galileo_Galilei_%281564-1642%29_RMG_BHC2700.tiff/lossy-page1-500px-Galileo_Galilei_%281564-1642%29_RMG_BHC2700.tiff.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+      "width": 440,
+      "height": 559
+     }
+    }
+   ]
+  },
+  "limits": {
+   "pageimages": 50
+  }
  }
 }

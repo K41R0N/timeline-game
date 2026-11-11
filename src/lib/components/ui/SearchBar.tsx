@@ -13,6 +13,8 @@ interface SearchBarProps {
   onAddFigure: (name: string) => void;
   /** True while a submitted name is being looked up; blocks further submits. */
   isAdding?: boolean;
+  /** The button's text while a name is being looked up. */
+  busyLabel?: string;
 }
 
 interface SearchSuggestion {
@@ -21,7 +23,7 @@ interface SearchSuggestion {
   isExisting?: boolean;
 }
 
-export function SearchBar({ figures, onSelect, onAddFigure, isAdding = false }: SearchBarProps) {
+export function SearchBar({ figures, onSelect, onAddFigure, isAdding = false, busyLabel }: SearchBarProps) {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,23 +102,19 @@ export function SearchBar({ figures, onSelect, onAddFigure, isAdding = false }: 
   };
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] w-full max-w-2xl px-4">
-      <div className="timeline-card p-3 shadow-glow backdrop-blur-lg overflow-visible">
-        <SearchInput
-          onSearch={handleSearch}
-          onSelect={handleSelect}
-          onSubmit={onAddFigure}
-          suggestions={suggestions.map(s => ({
-            title: s.title,
-            description: s.snippet,
-            isExisting: s.isExisting
-          }))}
-          isLoading={isLoading}
-          isSubmitting={isAdding}
-          error={error}
-          className="search-input"
-        />
-      </div>
-    </div>
+    <SearchInput
+      onSearch={handleSearch}
+      onSelect={handleSelect}
+      onSubmit={onAddFigure}
+      suggestions={suggestions.map(s => ({
+        title: s.title,
+        description: s.snippet,
+        isExisting: s.isExisting
+      }))}
+      isLoading={isLoading}
+      isSubmitting={isAdding}
+      busyLabel={busyLabel}
+      error={error}
+    />
   );
-} 
+}

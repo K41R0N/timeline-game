@@ -42,71 +42,56 @@ export function DetailPanel({
 
   return (
     <>
-      {/* Semi-transparent backdrop - doesn't block timeline interaction */}
-      <div className="fixed inset-0 z-[50] bg-foreground/10 backdrop-blur-[2px] pointer-events-none animate-fadeIn" />
+      <div className="fixed inset-0 z-[50] bg-[rgba(4,20,24,0.45)] pointer-events-none animate-fadeIn" />
 
-      {/* Slide-in drawer from right */}
+      {/* A bottom sheet on phones, a drawer from the right from 640px up */}
       <div
         ref={panelRef}
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="detail-panel-title"
         className={`
-          fixed right-0 top-0 bottom-0
-          w-[400px]
-          bg-background
-          shadow-[-4px_0_20px_rgba(0,0,0,0.2)]
-          transition-transform duration-300 ease-out
-          animate-slideInRight
-          z-[50]
+          fixed inset-x-0 bottom-0 z-[50] max-h-[75dvh]
+          rounded-t-2xl bg-[var(--card-stock)] text-[var(--card-ink)] shadow-[0_-8px_30px_rgba(0,0,0,0.4)]
+          sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:max-h-none sm:w-[400px] sm:rounded-none sm:shadow-[-8px_0_30px_rgba(0,0,0,0.4)]
+          animate-sheetIn
           ${className}
         `}
       >
-        <div className="h-full overflow-auto p-6">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-6">
+        <div className="max-h-[75dvh] overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 sm:h-full sm:max-h-none sm:p-6">
+          <div aria-hidden className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#d8d4c8] sm:hidden" />
+          <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-semibold text-foreground mb-2">
+              <h2 id="detail-panel-title" className="type-display text-[28px] font-extrabold uppercase leading-none text-[var(--card-ink)] [text-shadow:none]">
                 {figure.name}
               </h2>
-              <div className="text-[var(--interactive)] font-medium">
-                {formatLifespan(figure)}
-              </div>
+              <div className="type-display mt-1 text-xl font-semibold text-[var(--card-muted)]">{formatLifespan(figure)}</div>
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="
-                p-2 rounded-full
-                text-foreground-muted hover:text-foreground
-                hover:bg-background-hover
-                transition-colors duration-[var(--transition-fast)]
-              "
+              aria-label="Close"
+              className="-mr-2 -mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--card-muted)] transition-colors hover:bg-[#efece3] hover:text-[var(--card-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foil)]"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg aria-hidden className="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <path d="M5 5l10 10M15 5 5 15" />
               </svg>
             </button>
           </div>
 
-          {/* Content */}
-          <div className="space-y-6">
-            {/* Image */}
+          <div className="space-y-4">
             {figure.imageUrl && (
-              <div className="aspect-video rounded-lg overflow-hidden bg-background-alt">
-                <img
-                  src={figure.imageUrl}
-                  alt={figure.name}
-                  className="w-full h-full object-cover"
-                />
+              <div className="aspect-[4/3] overflow-hidden rounded-xl bg-[#e7e4da]">
+                <img src={figure.imageUrl} alt={figure.name} className="h-full w-full object-cover object-top" />
               </div>
             )}
 
-            {/* Description */}
-            <div className="prose prose-sm max-w-none">
-              <p className="text-foreground/80 leading-relaxed">
-                {figure.summary || figure.shortDescription}
-              </p>
-            </div>
+            {(figure.summary || figure.shortDescription) && (
+              <p className="leading-relaxed text-[var(--card-muted)]">{figure.summary || figure.shortDescription}</p>
+            )}
           </div>
         </div>
       </div>
     </>
   );
-} 
+}

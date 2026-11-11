@@ -18,9 +18,3 @@ export interface HistoricalFigure {
   deathApproximate?: boolean;
   isLiving?: boolean;
 }
-
-export interface TimelineNode {
-  figure: HistoricalFigure;
-  position: number;  // Calculated position (0-100%)
-  isAbove: boolean;  // Alternating vertical display
-}
