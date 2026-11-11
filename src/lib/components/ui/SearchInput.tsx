@@ -17,6 +17,8 @@ interface SearchInputProps {
   isLoading?: boolean;
   /** Blocks submits while the previous name is still being looked up. */
   isSubmitting?: boolean;
+  /** The button's text while a name is being looked up. */
+  busyLabel?: string;
   error?: string | null;
   className?: string;
 }
@@ -29,6 +31,7 @@ export function SearchInput({
   suggestions = [],
   isLoading = false,
   isSubmitting = false,
+  busyLabel = 'Drawing…',
   error = null,
   className = ""
 }: SearchInputProps) {
@@ -227,7 +230,7 @@ export function SearchInput({
               : 'bg-[var(--foil)] text-[var(--foil-ink)] opacity-40 cursor-not-allowed'}
           `}
         >
-          {isSubmitting ? 'Drawing…' : 'Play'}
+          {isSubmitting ? busyLabel : 'Play'}
         </button>
       </div>
     </div>

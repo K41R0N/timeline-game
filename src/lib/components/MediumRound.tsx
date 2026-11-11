@@ -175,7 +175,7 @@ export function MediumRound({ puzzle, initial, label, onSave, onFinish, onHome, 
           >
             Wild card <span className="font-bold text-[var(--table-muted)]">+1</span>
           </button>
-          <SearchBar figures={[]} onSelect={() => {}} onAddFigure={name => void guess(name)} isAdding={checking || !roster} />
+          <SearchBar figures={[]} onSelect={() => {}} onAddFigure={name => void guess(name)} isAdding={checking || !roster} busyLabel="Checking…" />
         </>
       )}
     </>

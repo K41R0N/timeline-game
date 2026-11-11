@@ -13,6 +13,8 @@ interface SearchBarProps {
   onAddFigure: (name: string) => void;
   /** True while a submitted name is being looked up; blocks further submits. */
   isAdding?: boolean;
+  /** The button's text while a name is being looked up. */
+  busyLabel?: string;
 }
 
 interface SearchSuggestion {
@@ -21,7 +23,7 @@ interface SearchSuggestion {
   isExisting?: boolean;
 }
 
-export function SearchBar({ figures, onSelect, onAddFigure, isAdding = false }: SearchBarProps) {
+export function SearchBar({ figures, onSelect, onAddFigure, isAdding = false, busyLabel }: SearchBarProps) {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -111,6 +113,7 @@ export function SearchBar({ figures, onSelect, onAddFigure, isAdding = false }: 
       }))}
       isLoading={isLoading}
       isSubmitting={isAdding}
+      busyLabel={busyLabel}
       error={error}
     />
   );
