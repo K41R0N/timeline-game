@@ -5,7 +5,7 @@ Start with these documents:
 - `STRATEGY.md`: what the game should become (streamer-first, score the overlap). Check proposed work against it.
 - `PRODUCT.md` and `DESIGN.md`: confirmed product facts, and the built visual world (the Deck: cards on a table). `.impeccable/surfaces/round.md` holds the round screen's direction contract; never copy it into source.
 - `ROADMAP.md` / GitHub issue #37: the prioritised work, as GitHub issues under four epics (#38–#41).
-- `docs/audits/2026-11-02-current-state-audit.md`: the as-built baseline, verified defects, and the design levers still open.
+- `docs/audits/2026-11-11-milestone-audit.md`: the game as built after the daily-puzzle milestone, how it was verified, known gaps and open decisions. `docs/audits/2026-11-02-current-state-audit.md` is the original baseline.
 - `docs/research/2026-11-06-difficulty-balancing.md`: how difficulty is set (par and options per step, not years), with the bands and the analysis script.
 - `docs/plans/2026-11-07-1521-feat-daily-shared-puzzle-plan.md`: the daily puzzle (one shared puzzle per UTC day, weekday difficulty, scored attempt and practice).
 - `docs/plans/2026-11-09-0000-feat-three-play-styles-plan.md`: three ways to play (Easy arranges cards, Medium fills blanks, Hard types against par), each with its own daily puzzle.
