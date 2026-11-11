@@ -29,6 +29,7 @@ export function ArchiveList({ rows, todayNumber }: { rows: ArchiveRow[]; todayNu
           <span className="type-display flex w-12 shrink-0 flex-col justify-center text-center leading-none">
             <span className="block text-2xl font-black">#{row.number}</span>
             <span className="block text-xs font-bold uppercase text-[var(--card-muted)]">{row.weekday.slice(0, 3)}</span>
+            <span className="block text-[11px] font-semibold text-[var(--card-muted)]">{row.date.slice(5)}</span>
           </span>
           <span className="grid flex-1 grid-cols-3 gap-1.5">
             {STYLES.map(({ style, path }) => {
@@ -37,7 +38,7 @@ export function ArchiveList({ rows, todayNumber }: { rows: ArchiveRow[]; todayNu
                 <Link
                   key={style}
                   href={`/daily/${row.number}${path}`}
-                  aria-label={`Daily #${row.number}, ${style}${line ? `: ${line.text}` : ''}`}
+                  aria-label={`Daily #${row.number}, ${row.date}, ${style}${line ? `: ${line.text}` : ''}`}
                   className="type-display flex min-h-12 flex-col items-center justify-center rounded-lg px-1 py-1 text-center uppercase leading-tight transition-colors hover:bg-[rgba(15,30,34,0.06)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--foil-light)]"
                 >
                   <span className={`text-sm font-black ${STYLE_ON_STOCK[style]}`}>{style}</span>

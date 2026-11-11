@@ -208,8 +208,11 @@ export function styleStatus(progress: DailyProgress, style: ChainStyle, n: numbe
 
 export const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
+const isFigure = (value: unknown) =>
+  isRecord(value) && typeof value.id === 'string' && typeof value.name === 'string' && typeof value.birthYear === 'number' && typeof value.deathYear === 'number';
+
 function normalizeRound(value: Record<string, unknown>): RoundSave | null {
-  if (!Array.isArray(value.figures)) return null;
+  if (!Array.isArray(value.figures) || !value.figures.every(isFigure)) return null;
   const hint = isRecord(value.hint) && typeof value.hint.id === 'string' && typeof value.hint.name === 'string' ? { id: value.hint.id, name: value.hint.name } : null;
   return { figures: value.figures as HistoricalFigure[], hintsUsed: typeof value.hintsUsed === 'number' ? value.hintsUsed : 0, hint };
 }

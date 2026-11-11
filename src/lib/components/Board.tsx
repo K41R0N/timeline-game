@@ -72,7 +72,8 @@ function useCountedYears(figure: HistoricalFigure, active: boolean) {
     });
     return () => cancelAnimationFrame(frame);
   }, [active, figure.birthYear, figure.deathYear]);
-  return shown;
+  // A count cut short by the next placement must not leave its in-between years on the card.
+  return active ? shown : { birth: figure.birthYear, death: figure.deathYear };
 }
 
 interface CardProps {
@@ -190,10 +191,11 @@ export function Board({ figures, targetA, targetB, finalChainIds, highlightId, s
     cardRefs.current.get(highlightId)?.scrollIntoView({ block: 'center', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
   }, [highlightId, figures.length]);
 
-  // The winning chain's thread runs through the middle of each card's top, earliest-born first.
+  // The winning chain's thread runs through the middle of each card's top, in chain order from target to target.
   const thread = finalChainIds
-    ? table.cards
-        .filter(card => finalChainIds.has(card.lane.figure.id))
+    ? [...finalChainIds]
+        .map(id => table.cards.find(card => card.lane.figure.id === id))
+        .filter((card): card is TableCard => card !== undefined)
         .map(card => {
           const { left, width: w } = placeOf(card);
           return { x: left + w / 2, y: card.top + Math.min(card.height, minCardHeight) / 2 };

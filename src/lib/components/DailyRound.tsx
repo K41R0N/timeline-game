@@ -60,6 +60,9 @@ async function lookUpTargets(puzzle: DailyPuzzle): Promise<[HistoricalFigure, Hi
   }) as [HistoricalFigure, HistoricalFigure];
 }
 
+/** How long a Hard daily waits for its targets' descriptions and portraits before starting without them. */
+const TARGET_LOOKUP_MS = 4000;
+
 /** A daily puzzle: today's scored attempt, a resumed one, its result, or practice on a past puzzle. */
 export function DailyRound(props: DailyRoundProps) {
   const progress = useDailyProgress();
@@ -89,11 +92,16 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
 
   useEffect(() => {
     let cancelled = false;
+    const plain: [HistoricalFigure, HistoricalFigure] = [figureFrom(puzzle.targetA), figureFrom(puzzle.targetB)];
+    const timer = setTimeout(() => {
+      if (!cancelled) setTargets(current => current ?? plain);
+    }, TARGET_LOOKUP_MS);
     lookUpTargets(puzzle).then(found => {
-      if (!cancelled) setTargets(found);
+      if (!cancelled) setTargets(current => current ?? found);
     });
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [puzzle]);
 
@@ -140,7 +148,9 @@ function LoadedDailyRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
   );
 
   if (view.kind === 'result') {
-    const { attempt, canPractice } = view;
+    const { attempt } = view;
+    // A result opened as today's puzzle becomes replayable once midnight passes and the page refreshes.
+    const canPractice = n < todayNumber;
     // The stored result needs only names and years, so it does not wait for Wikimedia.
     const [a, b] = targets ?? [figureFrom(puzzle.targetA), figureFrom(puzzle.targetB)];
     const final = attempt.figures.length > 0 ? finalChain(a, b, attempt.figures) : null;

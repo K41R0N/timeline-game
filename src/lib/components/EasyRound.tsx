@@ -183,7 +183,7 @@ export function EasyRound({ puzzle, initial, label, onSave, onFinish, onHome, on
       targetB={puzzle.targetB}
       rule={untouched ? 'Tap a card, then a slot. Each life must overlap the next.' : null}
       onHome={onHome}
-      onRestart={onRestart}
+      onRestart={onRestart && (() => (finished || confirm('Start a new game? This round will be lost.')) && onRestart())}
       dock={dock}
       dockScrolls
       table={table}

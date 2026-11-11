@@ -12,6 +12,6 @@ export function seededRandom(seed: number): () => number {
 /** A 32-bit seed from text (FNV-1a), such as a date or a style and a date. */
 export function seedFor(text: string): number {
   let hash = 2166136261;
-  for (const char of text) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
+  for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 16777619);
   return hash >>> 0;
 }

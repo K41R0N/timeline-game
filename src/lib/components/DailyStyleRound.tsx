@@ -118,7 +118,8 @@ function LoadedStyleRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
   );
 
   if (view.kind === 'result') {
-    const { attempt, canPractice } = view;
+    const { attempt } = view;
+    const canPractice = n < todayNumber;
     return (
       <ResultView
         puzzle={puzzle}
@@ -132,7 +133,17 @@ function LoadedStyleRound({ puzzle: incoming, todayNumber, nextSwitchAt, progres
   }
 
   const isToday = n === todayNumber;
-  const label = <span>#{n} · {practice ? 'Practice' : isToday ? 'Today' : weekdayName(puzzle.date)}</span>;
+  const label = (
+    <span>
+      #{n} · {practice ? 'Practice' : isToday ? 'Today' : weekdayName(puzzle.date)}
+      {!practice && isToday && (
+        <span className="hidden sm:inline">
+          {' · '}
+          <Countdown until={nextSwitchAt} label="next in" />
+        </span>
+      )}
+    </span>
+  );
   const shared = { puzzle, label, onSave: save, onFinish: finish, onHome: goHome, endHeading: title, endActionLabel: 'Back to home', onEndAction: goHome, endExtra: countdown, analyticsContext: context };
 
   return style === 'easy' ? (

@@ -41,4 +41,16 @@ describe('createAnalytics', () => {
     analytics.track('game_started', {});
     await expect(analytics.flush()).resolves.toBeUndefined();
   });
+
+  it('keeps sending events after one capture throws', async () => {
+    const client = fakeClient();
+    client.capture.mockImplementationOnce(() => {
+      throw new Error('capture failed');
+    });
+    const analytics = createAnalytics({ key: 'phc_test', load: async () => client });
+    analytics.track('game_started', {});
+    analytics.track('game_completed', {});
+    await analytics.flush();
+    expect(client.capture.mock.calls.map(call => call[0])).toEqual(['game_started', 'game_completed']);
+  });
 });

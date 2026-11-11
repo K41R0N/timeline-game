@@ -45,8 +45,8 @@ export function surnameOf(name: string): string | null {
   const words = name.trim().split(/\s+/);
   if (words.length < 2) return null;
   if (words.some(word => /^(of|the)$/i.test(word) || /^[IVXLC]+$/.test(word))) return null;
-  const last = [...words].reverse().find(word => normalizeName(word).replace(/\s/g, '').length >= MIN_SURNAME_LETTERS);
-  return last ? normalizeName(last) : null;
+  const last = normalizeName(words[words.length - 1]);
+  return last.replace(/\s/g, '').length >= MIN_SURNAME_LETTERS ? last : null;
 }
 
 /** Whether a guess is the answer's full name (without disambiguation) or its surname. */

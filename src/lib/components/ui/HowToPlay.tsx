@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useDialogFocus } from '../../hooks/useDialogFocus';
 import type { Difficulty } from '../../utils/GameLogic';
 import { CLUTCH_MAX_SHARED_YEARS, LONG_BRIDGE_MIN_YEARS } from '../../utils/overlap';
 import { STYLE_NAME, STYLE_ON_STOCK } from './styles';
@@ -15,6 +16,7 @@ const STEPS: { style: Difficulty; text: string }[] = [
 /** The rules, one line per style, behind one quiet button. */
 export function HowToPlay() {
   const [open, setOpen] = useState(false);
+  const dialogRef = useDialogFocus<HTMLDivElement>(open);
 
   useEffect(() => {
     if (!open) return;
@@ -35,11 +37,13 @@ export function HowToPlay() {
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(4,20,24,0.6)] sm:items-center" onClick={() => setOpen(false)}>
           <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="how-to-play-title"
+            tabIndex={-1}
             onClick={event => event.stopPropagation()}
-            className="animate-sheetIn w-full max-w-md rounded-t-2xl bg-[var(--card-stock)] px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 text-[var(--card-ink)] sm:rounded-2xl"
+            className="animate-sheetIn max-h-[100dvh] w-full max-w-md overflow-y-auto rounded-t-2xl outline-none bg-[var(--card-stock)] px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 text-[var(--card-ink)] sm:rounded-2xl"
           >
             <h2 id="how-to-play-title" className="type-display text-3xl font-black uppercase [text-shadow:none]">
               How to play

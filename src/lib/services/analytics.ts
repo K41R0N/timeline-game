@@ -58,9 +58,12 @@ export function createAnalytics({ key, host = DEFAULT_HOST, load, url }: Analyti
 
   return {
     track(event, properties) {
-      queue = queue.then(() => ready()).then(posthog => {
-        posthog?.capture(event, properties);
-      });
+      queue = queue
+        .then(() => ready())
+        .then(posthog => {
+          posthog?.capture(event, properties);
+        })
+        .catch(error => console.warn('⚠️ Analytics event not sent:', error));
     },
     flush: () => queue,
   };

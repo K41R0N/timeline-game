@@ -5,6 +5,7 @@ import { HistoricalFigure } from '../../types/HistoricalFigure';
 import { describeResult, golfName, signedDifference } from '../../utils/GameLogic';
 import { sharedYears } from '../../utils/overlap';
 import type { StyleBadge } from '../../utils/style';
+import { useDialogFocus } from '../../hooks/useDialogFocus';
 import { Portrait } from './Portrait';
 import { ScorePlates } from './ScorePlates';
 
@@ -72,14 +73,17 @@ export function WinModal({ strokes, par, chain, badges, parChain, hintsUsed, onP
   const headline = !result ? 'Linked' : result.tone === 'par' ? 'Par' : underPar ? `${named ?? 'Under par'}!` : (named ?? signedDifference(result.difference));
   const longBridges = badges.filter(badge => badge.kind === 'longBridge').length;
   const tone = underPar ? 'under' : result?.tone === 'over' ? 'over' : 'even';
+  const dialogRef = useDialogFocus<HTMLDivElement>();
 
   return (
     <div className="fixed inset-0 z-[200] flex items-end justify-center bg-[rgba(4,20,24,0.72)] animate-fadeIn sm:items-center sm:p-6">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="result-title"
-        className={`max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[var(--table)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 text-center text-[var(--table-ink)] shadow-[0_-12px_40px_rgba(0,0,0,0.5)] sm:rounded-3xl ${
+        tabIndex={-1}
+        className={`max-h-[92dvh] outline-none w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[var(--table)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 text-center text-[var(--table-ink)] shadow-[0_-12px_40px_rgba(0,0,0,0.5)] sm:rounded-3xl ${
           underPar ? 'ring-[3px] ring-[var(--foil)]' : ''
         }`}
       >

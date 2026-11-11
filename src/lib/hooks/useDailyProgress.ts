@@ -34,6 +34,8 @@ function getSnapshot(): DailyProgress {
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
+  // Another tab may have saved while nothing here was listening.
+  cache = null;
   const onStorage = (event: StorageEvent) => {
     if (event.key !== STORAGE_KEY) return;
     cache = null;
@@ -48,7 +50,8 @@ function subscribe(listener: () => void) {
 
 /** Applies a change to this browser's daily progress and saves it at once. */
 export function updateDailyProgress(change: (progress: DailyProgress) => DailyProgress) {
-  const current = getSnapshot();
+  // Start from what is stored now, so a change from another tab is not overwritten by a stale copy.
+  const current = compactProgress(readProgress(), Date.now());
   const next = change(current);
   if (next === current) return;
   cache = next;

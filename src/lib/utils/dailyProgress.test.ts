@@ -115,6 +115,10 @@ describe('normalizeDailyProgress', () => {
     expect(normalizeDailyProgress({ attempts: { 4: { figures: 'x' } } })).toEqual(EMPTY_PROGRESS);
   });
 
+  it('drops an attempt whose saved board holds something that is not a person', () => {
+    expect(normalizeDailyProgress({ attempts: { 4: { number: 4, startedAt: NOW, figures: [null], hintsUsed: 0 } } }).attempts).toEqual({});
+  });
+
   it('keeps well-formed attempts and the practice slot', () => {
     const progress = saveRound(saveRound(EMPTY_PROGRESS, 4, 'scored', round('A', 'B'), NOW), 2, 'practice', round('C'), NOW);
     expect(normalizeDailyProgress(JSON.parse(JSON.stringify(progress)))).toEqual(progress);

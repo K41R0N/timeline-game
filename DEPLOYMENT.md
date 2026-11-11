@@ -73,7 +73,7 @@ Players stay anonymous: no person profiles, no autocapture, no session recording
 
 | Event | When | Properties |
 |---|---|---|
-| `$pageview` | Page load | PostHog defaults, plus `referrer_code` when present |
+| `$pageview` | The first tracked event on a page (PostHog loads lazily then), not every page load | PostHog defaults, plus `referrer_code` when present |
 | `game_started` | A free-play round is dealt, or a daily attempt (scored or practice) begins; not when one resumes | Hard: `par`, `narrowest_step`, `years_apart`, `gap_century`, `target_a`, `target_b`. Easy and Medium: `target_a`, `target_b`, `people` (people between the targets) |
 | `figure_added` | A name is submitted in Hard | `accepted`; when rejected, `reason` (`not_found`, `not_a_person`, `no_dates`, `network`, `duplicate`); when accepted, `overlaps`, `extends_chain`, `miss_years`, `from_hint` |
 | `hint_taken` | A Hard wild card is shown | `costs_stroke` |
@@ -97,7 +97,7 @@ PostHog drops events from automated browsers, so headless test runs do not show 
 - **Result against par by band:** median `result` from Hard `game_completed`, broken down by `band`. Compare with the tuning targets in `docs/research/2026-11-06-difficulty-balancing.md` (#82).
 - **Easy and Medium scores:** median `checks` (Easy) and `misses` plus `reveals` (Medium) from `game_completed`, by `puzzle`.
 - **Hint use in Hard:** `hint_taken` per Hard `game_started`.
-- **Birdies by era:** share of `game_completed` with `result` < 0, broken down by `gap_century`.
+- **Birdies by era:** a funnel from Hard `game_started` to `game_completed` with `result` < 0, broken down by the start event's `gap_century` (completion events do not carry it).
 - **Daily completions per puzzle:** `game_completed` where `mode` = `daily` and `scored` = true, broken down by `puzzle` and `style`.
 - **Arrivals through daily links:** `$pageview` where the URL path starts with `/daily/`, broken down by path; combine with `referrer_code` for streamer links.
 

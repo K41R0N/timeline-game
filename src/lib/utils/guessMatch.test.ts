@@ -34,6 +34,11 @@ describe('matchesAnswer', () => {
     expect(matchesAnswer('descartes', person('Q9191', 'René Descartes', 1596, 1650))).toBe(true);
   });
 
+  it('does not take a first name for the surname when the last word is too short', () => {
+    expect(matchesAnswer('Chien-Shiung', person('Q1', 'Chien-Shiung Wu', 1912, 1997))).toBe(false);
+    expect(matchesAnswer('Chien-Shiung Wu', person('Q1', 'Chien-Shiung Wu', 1912, 1997))).toBe(true);
+  });
+
   it('does not treat a place, an epithet or a numeral as a surname', () => {
     expect(matchesAnswer('England', person('Q38370', 'Henry VIII of England', 1491, 1547))).toBe(false);
     expect(matchesAnswer('Great', person('Q8409', 'Alexander the Great', -356, -323))).toBe(false);

@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import type { PuzzlePerson } from '../../data/dailySchedule';
 import type { ChainStyle } from '../../utils/chainPuzzle';
 import type { SlotOutcome, StyleResult as Result } from '../../utils/dailyProgress';
+import { useDialogFocus } from '../../hooks/useDialogFocus';
 import { CountPlate } from './ChainTable';
 import { ChainHand } from './WinModal';
 
@@ -38,15 +39,18 @@ interface StyleResultProps {
 /** The end of an Easy or Medium round: one word, the count, one square per slot, and the chain. */
 export function StyleResult({ style, result, chain, heading, actionLabel, onAction, extra }: StyleResultProps) {
   const perfect = style === 'easy' ? result.score === 1 : result.score === 0;
+  const dialogRef = useDialogFocus<HTMLDivElement>();
   const label = style === 'easy' ? (result.score === 1 ? 'Check' : 'Checks') : result.score === 1 ? 'Miss' : 'Misses';
 
   return (
     <div className="fixed inset-0 z-[200] flex items-end justify-center bg-[rgba(4,20,24,0.72)] animate-fadeIn sm:items-center sm:p-6">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="result-title"
-        className={`max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[var(--table)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 text-center text-[var(--table-ink)] shadow-[0_-12px_40px_rgba(0,0,0,0.5)] sm:rounded-3xl ${
+        tabIndex={-1}
+        className={`max-h-[92dvh] outline-none w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[var(--table)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 text-center text-[var(--table-ink)] shadow-[0_-12px_40px_rgba(0,0,0,0.5)] sm:rounded-3xl ${
           perfect ? 'ring-[3px] ring-[var(--foil)]' : ''
         }`}
       >

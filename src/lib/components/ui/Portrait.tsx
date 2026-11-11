@@ -32,8 +32,8 @@ type PortraitPerson = Pick<HistoricalFigure, 'name' | 'birthYear'> & { imageUrl?
 
 /** A person's Wikipedia portrait, or their initials on their era's colour when there is none or it fails to load. */
 export function Portrait({ figure, size = 'md' }: { figure: PortraitPerson; size?: keyof typeof SIZES }) {
-  const [failed, setFailed] = useState(false);
-  if (figure.imageUrl && !failed) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  if (figure.imageUrl && figure.imageUrl !== failedUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- Wikimedia thumbnails at their own size; nothing to optimise
       <img
@@ -41,7 +41,7 @@ export function Portrait({ figure, size = 'md' }: { figure: PortraitPerson; size
         alt=""
         loading="lazy"
         referrerPolicy="no-referrer"
-        onError={() => setFailed(true)}
+        onError={() => setFailedUrl(figure.imageUrl ?? null)}
         className={`${SIZES[size]} shrink-0 rounded-md bg-[var(--card-muted)] object-cover object-top`}
       />
     );

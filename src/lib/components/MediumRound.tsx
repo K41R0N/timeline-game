@@ -86,7 +86,11 @@ export function MediumRound({ puzzle, initial, label, onSave, onFinish, onHome, 
   useEffect(() => {
     loadRoster()
       .then(setRoster)
-      .catch(error => console.error('❌ Could not load the roster:', error));
+      .catch(error => {
+        // Guesses still match the answer and fall back to the live lookup.
+        console.error('❌ Could not load the roster:', error);
+        setRoster([]);
+      });
   }, []);
 
   const settle = (blank: number, next: MediumState) => {
@@ -203,7 +207,7 @@ export function MediumRound({ puzzle, initial, label, onSave, onFinish, onHome, 
       targetB={puzzle.targetB}
       rule={untouched ? 'Name the hidden people. Each box is a letter.' : null}
       onHome={onHome}
-      onRestart={onRestart}
+      onRestart={onRestart && (() => (finished || confirm('Start a new game? This round will be lost.')) && onRestart())}
       dock={dock}
       table={table}
       overlay={overlay}
