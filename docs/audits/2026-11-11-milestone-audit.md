@@ -33,7 +33,7 @@ The look is the Deck (`DESIGN.md`): a petrol card table, white card stock, era-c
 | Board | Pan-and-zoom bubbles on one line | Cards on a vertical table at their birth year, spines as long as the life, the gap as a chalk bay | #55, #63 (closed by this merge) |
 | Daily | None | Three frozen daily puzzles per date, a year ahead, checked in CI | #58 (closed by this merge) |
 | Screens | Splash, difficulty picker, round | Game menu, round per style, end screens, archive, How to play; phone and desktop layouts | #65, #66 (partly done) |
-| Quality | No tests, no CI | Vitest (291 tests, 288 run offline), CI on every PR: lint, typecheck, tests, build | #42, #45 (closed) |
+| Quality | No tests, no CI | Vitest (294 tests, 291 run offline), CI on every PR: lint, typecheck, tests, build | #42, #45 (closed) |
 
 ## 3. How the puzzles are made
 
@@ -45,11 +45,12 @@ The look is the Deck (`DESIGN.md`): a petrol card table, white card stock, era-c
 
 ## 4. How this milestone was verified
 
-- **[run]** `npm test`: 288 passed, 3 skipped (the network capture tests). `npx tsc --noEmit` clean. `npm run lint`: 0 errors, 6 warnings, all older than this milestone (#44). `npm run build` clean.
+- **[run]** `npm test`: 291 passed, 3 skipped (the network capture tests). `npx tsc --noEmit` clean. `npm run lint`: 0 errors, 6 warnings, all older than this milestone (#44). `npm run build` clean.
 - **[run]** Schedule generation: 370 Easy and 370 Medium entries, one per Hard entry, no health-check problems; every Hard entry that existed before is byte-identical.
 - **[run]** Bundle check: no field that only the schedule files carry appears in the client chunks, so future puzzles never reach the browser.
 - **[run]** Playwright on the production build, emulated iPhone 13 and 1440 px: full Easy and Medium dailies to their results, a result reopened after reload, a future puzzle showing only its release date, menu and archive statuses per style, free play in all three styles, and a free-play save from before this milestone reopening as Hard.
 - **[run]** Code review of the milestone diff (correctness, testing, maintainability, reliability, frontend). It ran in the same session that wrote the code, so it was not independent. Its two findings were fixed: Easy's repeated people (now the fame-weighted draw with a 14-day gap) and Medium's "Drawing…" label while checking a name.
+- **[run]** CodeRabbit on PR #84: 4 major and 19 minor findings. Fixed: dialog focus on the result screens and How to play, the Hard daily no longer waiting on Wikimedia (it starts after 4 seconds without portraits), Medium surviving a failed roster load, and 16 of the minor findings. The three left are explained on the PR.
 
 ## 5. Known gaps and risks
 
@@ -63,7 +64,6 @@ The look is the Deck (`DESIGN.md`): a petrol card table, white card stock, era-c
 | Physical phones untested | Only emulated; Safari and the on-screen keyboard over the dock are unverified | #66 |
 | Answers in the page | A published Easy or Medium puzzle's answers are in its page data (accepted: there is no backend) | Plan KTD7 |
 | Portraits | Wikimedia rate-limits shared IPs (HTTP 429); in testing only the initials fallback was seen | — |
-| Hard daily waits on Wikimedia | The Hard daily looks up its two targets before starting and stalls while Wikimedia rate-limits | — |
 | No component tests | The round screens are covered by browser runs, not automated tests | — |
 | Year 0 | Overlap and gap maths treat 1 BCE to 1 CE as two years | #53 |
 | Lint warnings | 6 warnings remain | #44 |
